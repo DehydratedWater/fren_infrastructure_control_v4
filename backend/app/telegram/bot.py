@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import logging
 import os
 import signal
@@ -20,51 +19,33 @@ from telegram.ext import (
 
 from app.settings import get_settings
 from app.telegram.scheduler import Scheduler
+from app.telegram.spawn import spawn_agent
 
 logger = logging.getLogger(__name__)
 
 _scheduler: Scheduler | None = None
 
-# Track running subprocesses for cleanup: process → agent name
-_active_processes: dict[asyncio.subprocess.Process, str] = {}
-
 # Strong references to background tasks so they are not GC'd mid-run.
 # See https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
 _background_personality_tasks: set[asyncio.Task[None]] = set()
 
-# Set by the SIGTERM/SIGINT cleanup handler so error-notification and
-# signal-caused subprocess kills don't spam Telegram during Docker restarts.
+# Set by the SIGTERM/SIGINT cleanup handler so error notifications and the
+# post-run persona delivery hook stay quiet during Docker restarts — agent
+# spawns get torn down with the process and we don't want to spam Telegram.
 _shutting_down: bool = False
 
 
-def _is_signal_exit(returncode: int | None) -> bool:
-    """True if the subprocess exited because of a signal (SIGTERM 143, SIGKILL 137, etc)
-    rather than a real application error. Signal exits typically mean "someone
-    asked you to stop" — a restart, a cleanup, a timeout kill — not a bug in
-    the agent, so we should NOT send a user-facing 'something went wrong'
-    notification for them.
-    """
-    if returncode is None:
-        return False
-    # POSIX: 128 + signal_number. Cover SIGINT(2)=130, SIGTERM(15)=143, SIGKILL(9)=137.
-    return returncode >= 128 or returncode in (130, 137, 143)
-
-
-async def _post_run_persona_delivery(agent: str, run_id: str, returncode: int | None) -> None:
+async def _post_run_persona_delivery(agent: str, run_id: str) -> None:
     """Post-run hook that hands control to persona_prose for delivery.
 
-    Skipped when the bot is shutting down or the agent subprocess was killed
-    by a signal (SIGTERM/SIGKILL/SIGINT from Docker restart, timeout, or
-    /cleanup). In those cases the agent didn't get to emit guidance, and we
-    don't want persona_prose to synthesize a flustered fallback for a dying
-    bot process — it would race with shutdown and leak 'something went
+    Skipped when the bot is shutting down. In that case the agent likely
+    didn't get to emit guidance (Docker restart / timeout kill / cleanup),
+    and we don't want persona_prose to synthesize a flustered fallback for a
+    dying bot process — it would race with shutdown and leak 'something went
     wrong' messages to the user.
     """
     if _shutting_down:
         logger.info("Skipping post-run delivery for %s (bot shutting down)", agent)
-        return
-    if _is_signal_exit(returncode):
-        logger.info("Skipping post-run delivery for %s (signal exit %s)", agent, returncode)
         return
     try:
         from app.telegram.persona_prose import deliver_guidance_from_ledger, is_excluded_agent
@@ -260,65 +241,28 @@ async def trigger_chatbot(
 
     run_id = f"run_{uuid.uuid4().hex[:16]}"
 
-    # TODO(v4-port): verify agent-spawn wiring — v3 shelled out to its own
-    # scripts/opencode_manager.py against project_root + .opencode/data. v4's
-    # compiled-agent trees live under get_settings().agents_dir and the
-    # canonical runner is app.runtime.runner.run_agent. This subprocess call is
-    # preserved verbatim; point opencode_manager (or swap to run_agent) at the
-    # v4 agents_dir before going live.
-    cmd = [
-        "uv",
-        "run",
-        "scripts/opencode_manager.py",
-        "run",
-        "--no-attach",
-        "--agent",
-        agent,
-        prompt,
-    ]
-
-    env = {
-        **os.environ,
-        "XDG_DATA_HOME": str(Path(project_root) / ".opencode" / "data"),
-        "FREN_MSG_HEADER": header,
-        "FREN_CONTENT_CLASS": content_class,
-        "FREN_CLEARANCE": clearance,
-        "FREN_MODEL_POSTFIX": postfix,
-        "FREN_TTS_POSTFIX": _tts_postfix(),
-        "FREN_RUN_ID": run_id,
-    }
-
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            cwd=str(Path(project_root)),
-            env=env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        _active_processes[proc] = agent
-        _stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=1800)
-        if proc.returncode != 0:
-            if _is_signal_exit(proc.returncode):
-                logger.info(
-                    "Agent subprocess exited via signal %d (shutdown/terminate) — suppressing error notification",
-                    proc.returncode,
-                )
-            else:
-                logger.error("Agent failed (exit %d): %s", proc.returncode, stderr.decode()[:500])
-                await _send_error_notification("orchestrator crashed")
-    except TimeoutError:
-        logger.error("Agent timed out after 1800s")
-        proc.kill()  # type: ignore[union-attr]
-        await _send_error_notification("orchestrator timed out")
-    except Exception as e:
-        logger.error("Failed to run agent: %s", e)
+    # Spawn the compiled agent in-process via opencode (settings.agents_dir).
+    # spawn_agent writes the ledger run row first so the post-run persona_prose
+    # hook can read this run's guidance back by run_id. The FREN_* context is
+    # exported to the agent's environment exactly as v3's subprocess did.
+    result = await spawn_agent(
+        agent=agent,
+        prompt=prompt,
+        run_id=run_id,
+        model_postfix=postfix,
+        header=header,
+        content_class=content_class,
+        clearance=clearance,
+        tts_postfix=_tts_postfix(),
+        timeout_s=1800,
+        trigger="chatbot",
+    )
+    if not result.ok and not _shutting_down:
+        logger.error("Agent failed: %s", result.error)
         await _send_error_notification("orchestrator error")
-    finally:
-        _active_processes.pop(proc, None)
 
     # Post-run persona_prose delivery (no-op if agent didn't emit guidance).
-    await _post_run_persona_delivery(agent, run_id, getattr(locals().get("proc"), "returncode", None))
+    await _post_run_persona_delivery(agent, run_id)
 
 
 async def _update_personality_core_background(message: str, history_context: str, now_str: str) -> None:
@@ -778,65 +722,28 @@ async def trigger_chat_agent(
 
     run_id = f"run_{uuid.uuid4().hex[:16]}"
 
-    # TODO(v4-port): verify agent-spawn wiring — see trigger_chatbot note.
-    cmd = [
-        "uv",
-        "run",
-        "scripts/opencode_manager.py",
-        "run",
-        "--no-attach",
-        "--agent",
-        agent,
-        prompt,
-    ]
-
-    env = {
-        **os.environ,
-        "XDG_DATA_HOME": str(Path(project_root) / ".opencode" / "data"),
-        "FREN_MSG_HEADER": header,
-        "FREN_CONTENT_CLASS": content_class,
-        "FREN_CLEARANCE": clearance,
-        "FREN_MODEL_POSTFIX": postfix,
-        "FREN_TTS_POSTFIX": _tts_postfix(),
-        "FREN_RUN_ID": run_id,
-    }
-
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            cwd=str(Path(project_root)),
-            env=env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        _active_processes[proc] = agent
-        _stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=1800)
-        if proc.returncode != 0:
-            if _is_signal_exit(proc.returncode):
-                logger.info(
-                    "Chat agent subprocess exited via signal %d (shutdown/terminate) — suppressing error notification",
-                    proc.returncode,
-                )
-            else:
-                logger.error(
-                    "Chat agent failed (exit %d): %s",
-                    proc.returncode,
-                    stderr.decode()[:500],
-                )
-                await _send_error_notification("chat agent crashed")
-    except TimeoutError:
-        logger.error("Chat agent timed out after 1800s")
-        proc.kill()  # type: ignore[union-attr]
-        await _send_error_notification("chat agent timed out")
-    except Exception as e:
-        logger.error("Failed to run chat agent: %s", e)
+    # Spawn the compiled chat agent in-process via opencode. The run row is
+    # written to the ledger first so the post-run hook can read guidance back
+    # by run_id; FREN_* context is exported to the agent's environment.
+    result = await spawn_agent(
+        agent=agent,
+        prompt=prompt,
+        run_id=run_id,
+        model_postfix=postfix,
+        header=header,
+        content_class=content_class,
+        clearance=clearance,
+        tts_postfix=_tts_postfix(),
+        timeout_s=1800,
+        trigger="chat",
+    )
+    if not result.ok and not _shutting_down:
+        logger.error("Chat agent failed: %s", result.error)
         await _send_error_notification("chat agent error")
-    finally:
-        _active_processes.pop(proc, None)
 
     # Post-run persona_prose delivery hook. No-op if the agent didn't emit
     # guidance (the agent still called send_message directly on the old path).
-    await _post_run_persona_delivery(agent, run_id, getattr(locals().get("proc"), "returncode", None))
+    await _post_run_persona_delivery(agent, run_id)
 
 
 async def trigger_workflow(
@@ -872,107 +779,56 @@ async def trigger_workflow(
 
     run_id = f"run_{uuid.uuid4().hex[:16]}"
 
-    # TODO(v4-port): verify agent-spawn wiring — see trigger_chatbot note.
-    cmd = [
-        "uv",
-        "run",
-        "scripts/opencode_manager.py",
-        "run",
-        "--no-attach",
-        "--agent",
-        agent,
-        prompt,
-    ]
-
-    env = {
-        **os.environ,
-        "XDG_DATA_HOME": str(Path(project_root) / ".opencode" / "data"),
-        "FREN_MSG_HEADER": header,
-        "FREN_MODEL_POSTFIX": postfix,
-        "FREN_TTS_POSTFIX": _tts_postfix(),
-        "FREN_RUN_ID": run_id,
-    }
-
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            cwd=str(Path(project_root)),
-            env=env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        _active_processes[proc] = agent
-        _stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=1800)
-        if proc.returncode != 0:
-            if _is_signal_exit(proc.returncode):
-                logger.info(
-                    "Workflow subprocess exited via signal %d (shutdown/terminate) — suppressing error notification",
-                    proc.returncode,
-                )
-            else:
-                logger.error("Workflow failed (exit %d): %s", proc.returncode, stderr.decode()[:500])
-                await _send_error_notification("workflow crashed")
-    except TimeoutError:
-        logger.error("Workflow timed out after 1800s")
-        proc.kill()  # type: ignore[union-attr]
-        await _send_error_notification("workflow timed out")
-    except Exception as e:
-        logger.error("Failed to run workflow: %s", e)
+    # Spawn the workflow agent in-process via opencode (ledger row first).
+    result = await spawn_agent(
+        agent=agent,
+        prompt=prompt,
+        run_id=run_id,
+        model_postfix=postfix,
+        header=header,
+        tts_postfix=_tts_postfix(),
+        timeout_s=1800,
+        trigger="workflow",
+    )
+    if not result.ok and not _shutting_down:
+        logger.error("Workflow failed: %s", result.error)
         await _send_error_notification("workflow error")
-    finally:
-        _active_processes.pop(proc, None)
 
     # Post-run persona_prose delivery (no-op for unconverted agents).
-    await _post_run_persona_delivery(agent, run_id, getattr(locals().get("proc"), "returncode", None))
+    await _post_run_persona_delivery(agent, run_id)
 
 
 async def trigger_video_analysis(url: str, original_message: str, model: str | None = None) -> None:
     """Ingest a YouTube video and run the video_analyst agent in the background."""
-    import json as _json
-
     from app.telegram.state import get_model, get_postfix
-
-    settings = get_settings()
-    project_root = settings.project_root
 
     if model is None:
         model = get_model()
     postfix = get_postfix(model)
-    xdg_data = str(Path(project_root) / ".opencode" / "data")
 
-    # Phase 1: Ingest — create DB record + fetch transcript
-    ingest_cmd = [
-        "uv",
-        "run",
-        "scripts/youtube_fetcher.py",
-        "--command",
-        "ingest-url",
-        "--url",
-        url,
-    ]
-    env = {**os.environ, "XDG_DATA_HOME": xdg_data}
-
+    # Phase 1: Ingest — create DB record + fetch transcript. v3 shelled out to
+    # `uv run scripts/youtube_fetcher.py --command ingest-url`; v4 runs the
+    # same tool in-process via its async dispatch (no subprocess — the v4 image
+    # has no `uv`). The tool's .execute() wraps asyncio.run(), which we can't
+    # call from inside this running loop, so we await _dispatch directly.
     try:
-        proc = await asyncio.create_subprocess_exec(
-            *ingest_cmd,
-            cwd=str(Path(project_root)),
-            env=env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+        from app.tools.research.youtube_fetcher import (
+            Input as YouTubeInput,
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
-        if proc.returncode != 0:
-            logger.error(
-                "YouTube ingest failed (exit %d): %s",
-                proc.returncode,
-                stderr.decode()[:500],
-            )
-            return
+        from app.tools.research.youtube_fetcher import (
+            YouTubeFetcherTool,
+        )
 
-        result = _json.loads(stdout.decode())
-        video_id = result.get("item", {}).get("video_id", "")
+        out = await asyncio.wait_for(
+            YouTubeFetcherTool()._dispatch(YouTubeInput(command="ingest-url", url=url)),
+            timeout=120,
+        )
+        if not out.success:
+            logger.error("YouTube ingest failed for %s: %s", url, out.error)
+            return
+        video_id = out.item.get("video_id", "")
         if not video_id:
-            logger.error("YouTube ingest returned no video_id: %s", stdout.decode()[:300])
+            logger.error("YouTube ingest returned no video_id for %s: %r", url, out.item)
             return
     except TimeoutError:
         logger.error("YouTube ingest timed out after 120s for %s", url)
@@ -994,101 +850,53 @@ async def trigger_video_analysis(url: str, original_message: str, model: str | N
 
     run_id = f"run_{uuid.uuid4().hex[:16]}"
 
-    # TODO(v4-port): verify agent-spawn wiring — see trigger_chatbot note.
-    analyze_cmd = [
-        "uv",
-        "run",
-        "scripts/opencode_manager.py",
-        "run",
-        "--no-attach",
-        "--agent",
-        agent,
-        prompt,
-    ]
-    env = {
-        **os.environ,
-        "XDG_DATA_HOME": xdg_data,
-        "FREN_MODEL_POSTFIX": postfix,
-        "FREN_TTS_POSTFIX": _tts_postfix(),
-        "FREN_RUN_ID": run_id,
-    }
-
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *analyze_cmd,
-            cwd=str(Path(project_root)),
-            env=env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        _active_processes[proc] = agent
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=600)
-        if proc.returncode != 0:
-            logger.error(
-                "Video analyst failed (exit %d): stderr=%s stdout=%s",
-                proc.returncode,
-                stderr.decode()[:500],
-                stdout.decode()[:500],
-            )
-    except TimeoutError:
-        logger.error("Video analyst timed out after 600s for %s", url)
-        proc.kill()  # type: ignore[union-attr]
-    except Exception as e:
-        logger.error("Video analyst failed for %s: %s", url, e)
-    finally:
-        _active_processes.pop(proc, None)
+    result = await spawn_agent(
+        agent=agent,
+        prompt=prompt,
+        run_id=run_id,
+        model_postfix=postfix,
+        tts_postfix=_tts_postfix(),
+        timeout_s=600,
+        trigger="video_analysis",
+    )
+    if not result.ok and not _shutting_down:
+        logger.error("Video analyst failed for %s: %s", url, result.error)
 
     # Post-run persona_prose delivery hook.
-    await _post_run_persona_delivery(agent, run_id, getattr(locals().get("proc"), "returncode", None))
+    await _post_run_persona_delivery(agent, run_id)
 
 
 async def trigger_document_analysis(rel_path: str, filename: str, caption: str, model: str | None = None) -> None:
     """Parse a document and run the document_analyst agent in the background."""
-    import json as _json
-
     from app.telegram.state import get_model, get_postfix
-
-    settings = get_settings()
-    project_root = settings.project_root
 
     if model is None:
         model = get_model()
     postfix = get_postfix(model)
-    xdg_data = str(Path(project_root) / ".opencode" / "data")
 
-    # Phase 1: Parse — extract text and create DB record
-    parse_cmd = [
-        "uv",
-        "run",
-        "scripts/document_manager.py",
-        "--command",
-        "parse",
-        "--file_path",
-        rel_path,
-    ]
-    env = {**os.environ, "XDG_DATA_HOME": xdg_data}
-
+    # Phase 1: Parse — extract text + create DB record. v3 shelled out to
+    # `uv run scripts/document_manager.py --command parse`; v4 runs the same
+    # tool in-process via its async dispatch (no subprocess — the v4 image has
+    # no `uv`). .execute() wraps asyncio.run(), unusable inside this running
+    # loop, so we await _dispatch directly.
     try:
-        proc = await asyncio.create_subprocess_exec(
-            *parse_cmd,
-            cwd=str(Path(project_root)),
-            env=env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+        from app.tools.research.document_manager import (
+            DocumentManagerTool,
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
-        if proc.returncode != 0:
-            logger.error(
-                "Document parse failed (exit %d): %s",
-                proc.returncode,
-                stderr.decode()[:500],
-            )
-            return
+        from app.tools.research.document_manager import (
+            Input as DocumentInput,
+        )
 
-        result = _json.loads(stdout.decode())
-        doc_id = result.get("item", {}).get("doc_id", "")
+        out = await asyncio.wait_for(
+            DocumentManagerTool()._dispatch(DocumentInput(command="parse", file_path=rel_path)),
+            timeout=120,
+        )
+        if not out.success:
+            logger.error("Document parse failed for %s: %s", filename, out.error)
+            return
+        doc_id = out.item.get("doc_id", "")
         if not doc_id:
-            logger.error("Document parse returned no doc_id: %s", stdout.decode()[:300])
+            logger.error("Document parse returned no doc_id for %s: %r", filename, out.item)
             return
     except TimeoutError:
         logger.error("Document parse timed out after 120s for %s", filename)
@@ -1112,114 +920,47 @@ async def trigger_document_analysis(rel_path: str, filename: str, caption: str, 
 
     run_id = f"run_{uuid.uuid4().hex[:16]}"
 
-    # TODO(v4-port): verify agent-spawn wiring — see trigger_chatbot note.
-    analyze_cmd = [
-        "uv",
-        "run",
-        "scripts/opencode_manager.py",
-        "run",
-        "--no-attach",
-        "--agent",
-        agent,
-        prompt,
-    ]
-    env = {
-        **os.environ,
-        "XDG_DATA_HOME": xdg_data,
-        "FREN_MODEL_POSTFIX": postfix,
-        "FREN_TTS_POSTFIX": _tts_postfix(),
-        "FREN_RUN_ID": run_id,
-    }
+    result = await spawn_agent(
+        agent=agent,
+        prompt=prompt,
+        run_id=run_id,
+        model_postfix=postfix,
+        tts_postfix=_tts_postfix(),
+        timeout_s=600,
+        trigger="document_analysis",
+    )
+    if not result.ok and not _shutting_down:
+        logger.error("Document analyst failed for %s: %s", filename, result.error)
 
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *analyze_cmd,
-            cwd=str(Path(project_root)),
-            env=env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        _active_processes[proc] = agent
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=600)
-        if proc.returncode != 0:
-            logger.error(
-                "Document analyst failed (exit %d): stderr=%s stdout=%s",
-                proc.returncode,
-                stderr.decode()[:500],
-                stdout.decode()[:500],
-            )
-    except TimeoutError:
-        logger.error("Document analyst timed out after 600s for %s", filename)
-        proc.kill()  # type: ignore[union-attr]
-    except Exception as e:
-        logger.error("Document analyst failed for %s: %s", filename, e)
-    finally:
-        _active_processes.pop(proc, None)
-
-    await _post_run_persona_delivery(agent, run_id, getattr(locals().get("proc"), "returncode", None))
+    await _post_run_persona_delivery(agent, run_id)
 
 
 async def trigger_bug_report(prompt: str, model: str | None = None) -> None:
     """Run the bug_reporter agent to file a bug/feature report."""
     from app.telegram.state import get_model, get_postfix
 
-    settings = get_settings()
-    project_root = settings.project_root
-
     if model is None:
         model = get_model()
     postfix = get_postfix(model)
-    xdg_data = str(Path(project_root) / ".opencode" / "data")
 
     agent = f"support/bug_reporter{postfix}"
     import uuid
 
     run_id = f"run_{uuid.uuid4().hex[:16]}"
 
-    # TODO(v4-port): verify agent-spawn wiring — see trigger_chatbot note.
-    cmd = [
-        "uv",
-        "run",
-        "scripts/opencode_manager.py",
-        "run",
-        "--no-attach",
-        "--agent",
-        agent,
-        prompt,
-    ]
-    env = {
-        **os.environ,
-        "XDG_DATA_HOME": xdg_data,
-        "FREN_MODEL_POSTFIX": postfix,
-        "FREN_TTS_POSTFIX": _tts_postfix(),
-        "FREN_RUN_ID": run_id,
-    }
+    result = await spawn_agent(
+        agent=agent,
+        prompt=prompt,
+        run_id=run_id,
+        model_postfix=postfix,
+        tts_postfix=_tts_postfix(),
+        timeout_s=300,
+        trigger="bug_report",
+    )
+    if not result.ok and not _shutting_down:
+        logger.error("Bug reporter failed: %s", result.error)
 
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            cwd=str(Path(project_root)),
-            env=env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        _active_processes[proc] = agent
-        _stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=300)
-        if proc.returncode != 0:
-            logger.error(
-                "Bug reporter failed (exit %d): %s",
-                proc.returncode,
-                stderr.decode()[:500],
-            )
-    except TimeoutError:
-        logger.error("Bug reporter timed out after 300s")
-        proc.kill()  # type: ignore[union-attr]
-    except Exception as e:
-        logger.error("Bug reporter failed: %s", e)
-    finally:
-        _active_processes.pop(proc, None)
-
-    await _post_run_persona_delivery(agent, run_id, getattr(locals().get("proc"), "returncode", None))
+    await _post_run_persona_delivery(agent, run_id)
 
 
 async def _post_init(_app: Application) -> None:
@@ -1397,17 +1138,15 @@ def run() -> None:
 
     app = build_application()
 
-    # Cleanup on shutdown. Sets _shutting_down so that any subprocess exits
-    # triggered by our own proc.terminate() call are NOT reported to the
-    # user as "something went wrong" — they're expected signal exits during
-    # a normal restart / stop cycle.
+    # Cleanup on shutdown. Sets _shutting_down so that in-flight agent spawns
+    # being torn down with the process are NOT reported to the user as
+    # "something went wrong" — they're expected during a normal restart / stop
+    # cycle. The spawn_agent subprocesses are children of this process and exit
+    # with it; nothing extra to terminate here.
     def cleanup(*_):
         global _shutting_down
         _shutting_down = True
-        logger.info("Shutting down, terminating %d active processes...", len(_active_processes))
-        for proc in list(_active_processes):
-            with contextlib.suppress(Exception):
-                proc.terminate()
+        logger.info("Shutting down Fren bot...")
 
     signal.signal(signal.SIGTERM, cleanup)
     signal.signal(signal.SIGINT, cleanup)
