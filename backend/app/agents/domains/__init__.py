@@ -11,23 +11,39 @@ from types import ModuleType
 
 from app.agents.domains import (
     food,
+    funfact,
     goals,
+    investigation,
     persona,
+    persona_media,
     profile,
     research,
+    retrieval,
+    rp,
     server,
     support,
+    vis_simulation,
+    workflow_master,
+    workflows,
 )
 
 # Append domains here as they are ported from v3.
 ALL_DOMAINS: list[ModuleType] = [
     persona,
+    persona_media,
     goals,
     food,
     profile,
     server,
     research,
     support,
+    rp,
+    vis_simulation,
+    workflow_master,
+    funfact,
+    investigation,
+    retrieval,
+    workflows,
 ]
 
 
