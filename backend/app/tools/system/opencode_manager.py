@@ -55,7 +55,9 @@ async def _spawn(inp: Input) -> dict:
     try:
         from app.db.repos.execution_ledger import ExecutionLedgerRepo
 
-        await ExecutionLedgerRepo().start_run(run_id=run_id, agent_name=agent_name)
+        await ExecutionLedgerRepo().ensure_run(
+            run_id, interaction_mode="worker", owner=agent_name,
+        )
     except Exception:  # noqa: BLE001 — ledger is observability, never blocks spawn
         pass
 
