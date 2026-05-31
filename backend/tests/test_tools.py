@@ -50,7 +50,8 @@ def test_each_module_exposes_a_scripttool():
         mod = importlib.import_module(f"app.tools.{area}")
         for sm in pkgutil.iter_modules(mod.__path__):
             key = f"{area}.{sm.name}"
-            if key in _TOOL_HELPER_MODULES:
+            # `scripts` subpackages hold CLI entrypoints, not ScriptTool defs.
+            if sm.ispkg or sm.name == "scripts" or key in _TOOL_HELPER_MODULES:
                 continue
             m = importlib.import_module(f"app.tools.{area}.{sm.name}")
             tools = [
