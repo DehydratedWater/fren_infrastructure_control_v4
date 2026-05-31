@@ -47,11 +47,34 @@ class Settings(BaseSettings):
 
     # --- telegram -----------------------------------------------------------
     bot_token: str = Field(default="", alias="BOT_TOKEN")
+    bot_rp_token: str = Field(default="", alias="BOT_RP_TOKEN")
     chat_id: str = Field(default="", alias="CHAT_ID")
 
     # --- auth ---------------------------------------------------------------
     jwt_secret: str = Field(default="change-me", alias="JWT_SECRET")
     jwt_alg: str = Field(default="HS256", alias="JWT_ALG")
+
+    # --- openai (embeddings only) -------------------------------------------
+    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+
+    # --- google oauth2 (gmail + calendar services) --------------------------
+    google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
+    google_client_secret: str = Field(default="", alias="GOOGLE_CLIENT_SECRET")
+    google_redirect_uri: str = Field(
+        default="http://localhost:8642/oauth2callback", alias="GOOGLE_REDIRECT_URI",
+    )
+    # Comma-separated allowed recipients ("" = all allowed).
+    gmail_whitelist: str = Field(default="", alias="GMAIL_WHITELIST")
+    # Comma-separated read-only account names (e.g. "work,shared").
+    gmail_readonly_accounts: str = Field(default="", alias="GMAIL_READONLY_ACCOUNTS")
+    # Twily's own calendar for writes.
+    google_calendar_id: str = Field(default="primary", alias="GOOGLE_CALENDAR_ID")
+
+    # --- paths --------------------------------------------------------------
+    # Root used by google_auth to locate `.google_token*.json` files.
+    project_root: str = Field(
+        default_factory=lambda: str(Path.cwd()), alias="PROJECT_ROOT",
+    )
 
 
 @lru_cache
