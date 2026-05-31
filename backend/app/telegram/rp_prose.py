@@ -193,7 +193,7 @@ def resolve_model_arg(arg: str) -> tuple[str, str] | None:
 
     # 1. Try opencode variant key first (glm, glm47, glm5, glm51, localqwen3527b, ...)
     try:
-        from app.agents._config import VARIANT_PRESETS  # TODO(v4-port): app.agents._config
+        from app.agents._config import VARIANT_PRESETS
 
         lower = arg.lower().lstrip("#")
         if lower in VARIANT_PRESETS:

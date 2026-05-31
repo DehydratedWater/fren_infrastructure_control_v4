@@ -766,7 +766,7 @@ async def handle_models(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     """Handle /models command — list all available model hashtags."""
     if not _is_allowed(update):
         return
-    from app.agents._config import _MODEL_PRESET_MAP, MODEL_DISPLAY, VARIANT_PRESETS  # TODO(v4-port): app.agents._config not yet ported
+    from app.agents._config import _MODEL_PRESET_MAP, MODEL_DISPLAY, VARIANT_PRESETS
 
     lines = ["Available models (use #tag in messages):\n"]
     for key in sorted(VARIANT_PRESETS):

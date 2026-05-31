@@ -161,7 +161,7 @@ def set_content_mode(mode: str) -> None:
 
 def is_local_model(model: str | None = None) -> bool:
     """Check if model key refers to a local (NSFW-capable) model."""
-    from app.agents._config import LOCAL_MODEL_KEYS  # TODO(v4-port): app.agents._config
+    from app.agents._config import LOCAL_MODEL_KEYS
 
     if model is None:
         model = get_model()
@@ -200,7 +200,7 @@ def strip_content_tags(text: str) -> str:
 
 
 def get_postfix(model: str | None = None) -> str:
-    from app.agents._config import VARIANT_PRESETS  # TODO(v4-port): app.agents._config
+    from app.agents._config import VARIANT_PRESETS
 
     if model is None:
         model = get_model()
@@ -209,7 +209,7 @@ def get_postfix(model: str | None = None) -> str:
 
 
 def get_model_display(model: str | None = None) -> str:
-    from app.agents._config import MODEL_DISPLAY  # TODO(v4-port): app.agents._config
+    from app.agents._config import MODEL_DISPLAY
 
     if model is None:
         model = get_model()
