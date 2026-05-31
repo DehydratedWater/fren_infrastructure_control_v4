@@ -10,12 +10,35 @@ v3 declared `.model_class("fast")` — speed is the point (target < 15s).
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    chat_history_tool,
+    context_pin_tool,
+    embedding_search_tool,
+    fetch_context_tool,
+    goal_manager_tool,
+    memory_manager_tool,
+    todo_manager_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
     AgentToolPermissions as ToolPermissions,
     CapabilityTest,
     SubstringEvaluator,
+)
+
+# v3 fast_retrieval's curated retrieval allowlist: context_retrieval +
+# memory_management + chat_history skills plus context_pin / goal / todo. Each
+# factory compiles to a script-scoped bash permission (replaces the hand-written
+# allowlist that v3 declared inline).
+_RETRIEVAL_TOOLS = (
+    fetch_context_tool,
+    embedding_search_tool,
+    memory_manager_tool,
+    chat_history_tool,
+    context_pin_tool,
+    goal_manager_tool,
+    todo_manager_tool,
 )
 
 _FAST_RETRIEVAL_PROMPT = """\
@@ -68,24 +91,15 @@ def agents() -> list[AgentDefinition]:
             ),
             prompt=_FAST_RETRIEVAL_PROMPT,
             # v3 granted a curated bash allowlist for the retrieval scripts; the
-            # framework default here is no tools, so grant the scripted-read shape
+            # tool factories below compile to that same script-scoped allowlist
             # (read stays off — it used bash-scoped scripts, not file reads).
-            permissions=ToolPermissions(
-                bash=(
-                    ("uv run scripts/fetch_context.py *", "allow"),
-                    ("uv run scripts/embedding_search.py *", "allow"),
-                    ("uv run scripts/memory_manager.py *", "allow"),
-                    ("uv run scripts/chat_history.py *", "allow"),
-                    ("uv run scripts/context_pin.py *", "allow"),
-                    ("uv run scripts/goal_manager.py *", "allow"),
-                    ("uv run scripts/todo_manager.py *", "allow"),
-                ),
-                read=False,
-            ),
+            permissions=ToolPermissions(read=False),
+            tools=[t() for t in _RETRIEVAL_TOOLS],
             capability_tests=[
                 CapabilityTest(
                     name="retrieval-is-json-only",
                     description="Output must be structured JSON, not conversational prose.",
+                    must_have_tools=("fetch-context",),
                     evaluators=(
                         SubstringEvaluator(needle="JSON", case_sensitive=False),
                     ),

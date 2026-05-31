@@ -15,6 +15,53 @@ unit (see app/agents/branches.py).
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    activity_blocks_tool,
+    agent_notes_tool,
+    briefing_preferences_tool,
+    calendar_manager_tool,
+    chat_history_tool,
+    context_cache_tool,
+    context_resolver_tool,
+    db_query_tool,
+    document_manager_tool,
+    embedding_search_tool,
+    emit_guidance_tool,
+    event_manager_tool,
+    execution_ledger_tool,
+    fetch_context_tool,
+    garmin_health_tool,
+    gmail_manager_tool,
+    goal_manager_tool,
+    goal_progress_auto_updater_tool,
+    habit_manager_tool,
+    lock_manager_tool,
+    night_analysis_tool,
+    priority_manager_tool,
+    profile_manager_tool,
+    question_sender_tool,
+    report_writer_tool,
+    research_manager_tool,
+    response_processor_tool,
+    route_finder_tool,
+    run_agent_tool,
+    send_file_tool,
+    send_image_tool,
+    send_message_tool,
+    send_voice_tool,
+    session_inspector_tool,
+    strategy_tracker_tool,
+    techtree_manager_tool,
+    telegram_log_tool,
+    thought_transfer_tool,
+    todo_manager_tool,
+    topic_analyzer_tool,
+    user_config_tool,
+    web_search_tool,
+    website_monitor_tool,
+    youtube_fetcher_tool,
+    youtube_preferences_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
@@ -547,11 +594,20 @@ def agents() -> list[AgentDefinition]:
                 " fallback on routing failure."
             ),
             prompt=_TELEGRAM_PROMPT,
+            tools=[
+                chat_history_tool(),
+                send_message_tool(),
+                send_voice_tool(),
+                send_image_tool(),
+                send_file_tool(),
+                run_agent_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="telegram-is-pure-router",
-                    description="The router must not hold write/edit tools itself.",
+                    description="The router routes + sends fallbacks but never writes/edits files.",
                     must_not_have_tools=("write", "edit"),
+                    must_have_tools=("send-message",),
                 ),
             ],
             agent_tests=[
@@ -573,11 +629,13 @@ def agents() -> list[AgentDefinition]:
                 " apologetic note suggesting /help, sent via Telegram."
             ),
             prompt=_FALLBACK_PROMPT,
+            tools=[emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="fallback-no-write",
-                    description="Fallback only talks; it never writes/edits.",
+                    description="Fallback only talks (emit-guidance); it never writes/edits.",
                     must_not_have_tools=("write", "edit"),
+                    must_have_tools=("emit-guidance",),
                 ),
             ],
             agent_tests=[
@@ -600,11 +658,13 @@ def agents() -> list[AgentDefinition]:
                 " sends a friendly Twily apology instead of acting on the request."
             ),
             prompt=_BUILD_PROMPT,
+            tools=[emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="build-is-locked-down",
-                    description="The failure handler must not hold powerful tools.",
-                    must_not_have_tools=("bash", "write", "edit"),
+                    description="The failure handler only emits guidance; no write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("emit-guidance",),
                 ),
             ],
             agent_tests=[
@@ -736,11 +796,13 @@ def agents() -> list[AgentDefinition]:
                 " conversational, source-cited summary via Telegram."
             ),
             prompt=_WEB_SEARCHER_PROMPT,
+            tools=[web_search_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="web-searcher-no-write",
-                    description="Researcher reads + searches, never writes files.",
+                    description="Researcher searches + delivers, never writes files.",
                     must_not_have_tools=("write", "edit"),
+                    must_have_tools=("web-search",),
                 ),
             ],
             agent_tests=[
@@ -765,6 +827,30 @@ def agents() -> list[AgentDefinition]:
                 " master_investigator as needed. Prefixes messages <<master_planner>>."
             ),
             prompt=_MASTER_ORGANIZER_PROMPT,
+            tools=[
+                emit_guidance_tool(),
+                question_sender_tool(),
+                calendar_manager_tool(),
+                gmail_manager_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                habit_manager_tool(),
+                strategy_tracker_tool(),
+                chat_history_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                lock_manager_tool(),
+                route_finder_tool(),
+                profile_manager_tool(),
+                garmin_health_tool(),
+                activity_blocks_tool(),
+                telegram_log_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="organizer-prefixes-messages",
@@ -797,6 +883,35 @@ def agents() -> list[AgentDefinition]:
                 " cited Markdown report. Prefixes messages <<investigator>>."
             ),
             prompt=_MASTER_INVESTIGATOR_PROMPT,
+            tools=[
+                emit_guidance_tool(),
+                question_sender_tool(),
+                research_manager_tool(),
+                youtube_fetcher_tool(),
+                topic_analyzer_tool(),
+                youtube_preferences_tool(),
+                website_monitor_tool(),
+                profile_manager_tool(),
+                chat_history_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                lock_manager_tool(),
+                route_finder_tool(),
+                gmail_manager_tool(),
+                user_config_tool(),
+                garmin_health_tool(),
+                activity_blocks_tool(),
+                telegram_log_tool(),
+                send_file_tool(),
+                send_voice_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="investigator-prefixes-messages",
@@ -884,6 +999,7 @@ def agents() -> list[AgentDefinition]:
                 " session; supports multiple accounts and reports back via Telegram."
             ),
             prompt=_EMAIL_PROMPT,
+            tools=[gmail_manager_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="email-draft-then-send",
@@ -915,6 +1031,20 @@ def agents() -> list[AgentDefinition]:
                 " conflicts/alignment; writes go to Twily's own calendar."
             ),
             prompt=_CALENDAR_PROMPT,
+            tools=[
+                calendar_manager_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                habit_manager_tool(),
+                emit_guidance_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="calendar-congruence-check",
@@ -945,6 +1075,39 @@ def agents() -> list[AgentDefinition]:
                 " and sends it. Prefixes messages <<daily_briefing>>."
             ),
             prompt=_DAILY_BRIEFER_PROMPT,
+            tools=[
+                fetch_context_tool(),
+                embedding_search_tool(),
+                emit_guidance_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                habit_manager_tool(),
+                strategy_tracker_tool(),
+                calendar_manager_tool(),
+                gmail_manager_tool(),
+                chat_history_tool(),
+                profile_manager_tool(),
+                research_manager_tool(),
+                youtube_fetcher_tool(),
+                topic_analyzer_tool(),
+                youtube_preferences_tool(),
+                website_monitor_tool(),
+                event_manager_tool(),
+                techtree_manager_tool(),
+                db_query_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                briefing_preferences_tool(),
+                garmin_health_tool(),
+                activity_blocks_tool(),
+                telegram_log_tool(),
+                night_analysis_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="briefer-prefixes-messages",
@@ -977,6 +1140,12 @@ def agents() -> list[AgentDefinition]:
                 " auto-updater."
             ),
             prompt=_EVENT_EXTRACTOR_PROMPT,
+            tools=[
+                event_manager_tool(),
+                chat_history_tool(),
+                habit_manager_tool(),
+                goal_progress_auto_updater_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="extractor-updates-state",
@@ -1009,6 +1178,21 @@ def agents() -> list[AgentDefinition]:
                 " analysis of why it matters. Prefixes messages <<video_analysis>>."
             ),
             prompt=_VIDEO_ANALYST_PROMPT,
+            tools=[
+                research_manager_tool(),
+                youtube_fetcher_tool(),
+                topic_analyzer_tool(),
+                youtube_preferences_tool(),
+                website_monitor_tool(),
+                profile_manager_tool(),
+                chat_history_tool(),
+                emit_guidance_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="video-prefixes-messages",
@@ -1040,6 +1224,18 @@ def agents() -> list[AgentDefinition]:
                 " why it matters. Prefixes messages <<document_analysis>>."
             ),
             prompt=_DOCUMENT_ANALYST_PROMPT,
+            tools=[
+                document_manager_tool(),
+                embedding_search_tool(),
+                profile_manager_tool(),
+                chat_history_tool(),
+                emit_guidance_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="document-prefixes-messages",
@@ -1099,10 +1295,15 @@ def agents() -> list[AgentDefinition]:
                 " running agents (thought_transfer) or launches stopped ones."
             ),
             prompt=_AGENT_CONTROL_PROMPT,
+            tools=[
+                lock_manager_tool(),
+                thought_transfer_tool(),
+                run_agent_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="agent-control-no-write",
-                    description="Control inspects + launches; it never writes files.",
+                    description="Control inspects + launches (lock/thought/run); it never writes files.",
                     must_not_have_tools=("write", "edit"),
                 ),
             ],
@@ -1126,11 +1327,13 @@ def agents() -> list[AgentDefinition]:
                 " parent agents with summaries, cache_ids and file paths."
             ),
             prompt=_CONTEXT_CACHE_PROMPT,
+            tools=[context_cache_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="cache-reader-no-write",
-                    description="Reader only queries; it never writes.",
+                    description="Reader only queries the cache; it never writes.",
                     must_not_have_tools=("write", "edit"),
+                    must_have_tools=("context-cache",),
                 ),
             ],
             agent_tests=[
@@ -1153,6 +1356,11 @@ def agents() -> list[AgentDefinition]:
                 " report, and confirms via Telegram. Prefixes messages <<report>>."
             ),
             prompt=_BUG_REPORTER_PROMPT,
+            tools=[
+                session_inspector_tool(),
+                report_writer_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="bug-reporter-prefixes-messages",
@@ -1182,6 +1390,23 @@ def agents() -> list[AgentDefinition]:
                 " (check/try/watch/read), and sends a concise digest."
             ),
             prompt=_RESEARCH_DIGEST_PROMPT,
+            tools=[
+                research_manager_tool(),
+                youtube_fetcher_tool(),
+                topic_analyzer_tool(),
+                youtube_preferences_tool(),
+                website_monitor_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="digest-no-write",

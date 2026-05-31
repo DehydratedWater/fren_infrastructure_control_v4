@@ -14,6 +14,13 @@ an explicit `.model_class(...)` call, so all port to model_class="default".
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    send_file_tool,
+    send_image_tool,
+    send_message_tool,
+    send_voice_tool,
+    vis_simulation_manager_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
@@ -159,11 +166,14 @@ Return scores with detailed notes for each dimension.
 """
 
 
-def _pure_prompt_capability(name: str) -> CapabilityTest:
+def _sim_tool_capability(name: str) -> CapabilityTest:
+    # v3 subagents carried vis_simulation_skill (+ subagent_todo, which has no
+    # v4 factory). With the manager tool attached they hold a scoped bash
+    # permission, so we assert the tool is present rather than bash-absence.
     return CapabilityTest(
         name=name,
-        description="Pure-prompt subagent must not hold write/bash/edit tools itself.",
-        must_not_have_tools=("bash", "write", "edit"),
+        description="Generation/analysis subagent can read/write simulation data via its manager tool.",
+        must_have_tools=("vis-simulation-manager",),
     )
 
 
@@ -181,11 +191,19 @@ def agents() -> list[AgentDefinition]:
                 " router that delegates generation/analysis to subagents."
             ),
             prompt=_ORCH_PROMPT,
+            # v3 skills: vis_simulation (manager CRUD) + telegram_notification.
+            tools=[
+                vis_simulation_manager_tool(),
+                send_message_tool(),
+                send_voice_tool(),
+                send_image_tool(),
+                send_file_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
-                    name="vis-orchestrator-is-router",
-                    description="Orchestrator delegates generation; must not hold write/edit tools.",
-                    must_not_have_tools=("write", "edit"),
+                    name="vis-orchestrator-has-manager",
+                    description="Orchestrator runs simulation CRUD and sends the summary.",
+                    must_have_tools=("vis-simulation-manager",),
                 ),
             ],
             agent_tests=[
@@ -209,7 +227,8 @@ def agents() -> list[AgentDefinition]:
                 " checked against existing scenarios to avoid overlap."
             ),
             prompt=_SCENARIO_GENERATOR_PROMPT,
-            capability_tests=[_pure_prompt_capability("scenario-generator-pure-prompt")],
+            tools=[vis_simulation_manager_tool()],
+            capability_tests=[_sim_tool_capability("scenario-generator-has-manager")],
             agent_tests=[
                 AgentTest(
                     name="scenario-has-emotional-state",
@@ -231,7 +250,8 @@ def agents() -> list[AgentDefinition]:
                 " Hook->Deepening->Core->Complication->Trailing-Off arc in Vis's voice."
             ),
             prompt=_CONVERSATION_SIMULATOR_PROMPT,
-            capability_tests=[_pure_prompt_capability("conversation-simulator-pure-prompt")],
+            tools=[vis_simulation_manager_tool()],
+            capability_tests=[_sim_tool_capability("conversation-simulator-has-manager")],
             agent_tests=[
                 AgentTest(
                     name="conversation-requires-ten-messages",
@@ -253,7 +273,8 @@ def agents() -> list[AgentDefinition]:
                 " patterns (self-interruption, ADHD tangents, competence)."
             ),
             prompt=_CHARACTER_ANALYZER_PROMPT,
-            capability_tests=[_pure_prompt_capability("character-analyzer-pure-prompt")],
+            tools=[vis_simulation_manager_tool()],
+            capability_tests=[_sim_tool_capability("character-analyzer-has-manager")],
             agent_tests=[
                 AgentTest(
                     name="analysis-references-journal",
@@ -274,7 +295,8 @@ def agents() -> list[AgentDefinition]:
                 " adherence) and must quote specific message text in its notes."
             ),
             prompt=_QUALITY_SCORER_PROMPT,
-            capability_tests=[_pure_prompt_capability("quality-scorer-pure-prompt")],
+            tools=[vis_simulation_manager_tool()],
+            capability_tests=[_sim_tool_capability("quality-scorer-has-manager")],
             agent_tests=[
                 AgentTest(
                     name="scores-three-dimensions",

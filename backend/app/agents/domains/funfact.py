@@ -12,6 +12,7 @@ an explicit `.model_class(...)` call, so all port to model_class="default".
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import db_query_tool, emit_guidance_tool
 from src import (
     AgentDefinition,
     AgentTest,
@@ -75,11 +76,14 @@ interesting. Output the final fun fact for delivery to the user.
 """
 
 
-def _pure_prompt_capability(name: str) -> CapabilityTest:
+def _funfact_subagent_capability(name: str) -> CapabilityTest:
+    # v3 _funfact_subagent attached data_query + emit_guidance (+ subagent_todo,
+    # no v4 factory) to every subagent. They hold a scoped bash permission, so we
+    # assert delivery capability rather than bash-absence.
     return CapabilityTest(
         name=name,
-        description="Pure-prompt subagent must not hold write/bash/edit tools itself.",
-        must_not_have_tools=("bash", "write", "edit"),
+        description="Subagent can query data and deliver via emit-guidance.",
+        must_have_tools=("emit-guidance",),
     )
 
 
@@ -96,11 +100,13 @@ def agents() -> list[AgentDefinition]:
                 " Telegram. A router that delegates the work to its subagents."
             ),
             prompt=_ORCH_PROMPT,
+            # v3 skills: emit_guidance (deliver fun facts), data_query (read DB).
+            tools=[emit_guidance_tool(), db_query_tool()],
             capability_tests=[
                 CapabilityTest(
-                    name="funfact-orchestrator-is-router",
-                    description="Orchestrator delegates; must not hold write/edit tools.",
-                    must_not_have_tools=("write", "edit"),
+                    name="funfact-orchestrator-delivers",
+                    description="Orchestrator delivers the fun fact via emit-guidance.",
+                    must_have_tools=("emit-guidance",),
                 ),
             ],
             agent_tests=[
@@ -124,11 +130,13 @@ def agents() -> list[AgentDefinition]:
                 " pattern analyst. Does not enumerate tables or over-explore."
             ),
             prompt=_DATA_GATHERER_PROMPT,
+            # v3 _funfact_subagent: data_query + emit_guidance.
+            tools=[db_query_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
-                    name="data-gatherer-no-write-edit",
-                    description="Read-only data querier; must not hold write/edit tools.",
-                    must_not_have_tools=("write", "edit"),
+                    name="data-gatherer-has-db-query",
+                    description="Queries user data via read-only db-query.",
+                    must_have_tools=("db-query",),
                 ),
             ],
             agent_tests=[
@@ -152,7 +160,8 @@ def agents() -> list[AgentDefinition]:
                 " fact writer."
             ),
             prompt=_PATTERN_ANALYST_PROMPT,
-            capability_tests=[_pure_prompt_capability("pattern-analyst-pure-prompt")],
+            tools=[db_query_tool(), emit_guidance_tool()],
+            capability_tests=[_funfact_subagent_capability("pattern-analyst-delivers")],
             agent_tests=[
                 AgentTest(
                     name="analysis-mentions-streaks-or-correlations",
@@ -173,7 +182,8 @@ def agents() -> list[AgentDefinition]:
                 " facts in Twily's playful, curious voice, ready for delivery."
             ),
             prompt=_FACT_WRITER_PROMPT,
-            capability_tests=[_pure_prompt_capability("fact-writer-pure-prompt")],
+            tools=[db_query_tool(), emit_guidance_tool()],
+            capability_tests=[_funfact_subagent_capability("fact-writer-delivers")],
             agent_tests=[
                 AgentTest(
                     name="writes-in-twily-voice",

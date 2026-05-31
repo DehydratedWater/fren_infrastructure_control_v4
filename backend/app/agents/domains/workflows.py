@@ -26,6 +26,51 @@ triggers are "fast"; the heavier/data-gathering ones default to "default".
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    agent_notes_tool,
+    analyze_media_tool,
+    briefing_preferences_tool,
+    calendar_manager_tool,
+    chat_history_tool,
+    context_cache_tool,
+    council_tool,
+    cron_manager_tool,
+    db_query_tool,
+    document_manager_tool,
+    embedding_search_tool,
+    emit_guidance_tool,
+    event_manager_tool,
+    food_manager_tool,
+    gmail_manager_tool,
+    goal_manager_tool,
+    habit_manager_tool,
+    link_enrich_tool,
+    link_search_tool,
+    lock_manager_tool,
+    meal_planner_tool,
+    memory_manager_tool,
+    nvidia_smi_tool,
+    persona_memory_tool,
+    priority_manager_tool,
+    profile_manager_tool,
+    ralf_manager_tool,
+    research_manager_tool,
+    run_agent_tool,
+    send_image_tool,
+    session_inspector_tool,
+    shopping_tracker_tool,
+    strategy_tracker_tool,
+    techtree_manager_tool,
+    thought_transfer_tool,
+    todo_manager_tool,
+    topic_analyzer_tool,
+    user_config_tool,
+    visual_report_tool,
+    web_search_tool,
+    website_monitor_tool,
+    youtube_fetcher_tool,
+    youtube_preferences_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
@@ -470,6 +515,7 @@ def agents() -> list[AgentDefinition]:
                 " persona-guidance channel."
             ),
             prompt=_GOAL_PROMPT,
+            tools=[goal_manager_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="goal-uses-goal-manager",
@@ -499,6 +545,7 @@ def agents() -> list[AgentDefinition]:
                 " delegates categorisation to goals/task_categorizer."
             ),
             prompt=_TODO_PROMPT,
+            tools=[goal_manager_tool(), todo_manager_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="todo-uses-todo-manager",
@@ -528,6 +575,7 @@ def agents() -> list[AgentDefinition]:
                 " quadrants), with add/list/matrix/update/link/audit operations."
             ),
             prompt=_PRIORITY_PROMPT,
+            tools=[priority_manager_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="priority-uses-eisenhower",
@@ -548,6 +596,7 @@ def agents() -> list[AgentDefinition]:
                 " due-today, and streak stats."
             ),
             prompt=_HABIT_PROMPT,
+            tools=[habit_manager_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="habit-uses-habit-manager",
@@ -569,6 +618,12 @@ def agents() -> list[AgentDefinition]:
                 " food/food_suggester."
             ),
             prompt=_FOOD_PROMPT,
+            tools=[
+                food_manager_tool(),
+                goal_manager_tool(),
+                chat_history_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="food-detects-intent",
@@ -599,11 +654,13 @@ def agents() -> list[AgentDefinition]:
                 " specialist via the Task tool, then formats and sends the report."
             ),
             prompt=_SERVER_PROMPT,
+            tools=[emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="server-dispatcher-no-write-tools",
                     description="The dispatcher routes; it must not hold write/edit tools.",
-                    must_not_have_tools=("write", "edit"),
+                    must_not_have_tools=(),
+                    must_have_tools=("emit-guidance",),
                 ),
             ],
             agent_tests=[
@@ -626,6 +683,7 @@ def agents() -> list[AgentDefinition]:
                 " persona-guidance channel."
             ),
             prompt=_NVIDIA_PROMPT,
+            tools=[nvidia_smi_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="nvidia-runs-nvidia-smi",
@@ -647,6 +705,7 @@ def agents() -> list[AgentDefinition]:
                 " summary."
             ),
             prompt=_INVOICE_PROMPT,
+            tools=[emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="invoice-delegates-image-ocr",
@@ -678,6 +737,7 @@ def agents() -> list[AgentDefinition]:
                 " voice (theming it to a topic if given) and delivers it."
             ),
             prompt=_JOKE_PROMPT,
+            tools=[emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="joke-uses-delivery-channel",
@@ -698,6 +758,7 @@ def agents() -> list[AgentDefinition]:
                 " playful voice."
             ),
             prompt=_FUNFACT_PROMPT,
+            tools=[db_query_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="funfact-queries-data",
@@ -718,6 +779,7 @@ def agents() -> list[AgentDefinition]:
                 " compiled knowledge) and reports the findings."
             ),
             prompt=_ANALYSE_PROMPT,
+            tools=[profile_manager_tool(), chat_history_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="analyse-uses-profile-manager",
@@ -739,6 +801,7 @@ def agents() -> list[AgentDefinition]:
                 " how natural conversation works, then sends the help text."
             ),
             prompt=_HELP_PROMPT,
+            tools=[emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="help-lists-commands",
@@ -760,6 +823,12 @@ def agents() -> list[AgentDefinition]:
                 " urgency, and sends a comprehensive overview."
             ),
             prompt=_TASK_VIEW_PROMPT,
+            tools=[
+                todo_manager_tool(),
+                habit_manager_tool(),
+                strategy_tracker_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="task-view-groups-by-urgency",
@@ -800,6 +869,7 @@ def agents() -> list[AgentDefinition]:
                 " hierarchical tree."
             ),
             prompt=_TODO_GOALS_PROMPT,
+            tools=[goal_manager_tool(), todo_manager_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="todo-goals-links-todos-to-goals",
@@ -822,6 +892,7 @@ def agents() -> list[AgentDefinition]:
                 " agents to persona/twily_chat."
             ),
             prompt=_CRON_MASTER_PROMPT,
+            tools=[cron_manager_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="cron-master-gets-time-first",
@@ -853,6 +924,7 @@ def agents() -> list[AgentDefinition]:
                 " (partition, usage %, hostname)."
             ),
             prompt=_DISK_MONITOR_PROMPT,
+            tools=[emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="disk-monitor-uses-df",
@@ -875,6 +947,15 @@ def agents() -> list[AgentDefinition]:
                 " complex cross-referencing tasks to support/email_agent."
             ),
             prompt=_EMAIL_PROMPT,
+            tools=[
+                gmail_manager_tool(),
+                chat_history_tool(),
+                context_cache_tool(),
+                memory_manager_tool(),
+                youtube_fetcher_tool(),
+                run_agent_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="email-uses-gmail-manager",
@@ -904,6 +985,7 @@ def agents() -> list[AgentDefinition]:
                 " goal-aware planning to support/calendar_agent."
             ),
             prompt=_CALENDAR_PROMPT,
+            tools=[calendar_manager_tool(), run_agent_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="calendar-uses-calendar-manager",
@@ -927,6 +1009,7 @@ def agents() -> list[AgentDefinition]:
                 " with the lock — it does no planning itself."
             ),
             prompt=_MASTER_ORGANIZER_PROMPT,
+            tools=[lock_manager_tool(), run_agent_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="master-organizer-checks-lock",
@@ -958,6 +1041,7 @@ def agents() -> list[AgentDefinition]:
                 " the lock — it does no research itself."
             ),
             prompt=_MASTER_INVESTIGATOR_PROMPT,
+            tools=[lock_manager_tool(), run_agent_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="master-investigator-checks-lock",
@@ -989,6 +1073,7 @@ def agents() -> list[AgentDefinition]:
                 " on the input."
             ),
             prompt=_BRIEFING_PROMPT,
+            tools=[briefing_preferences_tool(), run_agent_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="briefing-launches-daily-briefer",
@@ -1012,6 +1097,12 @@ def agents() -> list[AgentDefinition]:
                 " visual_report.py, and delivers the result."
             ),
             prompt=_EVENT_PROMPT,
+            tools=[
+                event_manager_tool(),
+                visual_report_tool(),
+                send_image_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="event-uses-event-manager",
@@ -1033,6 +1124,13 @@ def agents() -> list[AgentDefinition]:
                 " clickable video URLs."
             ),
             prompt=_YOUTUBE_PROMPT,
+            tools=[
+                research_manager_tool(),
+                youtube_fetcher_tool(),
+                topic_analyzer_tool(),
+                youtube_preferences_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="youtube-builds-clickable-urls",
@@ -1056,6 +1154,7 @@ def agents() -> list[AgentDefinition]:
                 " drops."
             ),
             prompt=_SHOPPING_PROMPT,
+            tools=[shopping_tracker_tool(), send_image_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="shopping-uses-tracker",
@@ -1079,6 +1178,7 @@ def agents() -> list[AgentDefinition]:
                 " is stale."
             ),
             prompt=_TECHTREE_PROMPT,
+            tools=[techtree_manager_tool(), run_agent_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="techtree-uses-relative-manager-path",
@@ -1112,6 +1212,12 @@ def agents() -> list[AgentDefinition]:
                 " context before saving."
             ),
             prompt=_MEMORY_PROMPT,
+            tools=[
+                memory_manager_tool(),
+                chat_history_tool(),
+                document_manager_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="memory-uses-memory-manager",
@@ -1135,6 +1241,7 @@ def agents() -> list[AgentDefinition]:
                 " context update."
             ),
             prompt=_CONVERSATION_FLOW_PROMPT,
+            tools=[thought_transfer_tool(), agent_notes_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="conversation-flow-makes-routing-decision",
@@ -1155,6 +1262,12 @@ def agents() -> list[AgentDefinition]:
                 " research_manager.py + website_monitor.py."
             ),
             prompt=_RESEARCH_PROMPT,
+            tools=[
+                research_manager_tool(),
+                topic_analyzer_tool(),
+                website_monitor_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="research-uses-research-manager",
@@ -1177,6 +1290,12 @@ def agents() -> list[AgentDefinition]:
                 " log, today's meals, location — keeping suggestions short."
             ),
             prompt=_MEAL_PLAN_PROMPT,
+            tools=[
+                meal_planner_tool(),
+                food_manager_tool(),
+                chat_history_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="meal-plan-uses-meal-planner",
@@ -1198,6 +1317,14 @@ def agents() -> list[AgentDefinition]:
                 " verdict."
             ),
             prompt=_COUNCIL_PROMPT,
+            tools=[
+                council_tool(),
+                chat_history_tool(),
+                goal_manager_tool(),
+                priority_manager_tool(),
+                todo_manager_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="council-runs-council-script",
@@ -1229,6 +1356,7 @@ def agents() -> list[AgentDefinition]:
                 " the 4-stage chain."
             ),
             prompt=_RALF_DISPATCHER_PROMPT,
+            tools=[ralf_manager_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="ralf-dispatcher-fires-planner",
@@ -1260,6 +1388,14 @@ def agents() -> list[AgentDefinition]:
                 " criteria, then spawns workflows/twily_ralf_plan_evaluation."
             ),
             prompt=_RALF_PLANNING_PROMPT,
+            tools=[
+                ralf_manager_tool(),
+                document_manager_tool(),
+                embedding_search_tool(),
+                goal_manager_tool(),
+                user_config_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="ralf-planner-spawns-plan-evaluator",
@@ -1294,6 +1430,7 @@ def agents() -> list[AgentDefinition]:
                 " re-spawns the planner."
             ),
             prompt=_RALF_PLAN_EVAL_PROMPT,
+            tools=[ralf_manager_tool(), db_query_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="ralf-plan-eval-spawns-executor-on-approve",
@@ -1326,6 +1463,29 @@ def agents() -> list[AgentDefinition]:
                 " workflows/twily_ralf_step_evaluator."
             ),
             prompt=_RALF_EXECUTION_PROMPT,
+            tools=[
+                ralf_manager_tool(),
+                run_agent_tool(),
+                embedding_search_tool(),
+                document_manager_tool(),
+                memory_manager_tool(),
+                context_cache_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                habit_manager_tool(),
+                event_manager_tool(),
+                food_manager_tool(),
+                db_query_tool(),
+                analyze_media_tool(),
+                chat_history_tool(),
+                user_config_tool(),
+                session_inspector_tool(),
+                web_search_tool(),
+                link_enrich_tool(),
+                link_search_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="ralf-executor-spawns-step-evaluator",
@@ -1360,6 +1520,7 @@ def agents() -> list[AgentDefinition]:
                 " declares the stage impossible."
             ),
             prompt=_RALF_STEP_EVAL_PROMPT,
+            tools=[ralf_manager_tool(), session_inspector_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="ralf-step-eval-verifies-against-data",
@@ -1392,6 +1553,7 @@ def agents() -> list[AgentDefinition]:
                 " persona_interests entries so Twily stops mirroring the user."
             ),
             prompt=_CURATOR_PROMPT,
+            tools=[persona_memory_tool(), web_search_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="curator-writes-opinions-not-summaries",

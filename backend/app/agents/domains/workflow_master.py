@@ -13,6 +13,15 @@ an explicit `.model_class(...)` call, so all port to model_class="default".
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    db_query_tool,
+    send_file_tool,
+    send_image_tool,
+    send_message_tool,
+    send_voice_tool,
+    wm_file_operations_tool,
+    wm_session_manager_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
@@ -115,14 +124,6 @@ recommendations ([...]), verdict (PASS|NEEDS_FIXES).
 """
 
 
-def _pure_prompt_capability(name: str) -> CapabilityTest:
-    return CapabilityTest(
-        name=name,
-        description="Pure-prompt subagent must not hold write/bash/edit tools itself.",
-        must_not_have_tools=("bash", "write", "edit"),
-    )
-
-
 def agents() -> list[AgentDefinition]:
     return [
         # ── Meta-agent orchestrator ──
@@ -137,11 +138,23 @@ def agents() -> list[AgentDefinition]:
                 " Prefixes all user messages with <<workflow_master>>."
             ),
             prompt=_ORCH_PROMPT,
+            # v3 skills: workflow_master (wm session + file ops), telegram_notification,
+            # data_query (read-only DB context).
+            tools=[
+                wm_session_manager_tool(),
+                wm_file_operations_tool(),
+                db_query_tool(),
+                send_message_tool(),
+                send_voice_tool(),
+                send_image_tool(),
+                send_file_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="workflow-master-no-arbitrary-edit",
-                    description="Creates files only via its CLI tools, not the edit tool.",
+                    description="Creates files only via its CLI tools (wm-file-operations), not the edit tool.",
                     must_not_have_tools=("edit",),
+                    must_have_tools=("wm-file-operations",),
                 ),
             ],
             agent_tests=[
@@ -165,7 +178,15 @@ def agents() -> list[AgentDefinition]:
                 " diagram with filter/highlight focus modes."
             ),
             prompt=_AGENT_VISUALIZER_PROMPT,
-            capability_tests=[_pure_prompt_capability("agent-visualizer-pure-prompt")],
+            # v3 skill: data_query (query agent data).
+            tools=[db_query_tool()],
+            capability_tests=[
+                CapabilityTest(
+                    name="agent-visualizer-has-db-query",
+                    description="Reads agent data via read-only db-query.",
+                    must_have_tools=("db-query",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="produces-diagram-format",
@@ -187,7 +208,15 @@ def agents() -> list[AgentDefinition]:
                 " and dependency diagrams."
             ),
             prompt=_DOCUMENTATION_GENERATOR_PROMPT,
-            capability_tests=[_pure_prompt_capability("documentation-generator-pure-prompt")],
+            # v3 skill: workflow_master (read agent files, write documentation).
+            tools=[wm_session_manager_tool(), wm_file_operations_tool()],
+            capability_tests=[
+                CapabilityTest(
+                    name="documentation-generator-has-file-ops",
+                    description="Reads/writes docs via wm-file-operations (not the edit tool).",
+                    must_have_tools=("wm-file-operations",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="documents-per-agent-fields",
@@ -209,7 +238,22 @@ def agents() -> list[AgentDefinition]:
                 " passed checks, issues, recommendations, and a PASS/NEEDS_FIXES verdict."
             ),
             prompt=_QUALITY_REVIEWER_PROMPT,
-            capability_tests=[_pure_prompt_capability("quality-reviewer-pure-prompt")],
+            # v3 skills: workflow_master (read workflow files), telegram_notification.
+            tools=[
+                wm_session_manager_tool(),
+                wm_file_operations_tool(),
+                send_message_tool(),
+                send_voice_tool(),
+                send_image_tool(),
+                send_file_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="quality-reviewer-has-file-ops",
+                    description="Reads workflow files via wm-file-operations to review them.",
+                    must_have_tools=("wm-file-operations",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="review-emits-verdict",

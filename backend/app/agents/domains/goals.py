@@ -14,6 +14,46 @@ an explicit `.model_class(...)` call, so all port to model_class="default".
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    activity_blocks_tool,
+    agent_notes_tool,
+    calendar_manager_tool,
+    camera_capture_tool,
+    chat_history_tool,
+    context_cache_tool,
+    context_resolver_tool,
+    db_query_tool,
+    emit_guidance_tool,
+    embedding_search_tool,
+    execution_ledger_tool,
+    fetch_context_tool,
+    garmin_health_tool,
+    goal_manager_tool,
+    goal_progress_auto_updater_tool,
+    habit_manager_tool,
+    nudge_strategist_tool,
+    periodic_checker_tool,
+    personality_core_tool,
+    priority_manager_tool,
+    proactive_send_tool,
+    profile_manager_tool,
+    question_sender_tool,
+    response_processor_tool,
+    routine_manager_tool,
+    screenshot_tool,
+    send_file_tool,
+    send_image_tool,
+    send_message_tool,
+    send_voice_tool,
+    session_inspector_tool,
+    strategy_tracker_tool,
+    telegram_log_tool,
+    thought_transfer_tool,
+    todo_manager_tool,
+    tuya_lights_tool,
+    user_config_tool,
+    visual_report_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
@@ -409,14 +449,6 @@ The selfie is separate (persona/twily_selfie) and doesn't count.
 """
 
 
-def _pure_router_capability(name: str) -> CapabilityTest:
-    return CapabilityTest(
-        name=name,
-        description="Pure-prompt router/agent must not hold write/bash/edit tools itself.",
-        must_not_have_tools=("bash", "write", "edit"),
-    )
-
-
 def agents() -> list[AgentDefinition]:
     return [
         # ── Priority review orchestrator (dispatch chain) ──
@@ -430,7 +462,24 @@ def agents() -> list[AgentDefinition]:
                 " router that delegates and compiles, not a tool runner."
             ),
             prompt=_ORCH_PROMPT,
-            capability_tests=[_pure_router_capability("priority-orchestrator-is-pure-router")],
+            tools=[
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                strategy_tracker_tool(),
+                send_message_tool(),
+                send_voice_tool(),
+                send_image_tool(),
+                send_file_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="priority-orchestrator-carries-priority-manager",
+                    description="Orchestrator runs the review CLI tools (priority-manager, strategy-tracker, send-message).",
+                    must_have_tools=("priority-manager",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="review-mentions-audit-and-strategy",
@@ -452,7 +501,19 @@ def agents() -> list[AgentDefinition]:
                 " determine alignment."
             ),
             prompt=_TASK_CATEGORIZER_PROMPT,
-            capability_tests=[_pure_router_capability("task-categorizer-pure-prompt")],
+            tools=[
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="task-categorizer-carries-goal-manager",
+                    description="Fetches active goals via the goal-management CLI tools.",
+                    must_have_tools=("goal-manager",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="categorizes-by-priority-and-category",
@@ -473,7 +534,20 @@ def agents() -> list[AgentDefinition]:
                 " produce a time-blocked schedule."
             ),
             prompt=_PRIORITY_PLANNER_PROMPT,
-            capability_tests=[_pure_router_capability("priority-planner-pure-prompt")],
+            tools=[
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                strategy_tracker_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="priority-planner-carries-goal-manager",
+                    description="Fetches goals/todos and writes schedule via goal-management + strategy-tracking CLI.",
+                    must_have_tools=("goal-manager",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="plan-mentions-eisenhower-or-schedule",
@@ -494,10 +568,18 @@ def agents() -> list[AgentDefinition]:
                 " activities before 9 or after 17."
             ),
             prompt=_STRATEGY_CREATOR_PROMPT,
+            tools=[
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                strategy_tracker_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="strategy-creator-no-source-reads",
-                    description="Must operate via CLI tools, never read source files.",
+                    description="Must operate via CLI tools (strategy-tracker), never read source files.",
+                    must_have_tools=("strategy-tracker",),
                     must_not_have_tools=("write", "edit"),
                 ),
             ],
@@ -521,7 +603,15 @@ def agents() -> list[AgentDefinition]:
                 " CLI-only; never reads source files."
             ),
             prompt=_STRATEGY_ANALYZER_PROMPT,
-            capability_tests=[_pure_router_capability("strategy-analyzer-pure-prompt")],
+            tools=[strategy_tracker_tool()],
+            capability_tests=[
+                CapabilityTest(
+                    name="strategy-analyzer-carries-strategy-tracker",
+                    description="Reads strategies/attempts via the strategy-tracking CLI; never reads source files.",
+                    must_have_tools=("strategy-tracker",),
+                    must_not_have_tools=("write", "edit"),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="analysis-mentions-patterns",
@@ -542,7 +632,14 @@ def agents() -> list[AgentDefinition]:
                 " attempts."
             ),
             prompt=_STRATEGY_EVALUATOR_PROMPT,
-            capability_tests=[_pure_router_capability("strategy-evaluator-pure-prompt")],
+            tools=[strategy_tracker_tool()],
+            capability_tests=[
+                CapabilityTest(
+                    name="strategy-evaluator-carries-strategy-tracker",
+                    description="Reads attempts and records learnings via the strategy-tracking CLI.",
+                    must_have_tools=("strategy-tracker",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="scores-on-zero-to-one-scale",
@@ -563,7 +660,14 @@ def agents() -> list[AgentDefinition]:
                 " confirmation before execution."
             ),
             prompt=_TACTIC_CRAFTER_PROMPT,
-            capability_tests=[_pure_router_capability("tactic-crafter-pure-prompt")],
+            tools=[strategy_tracker_tool(), question_sender_tool()],
+            capability_tests=[
+                CapabilityTest(
+                    name="tactic-crafter-carries-question-sender",
+                    description="Logs attempts (strategy-tracker) and confirms with the user via question-sender.",
+                    must_have_tools=("question-sender",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="seeks-confirmation",
@@ -584,10 +688,17 @@ def agents() -> list[AgentDefinition]:
                 " updated real_importance scores. CLI-only."
             ),
             prompt=_PRIORITY_AUDITOR_PROMPT,
+            tools=[
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="priority-auditor-no-source-reads",
-                    description="Must audit via CLI tools, never read source files.",
+                    description="Must audit via CLI tools (priority-manager), never read source files.",
+                    must_have_tools=("priority-manager",),
                     must_not_have_tools=("write", "edit"),
                 ),
             ],
@@ -612,7 +723,20 @@ def agents() -> list[AgentDefinition]:
                 " duplicates and emitting a workflow_result confirmation."
             ),
             prompt=_GOAL_INTERFACE_PROMPT,
-            capability_tests=[_pure_router_capability("goal-interface-pure-prompt")],
+            tools=[
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                emit_guidance_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="goal-interface-carries-goal-manager",
+                    description="Executes goal operations via goal-manager and confirms via emit-guidance.",
+                    must_have_tools=("goal-manager",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="confirms-goal-operation",
@@ -633,7 +757,20 @@ def agents() -> list[AgentDefinition]:
                 " duplicate. Confirms with a workflow_result guidance."
             ),
             prompt=_TODO_INTERFACE_PROMPT,
-            capability_tests=[_pure_router_capability("todo-interface-pure-prompt")],
+            tools=[
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                emit_guidance_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="todo-interface-carries-todo-manager",
+                    description="Executes todo operations via todo-manager and confirms via emit-guidance.",
+                    must_have_tools=("todo-manager",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="parses-completion-language",
@@ -655,7 +792,23 @@ def agents() -> list[AgentDefinition]:
                 " guidance with the report facts."
             ),
             prompt=_CONCLUSION_PROMPT,
-            capability_tests=[_pure_router_capability("conclusion-merger-pure-prompt")],
+            tools=[
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                habit_manager_tool(),
+                strategy_tracker_tool(),
+                db_query_tool(),
+                emit_guidance_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="conclusion-merger-carries-db-query",
+                    description="Reviews goals/todos/habits/strategies and runs custom SQL via db-query.",
+                    must_have_tools=("db-query",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="report-covers-habits-and-strategies",
@@ -676,7 +829,24 @@ def agents() -> list[AgentDefinition]:
                 " reason. Prevents duplicates, spam, and stale reminders."
             ),
             prompt=_CONTEXT_ANALYZER_PROMPT,
-            capability_tests=[_pure_router_capability("context-analyzer-pure-prompt")],
+            tools=[
+                fetch_context_tool(),
+                embedding_search_tool(),
+                chat_history_tool(),
+                personality_core_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="context-analyzer-carries-chat-history",
+                    description="Checks chat history and agent notes to decide SEND/SKIP.",
+                    must_have_tools=("chat-history",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="skips-already-acknowledged",
@@ -700,7 +870,19 @@ def agents() -> list[AgentDefinition]:
                 " voice, no emojis, no exclamation marks."
             ),
             prompt=_NEUTRAL_ASSISTANT_PROMPT,
-            capability_tests=[_pure_router_capability("neutral-assistant-pure-prompt")],
+            tools=[
+                send_message_tool(),
+                send_voice_tool(),
+                send_image_tool(),
+                send_file_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="neutral-assistant-carries-send-message",
+                    description="Delivers the formatted status message via send-message.",
+                    must_have_tools=("send-message",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="morning-briefing-is-plain",
@@ -722,7 +904,38 @@ def agents() -> list[AgentDefinition]:
                 " persona/twily_selfie for celebratory moments."
             ),
             prompt=_EVENING_FOCUS_PROMPT,
-            capability_tests=[_pure_router_capability("evening-focus-emits-not-sends")],
+            tools=[
+                fetch_context_tool(),
+                embedding_search_tool(),
+                user_config_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                habit_manager_tool(),
+                chat_history_tool(),
+                emit_guidance_tool(),
+                question_sender_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                garmin_health_tool(),
+                personality_core_tool(),
+                activity_blocks_tool(),
+                telegram_log_tool(),
+                visual_report_tool(),
+                calendar_manager_tool(),
+                proactive_send_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="evening-focus-carries-emit-guidance",
+                    description="Emits exactly one briefing guidance via emit-guidance (does not send_message).",
+                    must_have_tools=("emit-guidance",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="single-briefing-mentions-overdue",
@@ -743,7 +956,39 @@ def agents() -> list[AgentDefinition]:
                 " selfie/video media. Emits a single nudge guidance."
             ),
             prompt=_PERIODIC_CHECKER_PROMPT,
-            capability_tests=[_pure_router_capability("periodic-checker-emits-not-sends")],
+            tools=[
+                fetch_context_tool(),
+                embedding_search_tool(),
+                user_config_tool(),
+                periodic_checker_tool(),
+                emit_guidance_tool(),
+                question_sender_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                tuya_lights_tool(),
+                chat_history_tool(),
+                garmin_health_tool(),
+                personality_core_tool(),
+                activity_blocks_tool(),
+                telegram_log_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                visual_report_tool(),
+                routine_manager_tool(),
+                session_inspector_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="periodic-checker-carries-periodic-checker",
+                    description="Runs the periodic-checker CLI and emits a single nudge guidance via emit-guidance.",
+                    must_have_tools=("periodic-checker",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="respects-user-busy",
@@ -764,7 +1009,40 @@ def agents() -> list[AgentDefinition]:
                 " and selfie/video at high escalation. Emits one nudge guidance per tick."
             ),
             prompt=_NUDGE_STRATEGIST_PROMPT,
-            capability_tests=[_pure_router_capability("nudge-strategist-emits-not-sends")],
+            tools=[
+                fetch_context_tool(),
+                embedding_search_tool(),
+                user_config_tool(),
+                nudge_strategist_tool(),
+                periodic_checker_tool(),
+                strategy_tracker_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                habit_manager_tool(),
+                chat_history_tool(),
+                emit_guidance_tool(),
+                question_sender_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                garmin_health_tool(),
+                personality_core_tool(),
+                activity_blocks_tool(),
+                profile_manager_tool(),
+                visual_report_tool(),
+                proactive_send_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="nudge-strategist-carries-nudge-strategist",
+                    description="Manages campaigns via the nudge-strategist CLI and emits one nudge guidance.",
+                    must_have_tools=("nudge-strategist",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="l1-locks-onto-concrete-todo",
@@ -788,7 +1066,32 @@ def agents() -> list[AgentDefinition]:
                 " filler; skips silently when the user is busy."
             ),
             prompt=_TASK_TRIAGE_PROMPT,
-            capability_tests=[_pure_router_capability("task-triage-emits-not-sends")],
+            tools=[
+                fetch_context_tool(),
+                embedding_search_tool(),
+                user_config_tool(),
+                periodic_checker_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                chat_history_tool(),
+                emit_guidance_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                personality_core_tool(),
+                proactive_send_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="task-triage-carries-emit-guidance",
+                    description="Scans stale todos and emits ONE consolidated triage guidance via emit-guidance.",
+                    must_have_tools=("emit-guidance",),
+                ),
+            ],
             agent_tests=[
                 AgentTest(
                     name="forces-three-way-decision",
@@ -809,10 +1112,35 @@ def agents() -> list[AgentDefinition]:
                 " Emits exactly one short nudge guidance per run; CLI commands only."
             ),
             prompt=_WINDDOWN_PROMPT,
+            tools=[
+                fetch_context_tool(),
+                embedding_search_tool(),
+                user_config_tool(),
+                chat_history_tool(),
+                emit_guidance_tool(),
+                question_sender_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                screenshot_tool(),
+                camera_capture_tool(),
+                tuya_lights_tool(),
+                garmin_health_tool(),
+                personality_core_tool(),
+                activity_blocks_tool(),
+                context_cache_tool(),
+                telegram_log_tool(),
+                calendar_manager_tool(),
+                periodic_checker_tool(),
+                proactive_send_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="winddown-no-write-edit",
-                    description="Read-only persona agent; must not hold write/edit tools.",
+                    description="Read-only persona agent; emits via emit-guidance, must not hold write/edit tools.",
+                    must_have_tools=("emit-guidance",),
                     must_not_have_tools=("write", "edit"),
                 ),
             ],

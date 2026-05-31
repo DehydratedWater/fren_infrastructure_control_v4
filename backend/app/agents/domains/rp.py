@@ -32,6 +32,15 @@ each agent here keeps model_class="default".
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    execution_ledger_tool,
+    rp_adventure_manager_tool,
+    rp_ban_manager_tool,
+    rp_character_manager_tool,
+    rp_story_manager_tool,
+    rp_world_manager_tool,
+    send_rp_message_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
@@ -240,11 +249,19 @@ def agents() -> list[AgentDefinition]:
             # v3 granted read=True (browse adventure state); orchestrates via
             # rp_*.py scripts but never writes/edits files directly.
             permissions=ToolPermissions(read=True),
+            # v3 skills: rp_adventure, rp_character, rp_world, rp_story, rp_ban.
+            tools=[
+                rp_adventure_manager_tool(),
+                rp_character_manager_tool(),
+                rp_world_manager_tool(),
+                rp_story_manager_tool(),
+                rp_ban_manager_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
-                    name="game-master-no-write",
-                    description="Read-only orchestrator: may read, must not write/edit.",
-                    must_not_have_tools=("write", "edit"),
+                    name="game-master-has-state-tools",
+                    description="Orchestrator drives RP state via rp_* manager tools.",
+                    must_have_tools=("rp-story-manager",),
                 ),
             ],
             agent_tests=[
@@ -273,6 +290,14 @@ def agents() -> list[AgentDefinition]:
             prompt=_ADVENTURE_GENERATOR_PROMPT,
             # v3 granted read=True (read seed files); sends via rp scripts.
             permissions=ToolPermissions(read=True),
+            # v3 skills: rp_adventure, rp_character, rp_world, rp_story, send_rp_message.
+            tools=[
+                rp_adventure_manager_tool(),
+                rp_character_manager_tool(),
+                rp_world_manager_tool(),
+                rp_story_manager_tool(),
+                send_rp_message_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="generator-mentions-characters",
@@ -280,6 +305,11 @@ def agents() -> list[AgentDefinition]:
                     evaluators=(
                         SubstringEvaluator(needle="character", case_sensitive=False),
                     ),
+                ),
+                CapabilityTest(
+                    name="generator-can-send-intro",
+                    description="Generator delivers the intro via the RP bot.",
+                    must_have_tools=("send-rp-message",),
                 ),
             ],
             agent_tests=[
@@ -303,6 +333,14 @@ def agents() -> list[AgentDefinition]:
                 " integration, and sends a confirmation to the player."
             ),
             prompt=_WORLD_EDITOR_PROMPT,
+            # v3 skills: rp_adventure, rp_character, rp_world, rp_story, send_rp_message.
+            tools=[
+                rp_adventure_manager_tool(),
+                rp_character_manager_tool(),
+                rp_world_manager_tool(),
+                rp_story_manager_tool(),
+                send_rp_message_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="world-editor-handles-directives",
@@ -333,6 +371,12 @@ def agents() -> list[AgentDefinition]:
                 " execution ledger."
             ),
             prompt=_CHARACTER_SPEAKER_PROMPT,
+            # v3 skills: rp_character, rp_story, execution_ledger.
+            tools=[
+                rp_character_manager_tool(),
+                rp_story_manager_tool(),
+                execution_ledger_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="speaker-mentions-persona",
@@ -363,6 +407,12 @@ def agents() -> list[AgentDefinition]:
                 " world-changes summary to the execution ledger."
             ),
             prompt=_WORLD_UPDATER_PROMPT,
+            # v3 skills: rp_world, rp_story, execution_ledger.
+            tools=[
+                rp_world_manager_tool(),
+                rp_story_manager_tool(),
+                execution_ledger_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="updater-mentions-aspects",
@@ -393,6 +443,11 @@ def agents() -> list[AgentDefinition]:
                 " observable world changes, ending on a hook."
             ),
             prompt=_NARRATOR_PROMPT,
+            # v3 skills: execution_ledger, rp_story.
+            tools=[
+                execution_ledger_tool(),
+                rp_story_manager_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="narrator-mentions-ledger",

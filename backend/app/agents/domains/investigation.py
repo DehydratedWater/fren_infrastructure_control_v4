@@ -11,11 +11,28 @@ it keeps model_class="default".
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    research_manager_tool,
+    topic_analyzer_tool,
+    website_monitor_tool,
+    youtube_fetcher_tool,
+    youtube_preferences_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
     CapabilityTest,
     SubstringEvaluator,
+)
+
+# v3's research_tracking_skill (youtube_scout uses youtube-fetcher for search +
+# transcripts and research-manager for topic context).
+_RESEARCH_TRACKING_TOOLS = (
+    research_manager_tool,
+    youtube_fetcher_tool,
+    topic_analyzer_tool,
+    youtube_preferences_tool,
+    website_monitor_tool,
 )
 
 _YOUTUBE_SCOUT_PROMPT = """\
@@ -58,9 +75,11 @@ def agents() -> list[AgentDefinition]:
                 " priority-ordered recommendation report to the investigator."
             ),
             prompt=_YOUTUBE_SCOUT_PROMPT,
+            tools=[t() for t in _RESEARCH_TRACKING_TOOLS],
             capability_tests=[
                 CapabilityTest(
                     name="scout-explains-relevance",
+                    must_have_tools=("youtube-fetcher",),
                     description="Recommendations must explain why each video is relevant.",
                     evaluators=(
                         SubstringEvaluator(needle="relevan", case_sensitive=False),

@@ -22,6 +22,46 @@ persona_synthesizer were all `.model_class("fast")`.
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    activity_blocks_tool,
+    agent_notes_tool,
+    analyze_media_tool,
+    camera_capture_tool,
+    chat_history_tool,
+    context_cache_tool,
+    context_pin_tool,
+    context_resolver_tool,
+    document_manager_tool,
+    embedding_search_tool,
+    emit_guidance_tool,
+    execution_ledger_tool,
+    fetch_context_tool,
+    garmin_health_tool,
+    goal_manager_tool,
+    goal_progress_auto_updater_tool,
+    intent_inference_tool,
+    lesson_manager_tool,
+    memory_manager_tool,
+    peek_thought_tool,
+    personality_core_tool,
+    persona_vibe_tool,
+    ponyxl_prompt_composer_tool,
+    priority_manager_tool,
+    ralf_manager_tool,
+    render_ponyxl_tool,
+    research_manager_tool,
+    response_processor_tool,
+    route_finder_tool,
+    routine_manager_tool,
+    run_agent_tool,
+    screenshot_tool,
+    telegram_log_tool,
+    thought_transfer_tool,
+    todo_manager_tool,
+    tuya_lights_tool,
+    user_config_tool,
+    user_rules_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
@@ -262,6 +302,47 @@ def agents() -> list[AgentDefinition]:
             prompt=_CHAT_PROMPT,
             # v3 chat held bash/read/grep/task/skill — it runs scripts itself.
             permissions=ToolPermissions(read=True),
+            # v3 twily_chat: the widest persona skill bundle — delivery, context
+            # retrieval, simple goal/habit ops, smart-home, live-view cameras,
+            # persona memory/vibe, ralf amendments, and intent sanity-check.
+            tools=[
+                emit_guidance_tool(),
+                chat_history_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                run_agent_tool(),
+                route_finder_tool(),
+                context_cache_tool(),
+                research_manager_tool(),
+                document_manager_tool(),
+                memory_manager_tool(),
+                tuya_lights_tool(),
+                screenshot_tool(),
+                camera_capture_tool(),
+                user_config_tool(),
+                user_rules_tool(),
+                personality_core_tool(),
+                peek_thought_tool(),
+                persona_vibe_tool(),
+                lesson_manager_tool(),
+                garmin_health_tool(),
+                activity_blocks_tool(),
+                telegram_log_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                ralf_manager_tool(),
+                routine_manager_tool(),
+                context_pin_tool(),
+                fetch_context_tool(),
+                embedding_search_tool(),
+                intent_inference_tool(),
+                analyze_media_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="chat-emits-guidance",
@@ -269,6 +350,12 @@ def agents() -> list[AgentDefinition]:
                     evaluators=(
                         SubstringEvaluator(needle="emit_guidance", case_sensitive=False),
                     ),
+                ),
+                CapabilityTest(
+                    name="chat-has-delivery-tool",
+                    description="Chat delivers via emit_guidance and never holds write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("emit-guidance",),
                 ),
             ],
             agent_tests=[
@@ -293,7 +380,26 @@ def agents() -> list[AgentDefinition]:
             ),
             prompt=_SELFIE_PROMPT,
             permissions=ToolPermissions(read=True),
+            # v3 twily_selfie: compose + dispatch the render, emit the caption,
+            # read mood + thought_transfer context.
+            tools=[
+                ponyxl_prompt_composer_tool(),
+                render_ponyxl_tool(),
+                emit_guidance_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                personality_core_tool(),
+            ],
             capability_tests=[
+                CapabilityTest(
+                    name="selfie-can-render-and-caption",
+                    description="Selfie agent dispatches renders and captions; no write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("render-ponyxl", "emit-guidance"),
+                ),
                 CapabilityTest(
                     name="selfie-is-always-twilight",
                     description="Every image must be Twilight Sparkle, not a generic character.",
@@ -324,7 +430,25 @@ def agents() -> list[AgentDefinition]:
             ),
             prompt=_VIDEOGRAPHER_PROMPT,
             permissions=ToolPermissions(read=True),
+            # v3 twily_videographer: same render+caption toolset as selfie.
+            tools=[
+                ponyxl_prompt_composer_tool(),
+                render_ponyxl_tool(),
+                emit_guidance_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                personality_core_tool(),
+            ],
             capability_tests=[
+                CapabilityTest(
+                    name="videographer-can-render-and-caption",
+                    description="Videographer dispatches renders and captions; no write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("render-ponyxl", "emit-guidance"),
+                ),
                 CapabilityTest(
                     name="videographer-dialog-is-narrative",
                     description="The dialog field must be a narrative beat, not PonyXL tags.",
@@ -355,7 +479,21 @@ def agents() -> list[AgentDefinition]:
             ),
             prompt=_DRAFTER_PROMPT,
             permissions=ToolPermissions(read=True),
+            # v3 drafter: writes its draft to thought_transfer (agent_context).
+            tools=[
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+            ],
             capability_tests=[
+                CapabilityTest(
+                    name="drafter-passes-via-thought-transfer",
+                    description="Drafter writes its draft via thought_transfer; no write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("thought-transfer",),
+                ),
                 CapabilityTest(
                     name="drafter-is-personality-free",
                     description="Draft prompt must forbid personality markers.",
@@ -385,7 +523,22 @@ def agents() -> list[AgentDefinition]:
             ),
             prompt=_CRITIC_PROMPT,
             permissions=ToolPermissions(read=True),
+            # v3 socratic_critic: reads drafter_output, writes critic_output via
+            # thought_transfer (agent_context).
+            tools=[
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+            ],
             capability_tests=[
+                CapabilityTest(
+                    name="critic-passes-via-thought-transfer",
+                    description="Critic reads/writes drafts via thought_transfer; no write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("thought-transfer",),
+                ),
                 CapabilityTest(
                     name="critic-uses-conditional-concession",
                     description="Must yield ground inch-by-inch, not capitulate.",
@@ -416,7 +569,23 @@ def agents() -> list[AgentDefinition]:
             ),
             prompt=_SYNTHESIZER_PROMPT,
             permissions=ToolPermissions(read=True),
+            # v3 persona_synthesizer: reads the current vibe blend (persona_vibe)
+            # and critic_output, writes synthesizer_output (agent_context).
+            tools=[
+                persona_vibe_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+            ],
             capability_tests=[
+                CapabilityTest(
+                    name="synthesizer-reads-vibe-blend",
+                    description="Synthesizer reads the vibe blend; never holds write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("persona-vibe",),
+                ),
                 CapabilityTest(
                     name="synthesizer-uses-contrast-principle",
                     description="Voice must run on the contrast principle (care via complaint).",

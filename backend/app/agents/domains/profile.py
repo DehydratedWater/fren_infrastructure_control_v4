@@ -14,15 +14,41 @@ All v3 profile agents ran on the coder/default model preset (MODEL_CODER, no
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    chat_history_tool,
+    embedding_search_tool,
+    fetch_context_tool,
+    profile_manager_tool,
+    send_file_tool,
+    send_image_tool,
+    send_message_tool,
+    send_voice_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
+    AgentToolPermissions as ToolPermissions,
     BranchTest,
     CapabilityTest,
     SubstringEvaluator,
 )
 
 ORCHESTRATOR = "profile/orchestrator"
+
+
+def _subagent_tools() -> list:
+    """Shared v3 `_profile_subagent` skill bundle as v4 tools.
+
+    Every profile subagent (pattern_observer … journal_analyst) was built by the
+    same `_profile_subagent(...)` helper: context_retrieval + profile_analysis +
+    chat_history (subagent_todo is a framework built-in, not a script tool).
+    """
+    return [
+        fetch_context_tool(),
+        embedding_search_tool(),
+        profile_manager_tool(),
+        chat_history_tool(),
+    ]
 
 _ORCH_PROMPT = """\
 # Profile Orchestrator
@@ -131,11 +157,25 @@ def agents() -> list[AgentDefinition]:
                 " in order and sends the compiled report via Telegram."
             ),
             prompt=_ORCH_PROMPT,
+            # v3 profile_orchestrator: starts the run via profile-manager and
+            # sends the compiled report via Telegram, on top of context lookup.
+            permissions=ToolPermissions(read=True),
+            tools=[
+                fetch_context_tool(),
+                embedding_search_tool(),
+                profile_manager_tool(),
+                chat_history_tool(),
+                send_message_tool(),
+                send_voice_tool(),
+                send_image_tool(),
+                send_file_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
-                    name="orchestrator-is-pure-router",
-                    description="The orchestrator coordinates subagents and must not hold write/bash tools itself.",
-                    must_not_have_tools=("bash", "write", "edit"),
+                    name="orchestrator-starts-run-and-sends-report",
+                    description="Coordinator starts the run + sends the report; never write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("profile-manager", "send-message"),
                 ),
             ],
             agent_tests=[
@@ -158,11 +198,14 @@ def agents() -> list[AgentDefinition]:
                 " each as a sensitivity-classified observation."
             ),
             prompt=_PATTERN_OBSERVER_PROMPT,
+            permissions=ToolPermissions(read=True),
+            tools=_subagent_tools(),
             capability_tests=[
                 CapabilityTest(
-                    name="pattern-observer-no-shell",
-                    description="A read/analyse agent must not hold bash/edit tools.",
-                    must_not_have_tools=("bash", "edit"),
+                    name="pattern-observer-records-via-profile-manager",
+                    description="Records observations via profile-manager; never write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("profile-manager",),
                 ),
             ],
             agent_tests=[
@@ -185,11 +228,14 @@ def agents() -> list[AgentDefinition]:
                 " supporting evidence, and an initial confidence score."
             ),
             prompt=_HYPOTHESIS_GENERATOR_PROMPT,
+            permissions=ToolPermissions(read=True),
+            tools=_subagent_tools(),
             capability_tests=[
                 CapabilityTest(
-                    name="hypothesis-generator-no-shell",
-                    description="A read/analyse agent must not hold bash/edit tools.",
-                    must_not_have_tools=("bash", "edit"),
+                    name="hypothesis-generator-emits-via-profile-manager",
+                    description="Emits hypotheses via profile-manager; never write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("profile-manager",),
                 ),
             ],
             agent_tests=[
@@ -212,11 +258,14 @@ def agents() -> list[AgentDefinition]:
                 " promotes to discovery or disproves."
             ),
             prompt=_HYPOTHESIS_VALIDATOR_PROMPT,
+            permissions=ToolPermissions(read=True),
+            tools=_subagent_tools(),
             capability_tests=[
                 CapabilityTest(
-                    name="hypothesis-validator-no-shell",
-                    description="A read/analyse agent must not hold bash/edit tools.",
-                    must_not_have_tools=("bash", "edit"),
+                    name="hypothesis-validator-updates-via-profile-manager",
+                    description="Validates and updates via profile-manager; never write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("profile-manager",),
                 ),
             ],
             agent_tests=[
@@ -239,11 +288,14 @@ def agents() -> list[AgentDefinition]:
                 " sanitised public_summary for private discoveries."
             ),
             prompt=_DISCOVERY_MANAGER_PROMPT,
+            permissions=ToolPermissions(read=True),
+            tools=_subagent_tools(),
             capability_tests=[
                 CapabilityTest(
-                    name="discovery-manager-no-shell",
-                    description="A read/analyse agent must not hold bash/edit tools.",
-                    must_not_have_tools=("bash", "edit"),
+                    name="discovery-manager-updates-via-profile-manager",
+                    description="Manages discovery lifecycle via profile-manager; never write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("profile-manager",),
                 ),
             ],
             agent_tests=[
@@ -266,11 +318,14 @@ def agents() -> list[AgentDefinition]:
                 " respecting sensitivity clearance."
             ),
             prompt=_KNOWLEDGE_COMPILER_PROMPT,
+            permissions=ToolPermissions(read=True),
+            tools=_subagent_tools(),
             capability_tests=[
                 CapabilityTest(
-                    name="knowledge-compiler-no-shell",
-                    description="A read/analyse agent must not hold bash/edit tools.",
-                    must_not_have_tools=("bash", "edit"),
+                    name="knowledge-compiler-reads-via-profile-manager",
+                    description="Compiles discoveries via profile-manager; never write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("profile-manager",),
                 ),
             ],
             agent_tests=[
@@ -293,11 +348,14 @@ def agents() -> list[AgentDefinition]:
                 " recording findings as observations or hypotheses."
             ),
             prompt=_JOURNAL_ANALYST_PROMPT,
+            permissions=ToolPermissions(read=True),
+            tools=_subagent_tools(),
             capability_tests=[
                 CapabilityTest(
-                    name="journal-analyst-no-shell",
-                    description="A read/analyse agent must not hold bash/edit tools.",
-                    must_not_have_tools=("bash", "edit"),
+                    name="journal-analyst-records-via-profile-manager",
+                    description="Records insights via profile-manager; never write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("profile-manager",),
                 ),
             ],
             agent_tests=[

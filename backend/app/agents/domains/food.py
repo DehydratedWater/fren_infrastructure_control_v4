@@ -15,6 +15,24 @@ food_suggester), so it gets a path-test in branches().
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    agent_notes_tool,
+    chat_history_tool,
+    context_resolver_tool,
+    embedding_search_tool,
+    emit_guidance_tool,
+    execution_ledger_tool,
+    fetch_context_tool,
+    food_manager_tool,
+    meal_planner_tool,
+    periodic_checker_tool,
+    personality_core_tool,
+    proactive_send_tool,
+    response_processor_tool,
+    thought_transfer_tool,
+    user_config_tool,
+    web_search_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
@@ -150,11 +168,16 @@ def agents() -> list[AgentDefinition]:
                 " directly, then confirms to the user."
             ),
             prompt=_ORCH_PROMPT,
+            tools=[
+                food_manager_tool(),
+                meal_planner_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
-                    name="orchestrator-is-pure-router",
-                    description="The router must not hold write/bash/edit tools itself.",
-                    must_not_have_tools=("bash", "write", "edit"),
+                    name="orchestrator-carries-food-manager",
+                    description="Lists the food DB directly via food-manager and confirms via emit-guidance.",
+                    must_have_tools=("food-manager",),
                 ),
             ],
             agent_tests=[
@@ -177,6 +200,11 @@ def agents() -> list[AgentDefinition]:
                 " suggests meals with reasoning."
             ),
             prompt=_FOOD_SUGGESTER_PROMPT,
+            tools=[
+                food_manager_tool(),
+                meal_planner_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="suggester-avoids-repetition-language",
@@ -206,6 +234,11 @@ def agents() -> list[AgentDefinition]:
                 " input, then saves via the food manager."
             ),
             prompt=_RECIPE_PARSER_PROMPT,
+            tools=[
+                food_manager_tool(),
+                meal_planner_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="recipe-parser-extracts-ingredients",
@@ -238,6 +271,11 @@ def agents() -> list[AgentDefinition]:
                 " then saves via the food manager."
             ),
             prompt=_RESTAURANT_INTAKE_PROMPT,
+            tools=[
+                food_manager_tool(),
+                meal_planner_tool(),
+                emit_guidance_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="restaurant-intake-extracts-cuisine",
@@ -296,6 +334,24 @@ def agents() -> list[AgentDefinition]:
                 " escalating (L0-L4) meal check-ins or exits silently."
             ),
             prompt=_MEAL_PLANNER_PROMPT,
+            tools=[
+                fetch_context_tool(),
+                embedding_search_tool(),
+                meal_planner_tool(),
+                food_manager_tool(),
+                emit_guidance_tool(),
+                chat_history_tool(),
+                user_config_tool(),
+                web_search_tool(),
+                personality_core_tool(),
+                periodic_checker_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                proactive_send_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
                     name="meal-planner-keeps-it-short",

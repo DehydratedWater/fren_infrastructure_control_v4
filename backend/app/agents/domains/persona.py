@@ -9,9 +9,48 @@ optimisation (see app/agents/branches.py).
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    activity_blocks_tool,
+    analyze_media_tool,
+    agent_notes_tool,
+    chat_history_tool,
+    context_cache_tool,
+    context_pin_tool,
+    context_resolver_tool,
+    db_query_tool,
+    document_manager_tool,
+    embedding_search_tool,
+    emit_guidance_tool,
+    event_manager_tool,
+    execution_ledger_tool,
+    fetch_context_tool,
+    garmin_health_tool,
+    gmail_manager_tool,
+    goal_manager_tool,
+    goal_progress_auto_updater_tool,
+    habit_manager_tool,
+    link_enrich_tool,
+    link_search_tool,
+    night_analysis_tool,
+    personality_core_tool,
+    priority_manager_tool,
+    profile_manager_tool,
+    response_processor_tool,
+    route_finder_tool,
+    rp_cross_summary_tool,
+    run_agent_tool,
+    select_pose_tool,
+    telegram_log_tool,
+    thought_transfer_tool,
+    todo_manager_tool,
+    tool_history_tool,
+    tuya_lights_tool,
+    user_config_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
+    AgentToolPermissions as ToolPermissions,
     BranchTest,
     CapabilityTest,
     SubstringEvaluator,
@@ -43,11 +82,40 @@ def agents() -> list[AgentDefinition]:
                 " responding) and dispatches accordingly."
             ),
             prompt=_ORCH_PROMPT,
+            # v3 fren_orchestrator held a wide read-side toolset (ToolPermissions
+            # read=True) plus its skill bundle — it routes but also enriches
+            # context, reads the ledger, and delivers via emit_guidance.
+            permissions=ToolPermissions(read=True),
+            tools=[
+                user_config_tool(),
+                emit_guidance_tool(),
+                chat_history_tool(),
+                link_search_tool(),
+                link_enrich_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                select_pose_tool(),
+                run_agent_tool(),
+                route_finder_tool(),
+                context_cache_tool(),
+                document_manager_tool(),
+                tuya_lights_tool(),
+                context_pin_tool(),
+                fetch_context_tool(),
+                embedding_search_tool(),
+                personality_core_tool(),
+                rp_cross_summary_tool(),
+                analyze_media_tool(),
+            ],
             capability_tests=[
                 CapabilityTest(
-                    name="orchestrator-is-pure-router",
-                    description="The router must not hold write/bash tools itself.",
-                    must_not_have_tools=("bash", "write", "edit"),
+                    name="orchestrator-delivers-via-emit-guidance",
+                    description="The router enriches/delivers via scripts but never holds write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("emit-guidance",),
                 ),
             ],
             agent_tests=[
@@ -69,6 +137,27 @@ def agents() -> list[AgentDefinition]:
                 "Reply with a single short, warm acknowledgement. No tools, no"
                 " analysis — you exist to be fast."
             ),
+            # v3 twily_quick_ack: emit the ack, save the routing decision to the
+            # ledger, and read emotional state for a tone-right ack.
+            permissions=ToolPermissions(read=True),
+            tools=[
+                emit_guidance_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                personality_core_tool(),
+                context_pin_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="quick-ack-can-emit-and-record",
+                    description="Ack agent emits guidance and records its routing decision.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("emit-guidance", "execution-ledger"),
+                ),
+            ],
         ),
         define_agent(
             "persona/thinking",
@@ -80,6 +169,51 @@ def agents() -> list[AgentDefinition]:
                 " analysed context, think step by step about the best response"
                 " and hand a plan to persona/responding."
             ),
+            # v3 twily_thinking held the broadest read-side context toolset of
+            # the persona core: retrieval, goals/habits/profile, health/activity,
+            # personality, gmail, events, plus emit_guidance for interim sends.
+            permissions=ToolPermissions(read=True),
+            tools=[
+                fetch_context_tool(),
+                embedding_search_tool(),
+                chat_history_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                goal_manager_tool(),
+                todo_manager_tool(),
+                priority_manager_tool(),
+                goal_progress_auto_updater_tool(),
+                habit_manager_tool(),
+                profile_manager_tool(),
+                db_query_tool(),
+                emit_guidance_tool(),
+                run_agent_tool(),
+                context_cache_tool(),
+                activity_blocks_tool(),
+                garmin_health_tool(),
+                telegram_log_tool(),
+                context_pin_tool(),
+                user_config_tool(),
+                link_search_tool(),
+                link_enrich_tool(),
+                document_manager_tool(),
+                tool_history_tool(),
+                night_analysis_tool(),
+                personality_core_tool(),
+                event_manager_tool(),
+                gmail_manager_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="thinking-reads-context-no-mutating-shell",
+                    description="Reasoning layer holds context tools but never write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("fetch-context",),
+                ),
+            ],
         ),
         define_agent(
             "persona/responding",
@@ -91,6 +225,30 @@ def agents() -> list[AgentDefinition]:
                 " from the plan you are given. Do not invent facts not in the"
                 " plan or context."
             ),
+            # v3 twily_responding: emit the verbatim guidance, pick a pose, and
+            # read thinking_output / context for the final voice.
+            permissions=ToolPermissions(read=True),
+            tools=[
+                emit_guidance_tool(),
+                select_pose_tool(),
+                fetch_context_tool(),
+                embedding_search_tool(),
+                chat_history_tool(),
+                thought_transfer_tool(),
+                execution_ledger_tool(),
+                context_resolver_tool(),
+                response_processor_tool(),
+                agent_notes_tool(),
+                personality_core_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="responding-emits-final-message",
+                    description="Voice layer delivers via emit_guidance, never write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("emit-guidance",),
+                ),
+            ],
         ),
     ]
 

@@ -16,12 +16,28 @@ gets its own path-test (see `branches()`).
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    context_cache_tool,
+    send_file_tool,
+    send_image_tool,
+    send_message_tool,
+    send_voice_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
     BranchTest,
     CapabilityTest,
     SubstringEvaluator,
+)
+
+# v3's telegram_notification_skill: the four Telegram delivery tools every
+# server agent uses to send its formatted monitoring report.
+_TELEGRAM_TOOLS = (
+    send_message_tool,
+    send_voice_tool,
+    send_image_tool,
+    send_file_tool,
 )
 
 ORCHESTRATOR = "server/orchestrator"
@@ -141,11 +157,15 @@ def agents() -> list[AgentDefinition]:
                 " report via Telegram."
             ),
             prompt=_ORCH_PROMPT,
+            # v3 gave the orchestrator telegram_notification_skill to send the
+            # final report; it still never writes/edits, so keep those denied.
+            tools=[t() for t in _TELEGRAM_TOOLS],
             capability_tests=[
                 CapabilityTest(
-                    name="orchestrator-is-pure-router",
-                    description="The router classifies and dispatches; it must not gather data itself.",
-                    must_not_have_tools=("bash", "write", "edit"),
+                    name="orchestrator-sends-report-no-write",
+                    description="The router dispatches and sends a Telegram report; it must not write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("send-message",),
                 ),
             ],
             agent_tests=[
@@ -168,6 +188,7 @@ def agents() -> list[AgentDefinition]:
                 " Telegram."
             ),
             prompt=_HARDWARE_PROMPT,
+            tools=[t() for t in _TELEGRAM_TOOLS],
             capability_tests=[
                 CapabilityTest(
                     name="hardware-gathers-system-metrics",
@@ -196,6 +217,7 @@ def agents() -> list[AgentDefinition]:
                 " files, formats a report, and sends it via Telegram."
             ),
             prompt=_FILESYSTEM_PROMPT,
+            tools=[t() for t in _TELEGRAM_TOOLS],
             capability_tests=[
                 CapabilityTest(
                     name="filesystem-uses-df",
@@ -215,6 +237,7 @@ def agents() -> list[AgentDefinition]:
                 " formats a report, and sends it via Telegram."
             ),
             prompt=_SESSIONS_PROMPT,
+            tools=[t() for t in _TELEGRAM_TOOLS],
             capability_tests=[
                 CapabilityTest(
                     name="sessions-reports-ssh",
@@ -235,6 +258,8 @@ def agents() -> list[AgentDefinition]:
                 " Telegram while logging the capture to the context cache."
             ),
             prompt=_CAMERA_PROMPT,
+            # telegram delivery + context_cache (camera logs the capture to it).
+            tools=[t() for t in _TELEGRAM_TOOLS] + [context_cache_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="camera-uses-ffmpeg",
@@ -254,6 +279,7 @@ def agents() -> list[AgentDefinition]:
                 " plotly into data/charts/, and sends them via Telegram."
             ),
             prompt=_VISUALIZATION_PROMPT,
+            tools=[t() for t in _TELEGRAM_TOOLS],
             capability_tests=[
                 CapabilityTest(
                     name="visualization-produces-charts",

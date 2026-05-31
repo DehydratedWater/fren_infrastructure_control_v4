@@ -17,6 +17,22 @@ so each agent here keeps model_class="default".
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents._tools import (
+    agent_notes_tool,
+    context_resolver_tool,
+    emit_guidance_tool,
+    execution_ledger_tool,
+    gmail_manager_tool,
+    research_manager_tool,
+    response_processor_tool,
+    shopping_tracker_tool,
+    techtree_manager_tool,
+    thought_transfer_tool,
+    topic_analyzer_tool,
+    website_monitor_tool,
+    youtube_fetcher_tool,
+    youtube_preferences_tool,
+)
 from src import (
     AgentDefinition,
     AgentTest,
@@ -24,6 +40,26 @@ from src import (
     BranchTest,
     CapabilityTest,
     SubstringEvaluator,
+)
+
+# v3's research_tracking_skill: the five research-data tools (channels, videos,
+# topic analysis, prefs, website monitoring).
+_RESEARCH_TRACKING_TOOLS = (
+    research_manager_tool,
+    youtube_fetcher_tool,
+    topic_analyzer_tool,
+    youtube_preferences_tool,
+    website_monitor_tool,
+)
+
+# v3's agent_context_skill: inter-agent coordination (used by techtree orch to
+# pass active-PR context to the suggestion engine).
+_AGENT_CONTEXT_TOOLS = (
+    thought_transfer_tool,
+    execution_ledger_tool,
+    context_resolver_tool,
+    response_processor_tool,
+    agent_notes_tool,
 )
 
 RESEARCH_ORCHESTRATOR = "research/orchestrator"
@@ -195,11 +231,15 @@ def agents() -> list[AgentDefinition]:
                 " Telegram."
             ),
             prompt=_RESEARCH_ORCH_PROMPT,
+            # v3: research_tracking + shopping_tracking + emit_guidance skills.
+            tools=[t() for t in _RESEARCH_TRACKING_TOOLS]
+            + [shopping_tracker_tool(), emit_guidance_tool()],
             capability_tests=[
                 CapabilityTest(
-                    name="orchestrator-is-pure-router",
-                    description="The pipeline router must not hold write/bash tools itself.",
-                    must_not_have_tools=("bash", "write", "edit"),
+                    name="orchestrator-delivers-no-write",
+                    description="The pipeline router runs research scripts + sends a summary; must not write/edit.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("emit-guidance",),
                 ),
             ],
             agent_tests=[
@@ -220,6 +260,7 @@ def agents() -> list[AgentDefinition]:
                 " transcripts for videos missing them, and reports the counts."
             ),
             prompt=_VIDEO_FETCHER_PROMPT,
+            tools=[t() for t in _RESEARCH_TRACKING_TOOLS],
             capability_tests=[
                 CapabilityTest(
                     name="video-fetcher-mentions-channels",
@@ -248,6 +289,7 @@ def agents() -> list[AgentDefinition]:
                 " which sites changed plus notable search results."
             ),
             prompt=_WEBSITE_CHECKER_PROMPT,
+            tools=[t() for t in _RESEARCH_TRACKING_TOOLS],
             capability_tests=[
                 CapabilityTest(
                     name="website-checker-mentions-search",
@@ -267,6 +309,7 @@ def agents() -> list[AgentDefinition]:
                 " saves insights plus updated cumulative knowledge."
             ),
             prompt=_TOPIC_ANALYST_PROMPT,
+            tools=[t() for t in _RESEARCH_TRACKING_TOOLS],
             capability_tests=[
                 CapabilityTest(
                     name="topic-analyst-mentions-prism",
@@ -294,6 +337,7 @@ def agents() -> list[AgentDefinition]:
                 " triggered price alerts, and reports changes and alerts."
             ),
             prompt=_PRICE_CHECKER_PROMPT,
+            tools=[shopping_tracker_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="price-checker-mentions-alerts",
@@ -317,11 +361,19 @@ def agents() -> list[AgentDefinition]:
             prompt=_TECHTREE_ORCH_PROMPT,
             # v3 granted read=True (browse repo); still no write/edit/mcp.
             permissions=ToolPermissions(read=True),
+            # v3: techtree_tracking + gmail + emit_guidance + agent_context.
+            tools=[
+                techtree_manager_tool(),
+                gmail_manager_tool(),
+                emit_guidance_tool(),
+            ]
+            + [t() for t in _AGENT_CONTEXT_TOOLS],
             capability_tests=[
                 CapabilityTest(
                     name="techtree-orch-no-write",
-                    description="Read-only router: may read, must not write/edit.",
+                    description="Read-only router with techtree/gmail/notify tools: may read, must not write/edit.",
                     must_not_have_tools=("write", "edit"),
+                    must_have_tools=("techtree-manager",),
                 ),
             ],
             agent_tests=[
@@ -344,6 +396,7 @@ def agents() -> list[AgentDefinition]:
             ),
             prompt=_COMMIT_ANALYZER_PROMPT,
             permissions=ToolPermissions(read=True),
+            tools=[techtree_manager_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="commit-analyzer-mentions-interests",
@@ -374,6 +427,7 @@ def agents() -> list[AgentDefinition]:
             ),
             prompt=_SUGGESTION_ENGINE_PROMPT,
             permissions=ToolPermissions(read=True),
+            tools=[techtree_manager_tool()],
             capability_tests=[
                 CapabilityTest(
                     name="suggestion-engine-mentions-prs",
