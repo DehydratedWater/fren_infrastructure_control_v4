@@ -44,6 +44,10 @@ class Settings(BaseSettings):
         default=Path("/data/agents"), alias="AGENTS_DIR",
         description="Where compiled .opencode agent trees live (NOT /tmp).",
     )
+    # How often the checker service runs an intervention tick (seconds).
+    checker_interval_seconds: int = Field(
+        default=300, alias="CHECKER_INTERVAL_SECONDS",
+    )
 
     # --- telegram -----------------------------------------------------------
     bot_token: str = Field(default="", alias="BOT_TOKEN")
