@@ -55,6 +55,26 @@ class Settings(BaseSettings):
     tts_speed: float = Field(default=0.85, alias="TTS_SPEED")
     tts_output_dir: str = Field(default="./tts_output", alias="TTS_OUTPUT_DIR")
 
+    # --- stt (faster-whisper) -----------------------------------------------
+    # ADDED(v4-port): analyze_media's _transcribe_audio reads settings.stt_host.
+    # Default + alias mirror v3 fren/config.py.
+    stt_host: str = Field(default="192.168.0.95:8201", alias="STT_HOST")
+
+    # --- vLLM ---------------------------------------------------------------
+    # ADDED(v4-port): analyze_media's _call_api reads settings.vllm_api_key.
+    # Default + alias mirror v3 fren/config.py.
+    vllm_api_key: str = Field(default="EMPTY", alias="VLLM_API_KEY")
+
+    # --- ComfyUI ------------------------------------------------------------
+    # ADDED(v4-port): comfyui.render reads settings.get_comfyui_hosts(), which
+    # parses this field. Default + alias mirror v3 fren/config.py.
+    comfyui_instances: str = Field(default="192.168.0.95:8899", alias="COMFYUI_INSTANCES")
+
+    # --- Personality Core ---------------------------------------------------
+    # ADDED(v4-port): PersonalityCoreTool._call_model + app.personality helper
+    # read settings.personality_core_host. Default + alias mirror v3 config.
+    personality_core_host: str = Field(default="192.168.0.42:5506", alias="PERSONALITY_CORE_HOST")
+
     # --- auth ---------------------------------------------------------------
     jwt_secret: str = Field(default="change-me", alias="JWT_SECRET")
     jwt_alg: str = Field(default="HS256", alias="JWT_ALG")
@@ -80,6 +100,24 @@ class Settings(BaseSettings):
     project_root: str = Field(
         default_factory=lambda: str(Path.cwd()), alias="PROJECT_ROOT",
     )
+
+    def get_comfyui_hosts(self) -> list[tuple[str, int]]:
+        """Parse COMFYUI_INSTANCES into list of (host, port) tuples.
+
+        ADDED(v4-port): faithful port of v3 fren/config.py
+        Settings.get_comfyui_hosts; consumed by app.comfyui.render.render_scene.
+        """
+        hosts: list[tuple[str, int]] = []
+        for entry in self.comfyui_instances.split(","):
+            entry = entry.strip()
+            if not entry:
+                continue
+            if ":" in entry:
+                host, port = entry.rsplit(":", 1)
+                hosts.append((host, int(port)))
+            else:
+                hosts.append((entry, 8188))
+        return hosts
 
 
 @lru_cache
