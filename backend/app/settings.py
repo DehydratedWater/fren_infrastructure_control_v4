@@ -49,6 +49,19 @@ class Settings(BaseSettings):
     bot_token: str = Field(default="", alias="BOT_TOKEN")
     bot_rp_token: str = Field(default="", alias="BOT_RP_TOKEN")
     chat_id: str = Field(default="", alias="CHAT_ID")
+    # ADDED(v4-port): bot.build_application() reads telegram_api_id/hash to switch
+    # to the local Bot API server (2GB file support). Default "" mirrors v3.
+    telegram_api_id: str = Field(default="", alias="TELEGRAM_API_ID")
+    telegram_api_hash: str = Field(default="", alias="TELEGRAM_API_HASH")
+
+    # --- persona_prose (chat persona model) ---------------------------------
+    # ADDED(v4-port): handlers.handle_model_chat reads persona_prose_provider +
+    # persona_prose_model. Defaults + types mirror v3 fren/config.py.
+    persona_prose_provider: str = Field(default="local-vllm-remote", alias="PERSONA_PROSE_PROVIDER")
+    persona_prose_model: str = Field(default="qwen35-27b", alias="PERSONA_PROSE_MODEL")
+    persona_prose_temperature: float | None = Field(default=0.85, alias="PERSONA_PROSE_TEMPERATURE")
+    persona_prose_max_tokens: int | None = Field(default=16384, alias="PERSONA_PROSE_MAX_TOKENS")
+    persona_prose_timeout_seconds: int = Field(default=180, alias="PERSONA_PROSE_TIMEOUT_SECONDS")
 
     # --- tts (voice-message synthesis) --------------------------------------
     tts_host: str = Field(default="localhost:8200", alias="TTS_HOST")
