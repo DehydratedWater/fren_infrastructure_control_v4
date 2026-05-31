@@ -1,0 +1,30 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential curl unzip ca-certificates git ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# opencode CLI — the runtime the workers call.
+RUN curl -fsSL https://opencode.ai/install | bash
+ENV PATH="/root/.opencode/bin:${PATH}"
+
+WORKDIR /app
+
+# Deps installed without the framework (mounted + importable via PYTHONPATH).
+RUN pip install --upgrade pip && \
+    pip install fastapi 'uvicorn[standard]' 'sqlalchemy[asyncio]' asyncpg alembic \
+        'pydantic[email]>=2.6' pydantic-settings pyjwt \
+        httpx croniter python-telegram-bot pyyaml \
+        langchain-core langchain-openai \
+        pytest pytest-asyncio
+
+COPY backend /app/backend
+COPY backend/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Framework provided via runtime volume mount at /srv/oac.
+ENV PYTHONPATH=/srv/oac:/app:/app/backend
+
+EXPOSE 8000
+WORKDIR /app/backend
+CMD ["/usr/local/bin/entrypoint.sh"]

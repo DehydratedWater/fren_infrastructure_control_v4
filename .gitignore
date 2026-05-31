@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Env / secrets — NEVER commit
+.env
+*.env
+!.env.example
+.google_token.json
+
+# Compiled agent trees + runtime data
+/data/
+.opencode/data/
+.oac/snapshots/
+
+# Node (dashboard/frontend)
+node_modules/
+dist/

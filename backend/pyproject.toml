@@ -1,0 +1,46 @@
+[project]
+name = "fren-v4-backend"
+version = "0.1.0"
+description = "fren infrastructure control v4 — clean rebuild on open-agent-compiler (OpenCodeCompilerV2)"
+requires-python = ">=3.12"
+
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.29",
+    "alembic>=1.13",
+    "pydantic[email]>=2.6",
+    "pydantic-settings>=2.2",
+    "pyjwt>=2.8",
+    "httpx>=0.27",
+    "croniter>=2.0",
+    "python-telegram-bot>=20",
+    "pyyaml>=6.0",
+    # interactive (live) layer binding — local qwen via LangChain
+    "langchain-core>=0.3",
+    "langchain-openai>=0.2",
+    # The framework — editable from the sibling repo.
+    "opencodecompilerv2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.uv.sources]
+opencodecompilerv2 = { path = "../../OpenCodeCompilerV2", editable = true }
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = [".", "../../OpenCodeCompilerV2"]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

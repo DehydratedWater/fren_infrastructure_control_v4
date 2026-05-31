@@ -1,0 +1,53 @@
+name: fren-v4
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${FREN_DB_PORT:-5452}:5432"
+    volumes:
+      - fren_v4_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      ZAI_API_KEY: ${ZAI_API_KEY}
+      WORKER_MODEL: ${WORKER_MODEL}
+      EXECUTION_BACKEND: ${EXECUTION_BACKEND:-direct}
+      LOCAL_LLM_BASE_URL: ${LOCAL_LLM_BASE_URL:-}
+      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen3.5-27b}
+      LOCAL_LLM_API_KEY: ${LOCAL_LLM_API_KEY:-not-needed}
+      VLLM_API_KEY: ${VLLM_API_KEY:-not-needed}
+      AGENTS_DIR: ${AGENTS_DIR:-/data/agents}
+      BOT_TOKEN: ${BOT_TOKEN:-}
+      CHAT_ID: ${CHAT_ID:-}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALG: ${JWT_ALG:-HS256}
+      PYTHONPATH: /srv/oac:/app:/app/backend
+    ports:
+      - "${FREN_BACKEND_PORT:-8909}:8000"
+    volumes:
+      - fren_v4_data:/data
+      # Mount the framework as a sibling so it's importable at runtime.
+      - ../OpenCodeCompilerV2:/srv/oac:ro
+    restart: unless-stopped
+
+volumes:
+  fren_v4_db_data:
+  fren_v4_data:
