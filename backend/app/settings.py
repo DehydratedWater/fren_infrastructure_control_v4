@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     bot_rp_token: str = Field(default="", alias="BOT_RP_TOKEN")
     chat_id: str = Field(default="", alias="CHAT_ID")
 
+    # --- tts (voice-message synthesis) --------------------------------------
+    tts_host: str = Field(default="localhost:8200", alias="TTS_HOST")
+    tts_speed: float = Field(default=0.85, alias="TTS_SPEED")
+    tts_output_dir: str = Field(default="./tts_output", alias="TTS_OUTPUT_DIR")
+
     # --- auth ---------------------------------------------------------------
     jwt_secret: str = Field(default="change-me", alias="JWT_SECRET")
     jwt_alg: str = Field(default="HS256", alias="JWT_ALG")
