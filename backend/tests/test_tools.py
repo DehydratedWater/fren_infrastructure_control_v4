@@ -39,18 +39,26 @@ def test_all_tool_modules_import():
     assert total >= 70  # ~75 tools ported
 
 
+# Helper modules in a tool area that are intentionally NOT ScriptTools
+# (imported by sibling tools, e.g. shared search functions).
+_TOOL_HELPER_MODULES = {"research.web_search"}
+
+
 def test_each_module_exposes_a_scripttool():
     missing = []
     for area in _tool_areas():
         mod = importlib.import_module(f"app.tools.{area}")
         for sm in pkgutil.iter_modules(mod.__path__):
+            key = f"{area}.{sm.name}"
+            if key in _TOOL_HELPER_MODULES:
+                continue
             m = importlib.import_module(f"app.tools.{area}.{sm.name}")
             tools = [
                 v for v in vars(m).values()
                 if inspect.isclass(v) and issubclass(v, ScriptTool) and v is not ScriptTool
             ]
             if not tools:
-                missing.append(f"{area}.{sm.name}")
+                missing.append(key)
     assert not missing, "modules with no ScriptTool subclass:\n" + "\n".join(missing)
 
 
