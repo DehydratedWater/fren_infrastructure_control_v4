@@ -1,121 +1,82 @@
-"""Package entrypoint: ``python -m app <command>``.
+"""fren v4 entrypoint — `python -m app <service>`.
 
-v3 had no top-level ``__main__``: the scheduler (``fren/telegram/scheduler.py``)
-ran inside the long-lived Telegram bot process, and the checker / cron-manager
-were ``script:`` ScriptTools invoked per-tick. This v4 module provides a thin
-dispatcher so the same background-job runtime is runnable standalone:
-
-  python -m app scheduler   # run the long-lived cron scheduler (signal-aware)
-  python -m app checker      # run a single periodic-checker tick
-  python -m app cron ...     # drive cron/workflow execution logging
-
-Signal handling (SIGINT/SIGTERM → graceful Scheduler.stop) is installed for the
-scheduler command, mirroring how v3's bot drove Scheduler.start()/stop().
+Mirrors v3's process model: the Telegram bot, the cron scheduler, and the
+periodic checker each run as their own service (one container each in compose).
+`compile` builds the fleet into AGENTS_DIR (run once at boot before the bot).
 """
 
 from __future__ import annotations
 
-import argparse
 import asyncio
-import logging
 import signal
 import sys
 
 
-async def _run_scheduler() -> None:
+def _run_bot() -> None:
+    from app.telegram.bot import run as run_bot
+
+    run_bot()
+
+
+def _run_scheduler() -> None:
     from app.scheduler import Scheduler
 
-    scheduler = Scheduler()
-    loop = asyncio.get_running_loop()
-    stop_requested = asyncio.Event()
+    async def _main() -> None:
+        sched = Scheduler()
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.add_signal_handler(sig, sched.stop)
+            except (NotImplementedError, AttributeError):
+                pass
+        await sched.run()
 
-    def _request_stop() -> None:
-        logging.getLogger("app").info("shutdown signal received")
-        stop_requested.set()
-
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        try:
-            loop.add_signal_handler(sig, _request_stop)
-        except NotImplementedError:
-            # add_signal_handler is unavailable on some platforms (e.g. Windows).
-            signal.signal(sig, lambda *_: _request_stop())
-
-    await scheduler.start()
-    try:
-        await stop_requested.wait()
-    finally:
-        await scheduler.stop()
+    asyncio.run(_main())
 
 
-def _cmd_scheduler(_args: argparse.Namespace) -> int:
-    asyncio.run(_run_scheduler())
-    return 0
+def _run_checker() -> None:
+    from app.checker import Checker
+
+    async def _main() -> None:
+        chk = Checker()
+        await chk.run()
+
+    asyncio.run(_main())
 
 
-def _cmd_checker(args: argparse.Namespace) -> int:
-    from app.checker import Input, PeriodicCheckerTool
+def _run_compile() -> None:
+    """Compile the whole fleet (all worker variants) into settings.agents_dir.
 
-    out = PeriodicCheckerTool().execute(Input(command=args.command, force=args.force))
-    import json
+    Run once at boot before the bot/scheduler start so opencode can resolve
+    `--agent <name><postfix>` from the compiled tree.
+    """
+    from pathlib import Path
 
-    print(json.dumps(out.model_dump(), default=str))
-    return 0 if out.success else 1
+    from app.agents.compile import compile_fleet
+    from app.settings import get_settings
+
+    target = Path(get_settings().agents_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    files = compile_fleet(target=target, project_root=target, clean=True)
+    print(f"[compile] wrote {len(files)} files to {target}")
 
 
-def _cmd_cron(args: argparse.Namespace) -> int:
-    from app.cron_runner import CronManagerTool, Input
-
-    out = CronManagerTool().execute(
-        Input(
-            command=args.cron_command,
-            execution_id=args.execution_id,
-            mode=args.mode,
-            triggered_by=args.triggered_by,
-            exit_code=args.exit_code,
-            status=args.status,
-            limit=args.limit,
+def _dispatch(service: str) -> None:
+    if service == "bot":
+        _run_bot()
+    elif service == "scheduler":
+        _run_scheduler()
+    elif service == "checker":
+        _run_checker()
+    elif service == "compile":
+        _run_compile()
+    else:
+        print(
+            f"unknown service: {service!r} (use bot|scheduler|checker|compile)",
+            file=sys.stderr,
         )
-    )
-    import json
-
-    print(json.dumps(out.model_dump(), default=str))
-    return 0 if out.success else 1
-
-
-def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="app", description="fren infra control background-job runtime")
-    sub = parser.add_subparsers(dest="command_name", required=True)
-
-    p_sched = sub.add_parser("scheduler", help="run the long-lived cron scheduler")
-    p_sched.set_defaults(func=_cmd_scheduler)
-
-    p_check = sub.add_parser("checker", help="run a single periodic-checker tick")
-    p_check.add_argument("--command", default="check", help="check|get-state|dry-run")
-    p_check.add_argument("--force", action="store_true")
-    p_check.set_defaults(func=_cmd_checker)
-
-    p_cron = sub.add_parser("cron", help="drive cron/workflow execution logging")
-    p_cron.add_argument("cron_command", help="log-start|log-complete|list-recent|workflow-*")
-    p_cron.add_argument("--execution-id", default="")
-    p_cron.add_argument("--mode", default="")
-    p_cron.add_argument("--triggered-by", default="cron")
-    p_cron.add_argument("--exit-code", type=int, default=0)
-    p_cron.add_argument("--status", default="completed")
-    p_cron.add_argument("--limit", type=int, default=20)
-    p_cron.set_defaults(func=_cmd_cron)
-
-    return parser
-
-
-def _main(argv: list[str] | None = None) -> int:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
-    parser = _build_parser()
-    args = parser.parse_args(argv)
-    return args.func(args)
+        sys.exit(2)
 
 
 if __name__ == "__main__":
-    sys.exit(_main(sys.argv[1:]))
+    _dispatch(sys.argv[1] if len(sys.argv) > 1 else "bot")
