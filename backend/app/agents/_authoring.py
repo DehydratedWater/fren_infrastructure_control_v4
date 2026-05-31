@@ -22,6 +22,7 @@ from src import (
     AgentTest,
     AgentToolPermissions as ToolPermissions,
     CapabilityTest,
+    ToolDefinition,
 )
 
 # Permissions: pure-prompt agents get an all-deny set (no bash/write/edit/mcp)
@@ -41,6 +42,7 @@ def define_agent(
     long: str,
     prompt: str,
     model_class: str = "default",
+    tools: Sequence[ToolDefinition] = (),
     capability_tests: Sequence[CapabilityTest] = (),
     agent_tests: Sequence[AgentTest] = (),
     permissions: ToolPermissions | None = None,
@@ -51,6 +53,9 @@ def define_agent(
 
     `model_class` is the split-profile routing hint (default / fast / analytical
     / vision). `short`/`long` are the usage explanations the framework requires.
+    `tools` are the ToolDefinitions (from app/agents/_tools.py) the agent may
+    call — they compile into its scoped bash allowlist + tool docs, turning a
+    pure-prompt agent into one that can actually act (v3 parity wiring).
     """
     return AgentDefinition(
         header=AgentHeader(
@@ -62,6 +67,7 @@ def define_agent(
         usage_explanation_long=long,
         system_prompt=prompt,
         model_class=model_class,
+        extra_tools=list(tools),
         tool_permissions=permissions if permissions is not None else pure_prompt_permissions(),
         capability_tests=tuple(capability_tests),
         agent_tests=tuple(agent_tests),
