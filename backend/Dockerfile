@@ -14,7 +14,7 @@ WORKDIR /app
 RUN pip install --upgrade pip && \
     pip install fastapi 'uvicorn[standard]' 'sqlalchemy[asyncio]' asyncpg alembic \
         'pydantic[email]>=2.6' pydantic-settings pyjwt \
-        httpx croniter python-telegram-bot pyyaml \
+        httpx croniter apscheduler python-telegram-bot pyyaml \
         langchain-core langchain-openai \
         pytest pytest-asyncio
 
