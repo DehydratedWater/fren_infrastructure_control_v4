@@ -1,5 +1,23 @@
 name: fren-v4
 
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  # All credentials + config flow from the gitignored .env (32 keys copied
+  # from v3). PYTHONPATH makes the mounted framework importable.
+  env_file: .env
+  environment:
+    PYTHONPATH: /srv/oac:/app:/app/backend
+    AGENTS_DIR: ${AGENTS_DIR:-/data/agents}
+  depends_on:
+    db:
+      condition: service_healthy
+  volumes:
+    - fren_v4_data:/data
+    - ../OpenCodeCompilerV2:/srv/oac:ro   # framework as a sibling, importable
+  restart: unless-stopped
+
 services:
   db:
     image: pgvector/pgvector:pg17
@@ -18,35 +36,34 @@ services:
       retries: 10
     restart: unless-stopped
 
-  backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    depends_on:
-      db:
-        condition: service_healthy
+  # Primary surface: the Telegram bot (also runs migrations at boot).
+  bot:
+    <<: *backend
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      ZAI_API_KEY: ${ZAI_API_KEY}
-      WORKER_MODEL: ${WORKER_MODEL}
-      EXECUTION_BACKEND: ${EXECUTION_BACKEND:-direct}
-      LOCAL_LLM_BASE_URL: ${LOCAL_LLM_BASE_URL:-}
-      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen3.5-27b}
-      LOCAL_LLM_API_KEY: ${LOCAL_LLM_API_KEY:-not-needed}
-      VLLM_API_KEY: ${VLLM_API_KEY:-not-needed}
-      AGENTS_DIR: ${AGENTS_DIR:-/data/agents}
-      BOT_TOKEN: ${BOT_TOKEN:-}
-      CHAT_ID: ${CHAT_ID:-}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_ALG: ${JWT_ALG:-HS256}
       PYTHONPATH: /srv/oac:/app:/app/backend
-    ports:
-      - "${FREN_BACKEND_PORT:-8909}:8000"
-    volumes:
-      - fren_v4_data:/data
-      # Mount the framework as a sibling so it's importable at runtime.
-      - ../OpenCodeCompilerV2:/srv/oac:ro
-    restart: unless-stopped
+      AGENTS_DIR: ${AGENTS_DIR:-/data/agents}
+      SERVICE: bot
+
+  # Autonomous job runners (cron-driven agents + periodic checker).
+  scheduler:
+    <<: *backend
+    environment:
+      PYTHONPATH: /srv/oac:/app:/app/backend
+      AGENTS_DIR: ${AGENTS_DIR:-/data/agents}
+      SERVICE: scheduler
+    depends_on:
+      bot:
+        condition: service_started
+
+  checker:
+    <<: *backend
+    environment:
+      PYTHONPATH: /srv/oac:/app:/app/backend
+      AGENTS_DIR: ${AGENTS_DIR:-/data/agents}
+      SERVICE: checker
+    depends_on:
+      bot:
+        condition: service_started
 
 volumes:
   fren_v4_db_data:

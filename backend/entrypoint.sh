@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Materialise the opencode config with the real z.ai key (opencode's env:VAR
-# substitution is unreliable, so write the literal value at boot), then start.
+# Materialise opencode config with the real z.ai key (env:VAR substitution is
+# unreliable), run migrations once, then start the selected service.
+# SERVICE = bot (default) | scheduler | checker.
 set -euo pipefail
 
 mkdir -p /root/.config/opencode
@@ -14,9 +15,20 @@ cat > /root/.config/opencode/opencode.json <<EOF
   }
 }
 EOF
-
 echo "[entrypoint] opencode config written (key length: ${#ZAI_API_KEY})"
 
 cd /app/backend
-# alembic upgrade head   # enabled once migrations land (P1 DB)
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Only the bot service runs migrations (single writer at boot).
+SERVICE="${SERVICE:-bot}"
+if [ "$SERVICE" = "bot" ]; then
+  alembic upgrade head || echo "[entrypoint] alembic upgrade skipped/failed (continuing)"
+fi
+
+echo "[entrypoint] starting service: $SERVICE"
+case "$SERVICE" in
+  bot)       exec python -m app bot ;;
+  scheduler) exec python -m app scheduler ;;
+  checker)   exec python -m app checker ;;
+  *)         exec python -m app "$SERVICE" ;;
+esac
