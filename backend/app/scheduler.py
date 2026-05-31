@@ -29,6 +29,7 @@ import yaml
 from croniter import croniter
 
 from app.settings import get_settings
+from app.telegram.spawn import spawn_agent
 
 logger = logging.getLogger(__name__)
 
