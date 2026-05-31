@@ -12,6 +12,7 @@ from app.agents._authoring import define_agent
 from src import (
     AgentDefinition,
     AgentTest,
+    BranchTest,
     CapabilityTest,
     SubstringEvaluator,
 )
@@ -90,5 +91,26 @@ def agents() -> list[AgentDefinition]:
                 " from the plan you are given. Do not invent facts not in the"
                 " plan or context."
             ),
+        ),
+    ]
+
+
+def branches() -> list[BranchTest]:
+    """The orchestrator's distinguished paths (tested + optimised as units)."""
+    return [
+        # substantive message → context → thinking → responding (never skip)
+        BranchTest(
+            name="persona/orchestrator::substantive-flow",
+            entry_agent=ORCHESTRATOR,
+            prompt="Help me plan my week around my fitness goal.",
+            path=("context_analyzer", "persona/thinking", "persona/responding"),
+            evaluators=(SubstringEvaluator(needle="plan", case_sensitive=False),),
+        ),
+        # trivial greeting → quick_ack short-circuit
+        BranchTest(
+            name="persona/orchestrator::trivial-ack",
+            entry_agent=ORCHESTRATOR,
+            prompt="thanks!",
+            path=("persona/quick_ack",),
         ),
     ]

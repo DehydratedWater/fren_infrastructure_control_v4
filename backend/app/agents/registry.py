@@ -12,10 +12,9 @@ Variants (the 7 worker passes incl. the split profile) are applied by
 from __future__ import annotations
 
 from pathlib import Path
-from types import ModuleType
 
 from app.agents.config import DEFAULT_WORKER
-from app.agents.domains import persona
+from app.agents.domains import all_agent_defs
 from src import (
     AgentDefinition,
     AgentRegistry,
@@ -24,27 +23,13 @@ from src import (
     TemplateTree,
 )
 
-# The repo root that holds `.oac/promoted/` (two levels up from this file:
+# The repo root that holds `.oac/promoted/` (three parents up from this file:
 # backend/app/agents/registry.py -> repo root).
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-# Every domain module exposing `agents()`. Grows as domains are ported.
-DOMAINS: tuple[ModuleType, ...] = (
-    persona,
-)
-
 
 def all_agents() -> list[AgentDefinition]:
-    out: list[AgentDefinition] = []
-    seen: set[str] = set()
-    for domain in DOMAINS:
-        for agent in domain.agents():
-            aid = agent.header.agent_id
-            if aid in seen:
-                raise ValueError(f"duplicate agent_id across domains: {aid!r}")
-            seen.add(aid)
-            out.append(agent)
-    return out
+    return all_agent_defs()
 
 
 def build_registry(*, project_root: Path | None = None) -> AgentRegistry:
