@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     local_llm_model: str = Field(default="qwen3.5-27b", alias="LOCAL_LLM_MODEL")
     local_llm_api_key: str = Field(default="not-needed", alias="LOCAL_LLM_API_KEY")
 
+    # --- locale -------------------------------------------------------------
+    user_timezone: str = Field(default="Europe/Warsaw", alias="USER_TIMEZONE")
+
     # --- agents / runtime ---------------------------------------------------
     agents_dir: Path = Field(
         default=Path("/data/agents"), alias="AGENTS_DIR",
