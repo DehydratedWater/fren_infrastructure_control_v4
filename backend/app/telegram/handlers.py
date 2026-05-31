@@ -270,7 +270,7 @@ async def _drift_vibe_state() -> None:
         project_root = Path(__file__).resolve().parents[3]
         # Detached subprocess — don't block, don't raise if it fails.
         subprocess.Popen(
-            ["uv", "run", "scripts/vibe_drift.py"],
+            ["python", "scripts/vibe_drift.py"],
             cwd=str(project_root),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -824,8 +824,7 @@ async def _run_vllm_switch(variant: str) -> None:
     project_root = settings.project_root
     try:
         proc = await asyncio.create_subprocess_exec(
-            "uv",
-            "run",
+            "python",
             "scripts/vllm_model_switch.py",
             "--command",
             "switch",
@@ -1087,8 +1086,7 @@ async def _process_user_response(message_text: str) -> None:
     """Process user message for task completions (background)."""
     try:
         proc = await asyncio.create_subprocess_exec(
-            "uv",
-            "run",
+            "python",
             "scripts/response_processor.py",
             "--command",
             "process-message",

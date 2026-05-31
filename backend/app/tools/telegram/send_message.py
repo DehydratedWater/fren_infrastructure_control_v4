@@ -292,8 +292,7 @@ class SendMessageTool(ScriptTool[Input, Output]):
         try:
             subprocess.Popen(
                 [
-                    "uv",
-                    "run",
+                    "python",
                     "scripts/send_voice.py",
                     "--text_file",
                     tmp_path,

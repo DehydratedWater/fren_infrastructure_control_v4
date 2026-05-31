@@ -343,76 +343,69 @@ class Scheduler:
             "FREN_JOB_ID": job_id,
         }
 
-        if is_script:
-            script_path = base_agent.removeprefix("script:")
-            cmd = ["uv", "run", script_path]
-            if prompt:
-                cmd.extend(prompt.split())
-        else:
-            # Wrap the task prompt with a scheduled-trigger header when targeting
-            # chat/persona agents — they see both user messages and scheduled
-            # instructions and must not confuse the two.
-            if base_agent.startswith("persona/twily_chat") or base_agent.startswith("persona/fren_orchestrator"):
-                prompt = (
-                    "## ⚙️ SCHEDULED TRIGGER — NOT A USER MESSAGE\n"
-                    f"This prompt was fired by the scheduler (job: {job_id}). The user did NOT send it. "
-                    "The user typed nothing. Do NOT quote, praise, or thank the user for this content — "
-                    "they have no idea it exists. Reach out first-person as if initiating the interaction.\n\n"
-                    f"## TASK INSTRUCTION:\n{prompt}"
-                )
-
-            # Prepend conversation digest to agent prompt for situational context
-            enriched_prompt = await self._enrich_prompt(prompt)
-
-            cmd = [
-                "uv",
-                "run",
-                "scripts/opencode_manager.py",
-                "run",
-                "--agent",
-                agent,
-                "--prefix",
-                job_id,
-                "--no-server",
-                "--no-attach",
-                enriched_prompt,
-            ]
-
         logger.info("[%s] Starting agent %s (timeout=%ds)", job_id, agent, timeout)
         return_code = 1
         stderr_text: str | None = None
         status = "failed"
-        proc: asyncio.subprocess.Process | None = None
         try:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                cwd=str(project_root),
-                env=env,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            _stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-            return_code = proc.returncode or 0
-            if return_code != 0:
-                stderr_text = stderr.decode("utf-8", errors="replace")[:2000] if stderr else None
-                logger.error("[%s] Agent failed (exit %d): %s", job_id, return_code, (stderr_text or "")[:500])
+            if is_script:
+                # `script:`-type cron jobs run a plain Python entrypoint (no `uv`
+                # in the v4 image); FREN_* context exported via env.
+                script_path = base_agent.removeprefix("script:")
+                cmd = ["python", script_path]
+                if prompt:
+                    cmd.extend(prompt.split())
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd, cwd=str(project_root), env=env,
+                    stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+                )
+                _stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(), timeout=timeout,
+                )
+                return_code = proc.returncode or 0
+                if return_code != 0:
+                    stderr_text = stderr.decode("utf-8", errors="replace")[:2000] if stderr else None
+                    logger.error("[%s] Script failed (exit %d): %s", job_id, return_code, (stderr_text or "")[:500])
+                else:
+                    status = "completed"
+                    logger.info("[%s] Completed successfully", job_id)
             else:
-                status = "completed"
-                logger.info("[%s] Completed successfully", job_id)
+                # Scheduled-trigger header so chat/persona agents don't mistake a
+                # scheduled instruction for a user message.
+                if base_agent.startswith("persona/twily_chat") or base_agent.startswith("persona/fren_orchestrator"):
+                    prompt = (
+                        "## ⚙️ SCHEDULED TRIGGER — NOT A USER MESSAGE\n"
+                        f"This prompt was fired by the scheduler (job: {job_id}). The user did NOT send it. "
+                        "The user typed nothing. Do NOT quote, praise, or thank the user for this content — "
+                        "they have no idea it exists. Reach out first-person as if initiating the interaction.\n\n"
+                        f"## TASK INSTRUCTION:\n{prompt}"
+                    )
+                enriched_prompt = await self._enrich_prompt(prompt)
+                # In-process spawn against the compiled fleet (no `uv`/subprocess
+                # shell); FREN_* forwarded, ledger run row for the delivery hook.
+                result = await asyncio.wait_for(
+                    spawn_agent(
+                        agent=agent, prompt=enriched_prompt, run_id=run_id,
+                        model_postfix=postfix, trigger="cron",
+                        extra_env={"FREN_JOB_ID": job_id},
+                    ),
+                    timeout=timeout,
+                )
+                if result.ok:
+                    return_code, status = 0, "completed"
+                    logger.info("[%s] Completed successfully", job_id)
+                else:
+                    stderr_text = result.error
+                    logger.error("[%s] Agent failed: %s", job_id, result.error)
         except TimeoutError:
             logger.error("[%s] Timed out after %ds", job_id, timeout)
             stderr_text = f"TIMEOUT: exceeded {timeout}s budget"
             return_code = 124
-            if proc is not None:
-                proc.kill()
         except asyncio.CancelledError:
             logger.info("[%s] Cancelled by scheduler shutdown", job_id)
             stderr_text = "CANCELLED: scheduler shutdown"
             return_code = 130
             status = "cancelled"
-            if proc is not None:
-                with contextlib.suppress(ProcessLookupError):
-                    proc.kill()
         except Exception:
             logger.exception("[%s] Failed to run agent", job_id)
             stderr_text = "UNEXPECTED ERROR: scheduler failed to run job"

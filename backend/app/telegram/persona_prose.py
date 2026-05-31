@@ -1589,8 +1589,7 @@ async def _deliver_via_send_message(text: str, attachments: list[str]) -> None:
             await asyncio.to_thread(
                 _fire,
                 [
-                    "uv",
-                    "run",
+                    "python",
                     "scripts/send_image.py",
                     "--image",
                     path,
@@ -1602,7 +1601,7 @@ async def _deliver_via_send_message(text: str, attachments: list[str]) -> None:
 
     await asyncio.to_thread(
         _fire,
-        ["uv", "run", "scripts/send_message.py", "--message", text],
+        ["python", "scripts/send_message.py", "--message", text],
     )
 
 

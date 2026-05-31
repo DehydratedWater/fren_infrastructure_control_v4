@@ -129,7 +129,7 @@ class EmitGuidanceTool(ScriptTool[Input, Output]):
         def _fire() -> tuple[int, str]:
             try:
                 result = subprocess.run(
-                    ["uv", "run", "scripts/send_message.py", "--message", ack_text],
+                    ["python", "scripts/send_message.py", "--message", ack_text],
                     cwd=project_root,
                     capture_output=True,
                     text=True,

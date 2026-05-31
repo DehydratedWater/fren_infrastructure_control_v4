@@ -90,7 +90,7 @@ class RenderRPSceneTool(ScriptTool[Input, Output]):
         try:
             with open(log_path, "w") as log_file:
                 subprocess.Popen(
-                    ["uv", "run", str(worker_script), job_path],
+                    ["python", str(worker_script), job_path],
                     cwd=str(PROJECT_ROOT),
                     start_new_session=True,
                     stdout=log_file,
