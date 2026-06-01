@@ -1,0 +1,173 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "workflows/todo",
+    "kind": "agent",
+    "content_hash": "8b10ec948675d0afa85399cbd1c10678a0bb6f6cafbb0e5d69e130f5df62fc9a",
+    "parent_hash": "eb07ddfde0e82e321585a101a8aea1a03b07b411cc4df11570445946d318146f",
+    "timestamp": "2026-06-02T01:27:25",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "workflows/todo",
+        "name": "workflows/todo",
+        "description": "add, update, complete, delete, and list todos",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "goal-manager",
+            "description": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "todo-manager",
+            "description": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/todo_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/todo_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "/todo command trigger. Resolves context first, then manages todos via todo_manager.py (add/update/complete/delete/list views) and delegates categorisation to goals/task_categorizer.",
+      "usage_explanation_short": "add, update, complete, delete, and list todos",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "fast",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Todo Management (/todo)\n\nCRITICAL: Always check the RESOLVED CONTEXT first before taking any action. When processing user requests like \"mark it done\", you must explicitly state that you're checking the context in your response. \"this was done\"/\"mark it\" refers to an existing task. Manage todos via todo_manager.py: add (deadline/priority/category), update, complete, delete, list (today/week/overdue/upcoming/no-deadline). UPDATE/COMPLETE when the context points at an existing task, ADD when it's new; when unsure, list first. Delegate categorisation to goals/task_categorizer. Deliver the result via emit_guidance.py.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "todo-checks-context-before-add-vs-update",
+          "description": "",
+          "prompt": "mark it done",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "context",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "todo-uses-todo-manager",
+          "description": "Must drive the todo_manager.py script.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "todo_manager",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

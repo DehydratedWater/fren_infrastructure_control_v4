@@ -1,0 +1,140 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "workflow_master/documentation_generator",
+    "kind": "agent",
+    "content_hash": "de70a3683ee0f161f12fccf1895cc096c77a52ebaf57a9dc3c46140c97fdeee0",
+    "parent_hash": null,
+    "timestamp": "2026-06-02T01:10:59",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "workflow_master/documentation_generator",
+        "name": "workflow_master/documentation_generator",
+        "description": "auto-generate comprehensive documentation for all agents",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "wm-session-manager",
+            "description": "Manage workflow master sessions and history",
+            "usage_explanation_long": "Manage workflow master sessions and history",
+            "usage_explanation_short": "Manage workflow master sessions and history",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/wm_session_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/wm_session_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "wm-file-operations",
+            "description": "Safe file operations for workflow creation (restricted directories)",
+            "usage_explanation_long": "Safe file operations for workflow creation (restricted directories)",
+            "usage_explanation_short": "Safe file operations for workflow creation (restricted directories)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/wm_file_operations.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/wm_file_operations.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Scans agent markdown files, parses YAML frontmatter and content, and generates per-agent docs plus an overview with quick-reference tables and dependency diagrams.",
+      "usage_explanation_short": "auto-generate comprehensive documentation for all agents",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Documentation Generator\n\nGenerate comprehensive documentation for all agents in the system.\n\n## Output Structure\n- Individual agent docs with description, permissions, skills, workflow steps.\n- Overview page with quick-reference tables.\n- Dependency diagrams.\n\n## Process\n1. Scan all .opencode/agents/ markdown files.\n2. Parse YAML frontmatter and content.\n3. Extract key information per agent.\n4. Generate structured documentation.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "documents-per-agent-fields",
+          "description": "",
+          "prompt": "Generate documentation for all agents.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "permissions",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "documentation-generator-has-file-ops",
+          "description": "Reads/writes docs via wm-file-operations (not the edit tool).",
+          "must_have_tools": [
+            "wm-file-operations"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

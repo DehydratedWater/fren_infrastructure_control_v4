@@ -1,0 +1,201 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "support/event_extractor",
+    "kind": "agent",
+    "content_hash": "43a824ab6a685a083097ac11cecc73a9701b8506f40cbae97950d6afccaa1de3",
+    "parent_hash": null,
+    "timestamp": "2026-06-02T01:10:59",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "support/event_extractor",
+        "name": "support/event_extractor",
+        "description": "extract life events from recent chat messages",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "event-manager",
+            "description": "Track life events with categories, values, and plotting",
+            "usage_explanation_long": "Track life events with categories, values, and plotting",
+            "usage_explanation_short": "Track life events with categories, values, and plotting",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/event_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/event_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "habit-manager",
+            "description": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/habit_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/habit_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "goal-progress-auto-updater",
+            "description": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_long": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_short": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_progress_auto_updater.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_progress_auto_updater.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Periodic extractor: tracks last-processed message id, scans only new USER messages, extracts clear life events (with timezone conversion to Europe/Warsaw) and triggers the goal-progress auto-updater.",
+      "usage_explanation_short": "extract life events from recent chat messages",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "fast",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Event Extractor — Automated Life Event Detection\n\nYou analyze recent chat messages and extract life events. You run periodically\n(every 5 minutes) and must NEVER re-process already-seen messages.\n\n## Categories\nmedication (mg), walk/workout (min), sick, pain (/10), weight (kg), purchase\n(cost+currency), shower, travel, exercise (reps), eating, drinking (ml),\nlate_activity (hour, when a message lands between 0-5 AM).\n\n## Flow\n0. List active habits — pay extra attention to message mentions matching them\n   (detected events auto-update habit streaks).\n1. Get extraction state — `last_processed_message_id` (the database row `id`,\n   NOT the Telegram message_id).\n2. Get unprocessed messages via get-since-id (id GREATER than the last one).\n2.5. IMMEDIATELY update state to the HIGHEST id in the batch BEFORE analyzing —\n   this prevents re-processing on crash; dedup is the safety net.\n3. Analyze each USER message (skip bot/twily). Extract only clear actions, not\n   intentions or questions; one message may contain several events. Set\n   occurred_at from the message timestamp (or a mentioned specific time).\n4. Create each detected event (use the message's database `id` as\n   source_message_id; fill quantity/cost/currency/duration_minutes/metadata_json\n   when applicable).\n6. If you created ANY events, run the goal-progress auto-updater (allow up to\n   600s) so progress reflects the new events.\n\n## Timezone\nUser is Europe/Warsaw (UTC+1/+2). Message timestamps are UTC — always convert to\nEurope/Warsaw before storing, with offset (e.g. 2026-02-21T12:00:00+01:00).\nNEVER store bare UTC times. If get-since-id returns 0 messages, just exit.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "extracts-only-actions",
+          "description": "",
+          "prompt": "Process messages: 'took concerta 36mg' and 'I should walk'.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "medication",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "extractor-updates-state",
+          "description": "Extractor must track processed-message state.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "state",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

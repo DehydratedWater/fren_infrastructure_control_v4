@@ -1,0 +1,312 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "profile/orchestrator",
+    "kind": "agent",
+    "content_hash": "53cab805d23b674c2355c23cdb94f3ced2a0333fe178d1efcbf8162dc09af0ec",
+    "parent_hash": null,
+    "timestamp": "2026-06-02T01:10:59",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "profile/orchestrator",
+        "name": "profile/orchestrator",
+        "description": "run the profile analysis cycle by delegating to specialists",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "fetch-context",
+            "description": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_long": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_short": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/fetch_context.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/fetch_context.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "embedding-search",
+            "description": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/embedding_search.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/embedding_search.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "profile-manager",
+            "description": "Manage user profile analysis data",
+            "usage_explanation_long": "Manage user profile analysis data",
+            "usage_explanation_short": "Manage user profile analysis data",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/profile_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/profile_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-message",
+            "description": "Send a Telegram message to the user",
+            "usage_explanation_long": "Send a Telegram message to the user",
+            "usage_explanation_short": "Send a Telegram message to the user",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_message.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_message.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-voice",
+            "description": "Generate TTS audio and send as Telegram voice message",
+            "usage_explanation_long": "Generate TTS audio and send as Telegram voice message",
+            "usage_explanation_short": "Generate TTS audio and send as Telegram voice message",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_voice.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_voice.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-image",
+            "description": "Send an image with caption via Telegram",
+            "usage_explanation_long": "Send an image with caption via Telegram",
+            "usage_explanation_short": "Send an image with caption via Telegram",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_image.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_image.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-file",
+            "description": "Send a file via Telegram",
+            "usage_explanation_long": "Send a file via Telegram",
+            "usage_explanation_short": "Send a file via Telegram",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_file.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_file.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Profile analysis orchestrator. Starts an analysis run, then dispatches pattern_observer → hypothesis_generator → hypothesis_validator → discovery_manager → knowledge_compiler in order and sends the compiled report via Telegram.",
+      "usage_explanation_short": "run the profile analysis cycle by delegating to specialists",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Profile Orchestrator\n\nYou manage the user-profile analysis cycle by delegating to specialised\nsubagents. Run the cycle in order:\n\n1. Start a new analysis run (profile-manager `start-run`, hyphenated, with a\n   focus area).\n2. Gather observations — dispatch profile/pattern_observer to scan chat\n   history for recurring patterns.\n3. Generate hypotheses — dispatch profile/hypothesis_generator over those\n   observations.\n4. Validate — dispatch profile/hypothesis_validator to check pending\n   hypotheses against fresh evidence.\n5. Promote discoveries — dispatch profile/discovery_manager to update the\n   confirmed-discovery lifecycle.\n6. Compile the report — dispatch profile/knowledge_compiler and send the\n   structured result via Telegram.\n\nYou coordinate; the specialists do the data work. Do not skip the\nobserve → hypothesise → validate → promote → compile order.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": true,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "analysis-cycle-starts-with-observation",
+          "description": "",
+          "prompt": "Run a profile analysis cycle for me.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "observation",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "orchestrator-starts-run-and-sends-report",
+          "description": "Coordinator starts the run + sends the report; never write/edit.",
+          "must_have_tools": [
+            "profile-manager",
+            "send-message"
+          ],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

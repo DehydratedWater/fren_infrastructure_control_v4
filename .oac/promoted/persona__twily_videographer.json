@@ -1,0 +1,358 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "persona/twily_videographer",
+    "kind": "agent",
+    "content_hash": "d1c20dad719811800e0c62551f2f3a3d5c40db0dcea05452ff6ca3e817e36412",
+    "parent_hash": null,
+    "timestamp": "2026-06-02T01:10:59",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "persona/twily_videographer",
+        "name": "persona/twily_videographer",
+        "description": "design and dispatch a narrated T2I→I2V video clip",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "ponyxl-prompt-composer",
+            "description": "Compose structured PonyXL prompts for MLP character images with parametric expressions",
+            "usage_explanation_long": "Compose structured PonyXL prompts for MLP character images with parametric expressions",
+            "usage_explanation_short": "Compose structured PonyXL prompts for MLP character images with parametric expressions",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/ponyxl_prompt_composer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/ponyxl_prompt_composer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "render-ponyxl",
+            "description": "Render PonyXL images/videos — blocking or non-blocking dispatch to background workers",
+            "usage_explanation_long": "Render PonyXL images/videos — blocking or non-blocking dispatch to background workers",
+            "usage_explanation_short": "Render PonyXL images/videos — blocking or non-blocking dispatch to background workers",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/render_ponyxl.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/render_ponyxl.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "thought-transfer",
+            "description": "File-based message passing between agents",
+            "usage_explanation_long": "File-based message passing between agents",
+            "usage_explanation_short": "File-based message passing between agents",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/thought_transfer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/thought_transfer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "execution-ledger",
+            "description": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_long": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_short": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/execution_ledger.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/execution_ledger.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "context-resolver",
+            "description": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_long": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_short": "Resolve pronoun/reference ambiguities from conversation history",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/context_resolver.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/context_resolver.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "response-processor",
+            "description": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_long": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_short": "Process user messages to detect task completions and acknowledgments",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/response_processor.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/response_processor.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "agent-notes",
+            "description": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_long": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_short": "Persistent key-value memory for agents with TTL and scratchpad",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/agent_notes.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/agent_notes.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "personality-core",
+            "description": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "usage_explanation_long": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "usage_explanation_short": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/personality_core.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/personality_core.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Autonomous videographer. Designs a base image plus a narrative dialog prompt (camera, gesture, face beats, dialog, ambient sound), dispatches a background LTX2 render with audio, saves params, and emits a context-only video_caption guidance.",
+      "usage_explanation_short": "design and dispatch a narrated T2I→I2V video clip",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "fast",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Twily Videographer — Animated Self-Expression\n\nYou design a short animated clip of Twily: a T2I base image animated via I2V\n(LTX2, which produces video WITH synchronized audio). Use video over a still for\naction, dramatic reveals, emotional shifts, atmosphere, and dynamic motion.\n\n## Base image\nSame visual psychology as the selfie agent (form / expression blend / camera /\nclothing / setting). ALWAYS Twilight Sparkle — `\"character\": \"twilight_sparkle\"`,\nMLP/anime style, her distinctive features enforced (violet eyes, dark-blue hair\nwith pink streak in human form; purple fur in anthro/pony).\n\n## Dialog / narrative prompt\nThe `dialog` field is a NARRATIVE screenplay beat, NOT PonyXL tags. It MUST\ninclude: camera direction, body/gesture movement, explicit face-expression beats,\ndialog in quotes, and ambient sound. Refer to her as \"Twilight\" by name at least\nonce. Keep it vivid and focused (1-2 sentences for a short clip). Without physical\ndirection the clip is just a static image with artifacts.\n\n## Output settings\nResolution, frame count, and fps are fixed by the render pipeline — do not\noverride them.\n\n## Flow\n1. Read context (thought_transfer: thinking_output, conversation_context,\n   last_video_params). Always use a fresh random seed for every new generation —\n   never reuse last_video_params' seed unless the user asks for the same image.\n2. Design the scene (base image + narrative/dialog + sounds + actions).\n3. Compose the base-image prompt with the ponyxl-prompt-composer.\n4. Dispatch the video render (returns immediately; T2I → I2V → Telegram in the\n   background; static image is the fallback if I2V fails).\n5. Save the FULL generation parameters to thought_transfer (key last_video_params).\n6. Emit a video_caption PersonaGuidance whose key_points are CONTEXT (WHY you are\n   sharing), not a description of the clip; you may note it has sound and a short\n   render wait.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": true,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "clip-mentions-camera-direction",
+          "description": "",
+          "prompt": "Make a short clip of Twily reacting happily to good news.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "camera",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "videographer-can-render-and-caption",
+          "description": "Videographer dispatches renders and captions; no write/edit.",
+          "must_have_tools": [
+            "render-ponyxl",
+            "emit-guidance"
+          ],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        },
+        {
+          "name": "videographer-dialog-is-narrative",
+          "description": "The dialog field must be a narrative beat, not PonyXL tags.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "dialog",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

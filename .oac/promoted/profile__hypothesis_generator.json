@@ -1,0 +1,199 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "profile/hypothesis_generator",
+    "kind": "agent",
+    "content_hash": "3c875111c1e6789c5a12ccc7ab7d6ee302097ff2e072bf48600fe21a4dfa15fc",
+    "parent_hash": "334f4e5ee8c5aeee93870531e35f3e7b8c6f6b12ca3de15ede6724c813d011c9",
+    "timestamp": "2026-06-02T01:16:45",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "profile/hypothesis_generator",
+        "name": "profile/hypothesis_generator",
+        "description": "generate testable hypotheses from observed patterns",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "fetch-context",
+            "description": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_long": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_short": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/fetch_context.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/fetch_context.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "embedding-search",
+            "description": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/embedding_search.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/embedding_search.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "profile-manager",
+            "description": "Manage user profile analysis data",
+            "usage_explanation_long": "Manage user profile analysis data",
+            "usage_explanation_short": "Manage user profile analysis data",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/profile_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/profile_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Analyses observations for recurring themes and correlations, then emits hypotheses each carrying a clear statement, supporting evidence, and an initial confidence score.",
+      "usage_explanation_short": "generate testable hypotheses from observed patterns",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Hypothesis Generator\n\nAnalyse existing observations and generate testable hypotheses about the user.\nFetch recent observations, identify recurring themes and correlations, then\nemit hypotheses. Each hypothesis must have a clear statement, supporting\nevidence, and a confidence score.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": true,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "hypotheses-carry-confidence",
+          "description": "",
+          "prompt": "What must each hypothesis include?",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "confidence",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "hypothesis-generator-emits-via-profile-manager",
+          "description": "Emits hypotheses via profile-manager; never write/edit.",
+          "must_have_tools": [
+            "profile-manager"
+          ],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

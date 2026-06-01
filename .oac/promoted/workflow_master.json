@@ -1,0 +1,282 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "workflow_master",
+    "kind": "agent",
+    "content_hash": "83fbda2963141254efc7f79e0744d7a7cd599c0d3726adfac008c88f28459c92",
+    "parent_hash": null,
+    "timestamp": "2026-06-02T01:10:59",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "workflow_master",
+        "name": "workflow_master",
+        "description": "create and modify workflow agents via Telegram conversation",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "wm-session-manager",
+            "description": "Manage workflow master sessions and history",
+            "usage_explanation_long": "Manage workflow master sessions and history",
+            "usage_explanation_short": "Manage workflow master sessions and history",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/wm_session_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/wm_session_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "wm-file-operations",
+            "description": "Safe file operations for workflow creation (restricted directories)",
+            "usage_explanation_long": "Safe file operations for workflow creation (restricted directories)",
+            "usage_explanation_short": "Safe file operations for workflow creation (restricted directories)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/wm_file_operations.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/wm_file_operations.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "db-query",
+            "description": "Run read-only SQL queries against the database",
+            "usage_explanation_long": "Run read-only SQL queries against the database",
+            "usage_explanation_short": "Run read-only SQL queries against the database",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/db_query.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/db_query.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-message",
+            "description": "Send a Telegram message to the user",
+            "usage_explanation_long": "Send a Telegram message to the user",
+            "usage_explanation_short": "Send a Telegram message to the user",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_message.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_message.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-voice",
+            "description": "Generate TTS audio and send as Telegram voice message",
+            "usage_explanation_long": "Generate TTS audio and send as Telegram voice message",
+            "usage_explanation_short": "Generate TTS audio and send as Telegram voice message",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_voice.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_voice.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-image",
+            "description": "Send an image with caption via Telegram",
+            "usage_explanation_long": "Send an image with caption via Telegram",
+            "usage_explanation_short": "Send an image with caption via Telegram",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_image.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_image.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-file",
+            "description": "Send a file via Telegram",
+            "usage_explanation_long": "Send a file via Telegram",
+            "usage_explanation_short": "Send a file via Telegram",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_file.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_file.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Telegram-driven meta-agent: checks session, designs a workflow (name, trigger, minimal deny-by-default permissions), confirms, creates the agent files, and optionally dispatches quality_reviewer. Prefixes all user messages with <<workflow_master>>.",
+      "usage_explanation_short": "create and modify workflow agents via Telegram conversation",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Workflow Master — Meta-Agent for Workflow Creation\n\nYou create and modify workflow agents via Telegram conversation.\n\n## CRITICAL FIRST ACTIONS\nAlways start by checking session status and history — you may be continuing a\nprevious conversation (get-status, get-history).\n\n## Message Format\nALL messages to the user MUST be prefixed with `<<workflow_master>>`.\n\n## Special Commands\n- `#clear` — reset session and start fresh.\n- `#help` — show available commands.\n\n## Workflow Creation Process\n1. Check session (status + history; may be a continuation).\n2. Understand requirements — ask clarifying questions about the desired workflow.\n3. List existing workflows — check what already exists.\n4. Design the workflow — agent name, trigger command, permissions, steps.\n5. Save the design plan to session history.\n6. Request user confirmation before creating files.\n7. Create files in allowed directories.\n8. Optionally dispatch workflow_master/quality_reviewer.\n9. Confirm completion with a final Telegram summary.\n\n## Workflow Agent Template\n- Mode primary, agent_dir workflows, trigger command /command_name.\n- Bash patterns: only allow the specific scripts needed.\n- Task permissions: only allow the specific subagents needed.\n- Security: minimal permissions, deny by default.\n\n## Session Management\nSave important messages to the session; clear the session when done.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "starts-by-checking-session",
+          "description": "",
+          "prompt": "I want to create a new workflow that summarizes my emails.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "session",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "workflow-master-no-arbitrary-edit",
+          "description": "Creates files only via its CLI tools (wm-file-operations), not the edit tool.",
+          "must_have_tools": [
+            "wm-file-operations"
+          ],
+          "must_not_have_tools": [
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

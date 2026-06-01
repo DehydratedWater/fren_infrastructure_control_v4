@@ -17,8 +17,11 @@ venv/
 # Compiled agent trees + runtime data
 /data/
 .opencode/
+# .oac/snapshots/ = per-round candidate history (regenerable scratch); ignore.
+# .oac/promoted/  = the WINNING improved prompts the fleet compiles from — these
+# are real artifacts of autoresearch and ARE tracked (committed), so the
+# improved fleet is reproducible without re-running the loop.
 .oac/snapshots/
-.oac/promoted/
 # Local smoke-test / scratch compiled fleets
 .smoke_agents/
 *.smoke/
@@ -37,3 +40,6 @@ dist/
 .DS_Store
 *.swp
 *~
+
+# autoresearch run log (transient)
+.autoresearch.log

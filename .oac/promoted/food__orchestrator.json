@@ -1,0 +1,168 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "food/orchestrator",
+    "kind": "agent",
+    "content_hash": "29bba553b46732c1874d96f52f485f0309c9533035e234ca8de262b9afa97527",
+    "parent_hash": "900228a81e2503dde7d619ce25b879fe11f41e17cd58239d1eb1da256523118a",
+    "timestamp": "2026-06-02T01:15:30",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "food/orchestrator",
+        "name": "food/orchestrator",
+        "description": "route a food request to the right food specialist",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "food-manager",
+            "description": "Manage recipes, restaurants, dishes, and food preferences Share food suggestions or confirmations with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage recipes, restaurants, dishes, and food preferences Share food suggestions or confirmations with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage recipes, restaurants, dishes, and food preferences Share food suggestions or confirmations with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/food_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/food_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "meal-planner",
+            "description": "Daily meal check-ins with escalating suggestions Send meal suggestions or check-in results to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Daily meal check-ins with escalating suggestions Send meal suggestions or check-in results to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Daily meal check-ins with escalating suggestions Send meal suggestions or check-in results to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/meal_planner.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/meal_planner.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Fridge inventory orchestrator. Classifies food intent (suggest / add_recipe / add_restaurant / list / process_image) and dispatches to the matching subagent, or lists the food DB directly, then confirms to the user.",
+      "usage_explanation_short": "route a food request to the right food specialist",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Fridge Inventory Orchestrator\n\nManage the food system — recipes, restaurants, dishes, and meal suggestions.\nRoute each request to the right specialist based on user intent.\n\n## Routing\n1. Identify intent: suggest / add_recipe / add_restaurant / list / process_image.\n   - Note: Any request containing \"suggest\" should be classified as \"suggest\" intent\n2. Dispatch:\n   - suggest → food/food_suggester (must explicitly indicate using suggester in response)\n   - add_recipe → food/recipe_parser\n   - add_restaurant → food/restaurant_intake\n   - process_image → food/product_image_indexer\n   - list → query the food database directly (food-manager) for recipes,\n     restaurants, or dishes.\n3. Send the result back to the user via emit-guidance.\n\nYou are a router: classify intent, hand off to the subagent, then confirm.\nWhen the user asks for suggestions (any request containing \"suggest\"), dispatch to the food_suggester and explicitly mention in your response that you're using the suggester.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "suggest-intent-dispatches-suggester",
+          "description": "",
+          "prompt": "Suggest something for dinner tonight.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "suggest",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "orchestrator-carries-food-manager",
+          "description": "Lists the food DB directly via food-manager and confirms via emit-guidance.",
+          "must_have_tools": [
+            "food-manager"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

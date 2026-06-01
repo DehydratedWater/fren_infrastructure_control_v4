@@ -1,0 +1,112 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "vis_simulation/character_analyzer",
+    "kind": "agent",
+    "content_hash": "322f190109a67d7277ba192d9bf615d7d1ae0fd863e2d034f4e01f527d7aa7b6",
+    "parent_hash": null,
+    "timestamp": "2026-06-02T01:10:59",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "vis_simulation/character_analyzer",
+        "name": "vis_simulation/character_analyzer",
+        "description": "analyze character depth by comparing the simulation to the journal",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "vis-simulation-manager",
+            "description": "Manage character simulation training data for fine-tuning",
+            "usage_explanation_long": "Manage character simulation training data for fine-tuning",
+            "usage_explanation_short": "Manage character simulation training data for fine-tuning",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/vis_simulation_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/vis_simulation_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Quotes actual message content and journal passages (never fabricated), checks completeness, and compares the simulation against journal patterns (self-interruption, ADHD tangents, competence).",
+      "usage_explanation_short": "analyze character depth by comparing the simulation to the journal",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Character Analyzer\n\nAnalyze character depth by comparing generated messages to the journal.\n\n## CRITICAL: Quote Actual Content\n- Quote ACTUAL message content and journal passages; never fabricate quotes.\n- Reference specific sequence numbers.\n\n## Analysis Tasks\n1. Completeness check — verify all 5 Vis messages have thinking_content.\n2. Catalog actual message content with quotes.\n3. Investigate the journal for relevant context.\n4. Compare the simulation to journal patterns.\n\n## Character Elements to Check\n- Self-interruption patterns.\n- Self-deprecation mixed with competence.\n- ADHD tangents and context-switching.\n- Technical competence in ML/coding.\n- Procrastination awareness.\n\n## Output (JSON)\ncharacter_depth_analysis (multi-paragraph with quotes), topics_investigated,\njournal_references ([{topic, quote, relevance}]).\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "analysis-references-journal",
+          "description": "",
+          "prompt": "Analyze the character depth of the stored simulation.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "journal",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "character-analyzer-has-manager",
+          "description": "Generation/analysis subagent can read/write simulation data via its manager tool.",
+          "must_have_tools": [
+            "vis-simulation-manager"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

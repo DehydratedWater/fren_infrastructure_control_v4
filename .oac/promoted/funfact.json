@@ -1,0 +1,140 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "funfact",
+    "kind": "agent",
+    "content_hash": "9ef6f12559ff4b57310de91d0fdcaca3d449d04b51597dcde7922bf6b207a808",
+    "parent_hash": "c5d2abcd084981b229ccc3cd9586448df85ec96c8d755a274f3b0f71d9d05128",
+    "timestamp": "2026-06-02T01:26:16",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "funfact",
+        "name": "funfact",
+        "description": "discover and present fun facts based on user data",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "db-query",
+            "description": "Run read-only SQL queries against the database",
+            "usage_explanation_long": "Run read-only SQL queries against the database",
+            "usage_explanation_short": "Run read-only SQL queries against the database",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/db_query.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/db_query.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Runs the fun-fact pipeline as a chain: data_gatherer -> pattern_analyst -> fact_writer, then delivers the result via Telegram. A router that delegates the work to its subagents.",
+      "usage_explanation_short": "discover and present fun facts based on user data",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Fun Fact Discovery\n\nFind interesting facts about the user by gathering data, analyzing patterns, and\nwriting engaging fun facts in Twily's playful, curious voice. Run the pipeline as\nan ordered chain:\n\n1. Dispatch funfact/data_gatherer to query user data for interesting patterns.\n2. Dispatch funfact/pattern_analyst to find interesting patterns in that data.\n3. Dispatch funfact/fact_writer to craft an engaging fun fact in Twily's voice that explicitly mentions the discovered pattern.\n4. Deliver the fun fact to the user via Telegram.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "pipeline-mentions-pattern",
+          "description": "",
+          "prompt": "Find me a fun fact about myself.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "pattern",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "funfact-orchestrator-delivers",
+          "description": "Orchestrator delivers the fun fact via emit-guidance.",
+          "must_have_tools": [
+            "emit-guidance"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

@@ -1,0 +1,227 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "goals/strategy_creator",
+    "kind": "agent",
+    "content_hash": "3b05b0209df3998bd8721572bbd52d58bf24615af3cc1717343b22f584063c6d",
+    "parent_hash": null,
+    "timestamp": "2026-06-02T01:10:59",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "goals/strategy_creator",
+        "name": "goals/strategy_creator",
+        "description": "create a daily strategy with focus goals and time blocks",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "goal-manager",
+            "description": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "todo-manager",
+            "description": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/todo_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/todo_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "priority-manager",
+            "description": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/priority_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/priority_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "goal-progress-auto-updater",
+            "description": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_long": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_short": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_progress_auto_updater.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_progress_auto_updater.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "strategy-tracker",
+            "description": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_long": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_short": "Manage daily strategies and influence attempt tracking",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/strategy_tracker.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/strategy_tracker.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Analyzes goals and priorities to write a daily strategy. Reserves work hours (9-17 Mon-Fri) for work tasks only and schedules learning/personal activities before 9 or after 17.",
+      "usage_explanation_short": "create a daily strategy with focus goals and time blocks",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Strategy Creator\n\nCreate daily strategies by analyzing goals and priorities, then writing a strategy\nwith focus goals and time blocks.\n\nIMPORTANT: Work hours are 9-17 (Monday-Friday). Do NOT schedule learning or personal\nactivities during work hours — reserve 9-17 for work tasks only. Schedule learning,\npersonal development, and hobby activities before 9 or after 17.\n\nDo NOT read source code files. Only use the goal-management and strategy-tracking\nCLI commands provided in your workflow.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "respects-work-hours-rule",
+          "description": "",
+          "prompt": "Create my daily strategy. Where should I put guitar practice?",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "work",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "strategy-creator-no-source-reads",
+          "description": "Must operate via CLI tools (strategy-tracker), never read source files.",
+          "must_have_tools": [
+            "strategy-tracker"
+          ],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

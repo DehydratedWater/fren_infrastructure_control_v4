@@ -1,0 +1,169 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "support/agent_control",
+    "kind": "agent",
+    "content_hash": "3157dbdfaa888e3ebb7e51d0d980cd023fbb29483343ecd10af0594b87a912ea",
+    "parent_hash": null,
+    "timestamp": "2026-06-02T01:10:59",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "support/agent_control",
+        "name": "support/agent_control",
+        "description": "check agent status and pass messages between agents",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "lock-manager",
+            "description": "Single-instance enforcement via file-based locks",
+            "usage_explanation_long": "Single-instance enforcement via file-based locks",
+            "usage_explanation_short": "Single-instance enforcement via file-based locks",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/lock_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/lock_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "thought-transfer",
+            "description": "File-based message passing between agents",
+            "usage_explanation_long": "File-based message passing between agents",
+            "usage_explanation_short": "File-based message passing between agents",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/thought_transfer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/thought_transfer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "run-agent",
+            "description": "Invoke another agent via opencode_manager.py run",
+            "usage_explanation_long": "Invoke another agent via opencode_manager.py run",
+            "usage_explanation_short": "Invoke another agent via opencode_manager.py run",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/opencode_manager.py run *"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/opencode_manager.py run "
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Reports which agents are running (names, model variant, current work), lists locks and recent logs, and passes messages to running agents (thought_transfer) or launches stopped ones.",
+      "usage_explanation_short": "check agent status and pass messages between agents",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Agent Control\n\nYou check agent status and pass messages between agents.\n\n## Status\n- List running agents (stop_agents.py --list --json) — names, PIDs, command\n  lines.\n- List recent agent logs (opencode_manager logs) and read a specific log to see\n  what an agent did.\n- List active locks (lock_manager list).\n\n## Message passing\n- For a RUNNING agent: write to thought_transfer under key\n  `agent_message_{agent_name}` (use the short name).\n- For a STOPPED/new agent: launch it via opencode_manager run with your message\n  as its prompt (paths like persona/fren_orchestrator, support/master_investigator).\n\n## Response\nBe concise: how many agents run and their names, their model variant (from the\nname suffix: -local, -gptoss, -glm47, -glm5, or default glm-4.5-air), a brief\nsnippet of what they're doing, recent completions if asked, and confirmation of\nany message delivery / launch. If nothing is running, say so clearly.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "lists-running-agents",
+          "description": "",
+          "prompt": "What agents are running right now?",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "running",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "agent-control-no-write",
+          "description": "Control inspects + launches (lock/thought/run); it never writes files.",
+          "must_have_tools": [],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}
