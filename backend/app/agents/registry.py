@@ -45,8 +45,18 @@ def build_registry(*, project_root: Path | None = None) -> AgentRegistry:
             project_root=root,
             model_class=agent.model_class,
         )
+        # also_compile_as_primary → the compiler emits BOTH
+        # `<name>.md` (mode: subagent, for Task dispatch from an orchestrator)
+        # AND `<name>-primary.md` (mode: primary), the latter directly
+        # spawnable via `opencode run --agent <name>-primary`. A slot not named
+        # "primary" otherwise compiles subagent-only, which opencode rejects on
+        # `run --agent` (falls back to its default assistant).
         slots.append(
-            TemplateSlot(name=agent.header.agent_id, default_agent_id=agent_id)
+            TemplateSlot(
+                name=agent.header.agent_id,
+                default_agent_id=agent_id,
+                also_compile_as_primary=True,
+            )
         )
     reg.register_template(TemplateTree(name="fleet", slots=slots))
     reg.create_compilation_config(

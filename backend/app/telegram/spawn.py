@@ -48,7 +48,12 @@ async def spawn_agent(
     `run_id` afterward.
     """
     run_id = run_id or f"run_{int(time.time() * 1000)}"
-    agent_name = f"{agent}{model_postfix}"
+    # Spawn the PRIMARY variant: every fleet agent dual-compiles to
+    # `<agent><postfix>.md` (subagent, for Task dispatch) and
+    # `<agent><postfix>-primary.md` (primary, directly spawnable). `opencode run
+    # --agent` requires a primary or it silently falls back to its default
+    # assistant — so always target the -primary file here.
+    agent_name = f"{agent}{model_postfix}-primary"
 
     # Ledger run row first — guidance is read back by run_id after completion.
     try:

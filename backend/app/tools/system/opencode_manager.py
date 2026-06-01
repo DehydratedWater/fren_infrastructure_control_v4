@@ -47,7 +47,9 @@ def _fleet_dir() -> Path:
 
 
 async def _spawn(inp: Input) -> dict:
-    agent_name = f"{inp.agent}{inp.model_postfix}"
+    # Target the -primary variant (see app/telegram/spawn.py): opencode `run
+    # --agent` needs a primary-mode agent or it falls back to its default.
+    agent_name = f"{inp.agent}{inp.model_postfix}-primary"
     run_id = inp.run_id or f"run_{int(time.time() * 1000)}"
     agent_dir = _fleet_dir()
 
