@@ -99,7 +99,76 @@ def _run_compile() -> None:
     print(f"[compile] wrote {len(files)} files to {target}")
 
 
-def _dispatch(service: str) -> None:
+def _run_improve(argv: list[str]) -> None:
+    """Autoresearch the fleet: live LLM prompt-rewriting + opencode scoring,
+    promoting winners into .oac/promoted/.
+
+    Usage:
+      python -m app improve [--agent ID]... [--rounds N] [--workers N]
+                            [--threshold F] [--no-branches] [--list]
+    """
+    import argparse
+    from pathlib import Path
+
+    from app.agents.improve import run_improvement
+    from app.agents.improve_live import (
+        ZaiPromptRewriter,
+        live_agent_runner_factory,
+        live_branch_invoker_factory_for,
+    )
+    from app.agents.registry import PROJECT_ROOT, all_agents
+
+    p = argparse.ArgumentParser(prog="app improve")
+    p.add_argument("--agent", action="append", default=[], help="restrict to agent id(s)")
+    p.add_argument("--rounds", type=int, default=2)
+    p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--threshold", type=float, default=1.0, help="promote score floor")
+    p.add_argument("--no-branches", action="store_true")
+    p.add_argument("--list", action="store_true", help="list improvable agents and exit")
+    args = p.parse_args(argv)
+
+    improvable = [a.header.agent_id for a in all_agents() if a.agent_tests]
+    if args.list:
+        print(f"{len(improvable)} agents carry agent_tests (improvable):")
+        for aid in improvable:
+            print(" ", aid)
+        return
+
+    only = set(args.agent) or None
+    snaps = PROJECT_ROOT / ".oac" / "snapshots"
+    snaps.mkdir(parents=True, exist_ok=True)
+
+    log.info(
+        "autoresearch starting: %s agents%s, rounds=%d, workers=%d, threshold=%.2f",
+        len(only) if only else len(improvable),
+        "" if only else " (all improvable)",
+        args.rounds, args.workers, args.threshold,
+    )
+    result = run_improvement(
+        agent_runner_factory=live_agent_runner_factory,
+        branch_invoker_factory_for=live_branch_invoker_factory_for,
+        snapshots_dir=snaps,
+        promote_threshold=args.threshold,
+        project_root=PROJECT_ROOT,
+        max_workers=args.workers,
+        llm=ZaiPromptRewriter(),
+        only=only,
+        max_rounds=args.rounds,
+        include_branches=not args.no_branches,
+    )
+    s = result.summary()
+    print("\n========== AUTORESEARCH SUMMARY ==========")
+    print(f"units={s['units']} succeeded={s['succeeded']} failed={s['failed']} "
+          f"promoted={s['promoted']} mean_winner_score={s['mean_winner_score']:.3f}")
+    for o in result.outcomes:
+        flag = "PROMOTED" if o.promoted else ("ERR" if o.error else "kept")
+        print(f"  [{flag:8}] {o.unit_id:42} score={o.winner_score:.3f}"
+              + (f"  {o.error}" if o.error else ""))
+    if result.failed():
+        print(f"\n{len(result.failed())} unit(s) errored (see above).")
+
+
+def _dispatch(service: str, argv: list[str]) -> None:
     if service == "bot":
         _run_bot()
     elif service == "scheduler":
@@ -108,9 +177,11 @@ def _dispatch(service: str) -> None:
         _run_checker()
     elif service == "compile":
         _run_compile()
+    elif service == "improve":
+        _run_improve(argv)
     else:
         print(
-            f"unknown service: {service!r} (use bot|scheduler|checker|compile)",
+            f"unknown service: {service!r} (use bot|scheduler|checker|compile|improve)",
             file=sys.stderr,
         )
         sys.exit(2)
@@ -120,4 +191,7 @@ if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
-    _dispatch(sys.argv[1] if len(sys.argv) > 1 else "bot")
+    _dispatch(
+        sys.argv[1] if len(sys.argv) > 1 else "bot",
+        sys.argv[2:],
+    )

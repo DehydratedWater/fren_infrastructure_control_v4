@@ -39,6 +39,7 @@ from src import (
 # The improvement Criterion is shadowed at top-level by workflow's Criterion —
 # import the optimisation criteria from the improvement package explicitly.
 from src.improvement import Criterion, OptimisationCriterion
+from src.improvement.mutators import MutationContext
 from src.improvement.version import ComponentVersion
 from src.testing.branch import BranchInvoker
 from src.testing.evaluation import RunContext, ToolCallRecord, evaluate
@@ -64,13 +65,41 @@ def _default_mutators(marker_hint: str = ""):
     return muts
 
 
+def _test_expectations(agent: AgentDefinition) -> list[dict[str, Any]]:
+    """A human-readable description of what each agent_test expects, fed to the
+    LLM rewriter as `context.failures` so it knows the target to satisfy."""
+    out: list[dict[str, Any]] = []
+    for t in agent.agent_tests:
+        for e in t.evaluators:
+            exp = {
+                "test": t.name,
+                "prompt": (t.prompt or (t.turns[0].prompt if t.turns else ""))[:160],
+                "evaluator": e.kind,
+            }
+            for attr in ("needle", "expected", "pattern", "path", "criteria"):
+                v = getattr(e, attr, None)
+                if v is not None:
+                    exp[attr] = v
+            out.append(exp)
+    return out
+
+
 def build_agent_evaluator(
     agent: AgentDefinition, runner_factory: AgentRunnerFactory,
+    *, failures_sink: list[dict[str, Any]] | None = None,
 ):
-    """Score a candidate by running the agent's embedded agent_tests."""
+    """Score a candidate by running the agent's embedded agent_tests.
+
+    When `failures_sink` is provided, the specific (test, evaluator, output)
+    evidence for every FAILED check is appended to it — so the loop's
+    MutationContext can feed it to the LLM rewriter (it then knows exactly what
+    to fix). The list is cleared each evaluation so it reflects the latest run.
+    """
 
     def evaluator(version: ComponentVersion) -> dict[str, float]:
         tests = agent.agent_tests
+        if failures_sink is not None:
+            failures_sink.clear()
         if not tests:
             return {"pass_rate": 1.0}  # nothing to fail
         runner = runner_factory(version.definition)
@@ -86,6 +115,17 @@ def build_agent_evaluator(
             scores.append(
                 statistics.fmean([r.score for r in results]) if results else 1.0
             )
+            if failures_sink is not None and not ok:
+                for e, r in zip(evs, results):
+                    if not r.passed:
+                        failures_sink.append({
+                            "test": t.name,
+                            "prompt": (t.prompt or "")[:160],
+                            "evaluator": e.kind,
+                            "expected": getattr(e, "needle", None) or getattr(e, "expected", None),
+                            "got_output": str(output)[:300],
+                            "evidence": r.evidence[:160],
+                        })
         return {
             "pass_rate": passes / len(tests),
             "score_floor": min(scores) if scores else 1.0,
@@ -100,21 +140,42 @@ def build_agent_units(
     criterion: OptimisationCriterion = PASS,
     mutators=None,
     max_rounds: int = 2,
+    llm: Any = None,
+    only: set[str] | None = None,
 ) -> list[ImprovementUnit]:
-    """One improvement unit per agent that carries agent_tests."""
+    """One improvement unit per agent that carries agent_tests.
+
+    `llm` (an LLMMutatorClient) is threaded into each loop's MutationContext so
+    the LLMPromptRewriter mutator can actually rewrite prompts. `only` restricts
+    to a subset of agent ids.
+    """
     units: list[ImprovementUnit] = []
     for agent in all_agents():
+        if only is not None and agent.header.agent_id not in only:
+            continue
         if not agent.agent_tests:
             continue
         baseline = ComponentVersion.of(
             agent.header.agent_id, "agent", agent.model_dump(),
         )
+        # Shared failures list: the evaluator writes failed-check evidence into
+        # it; the MutationContext reads it so the LLM rewriter knows what to fix.
+        # Seed it with the test expectations so the FIRST rewrite is on-target
+        # even before the baseline run populates concrete failures.
+        failures: list[Any] = _test_expectations(agent)
+        ctx = None
+        if llm is not None:
+            ctx = MutationContext(llm=llm, criterion=criterion, failures=failures)
         loop = IterativeLoop(
             baseline=baseline,
             mutators=mutators or _default_mutators(),
             criterion=criterion,
-            evaluator=build_agent_evaluator(agent, runner_factory),
+            evaluator=build_agent_evaluator(
+                agent, runner_factory,
+                failures_sink=failures if llm is not None else None,
+            ),
             max_rounds=max_rounds,
+            mutation_context=ctx,
         )
         units.append(agent_unit(agent.header.agent_id, loop))
     return units
@@ -126,14 +187,19 @@ def build_branch_units(
     criterion: OptimisationCriterion = PASS,
     mutators=None,
     max_rounds: int = 2,
+    llm: Any = None,
+    only: set[str] | None = None,
 ) -> list[ImprovementUnit]:
     """One improvement unit per branch.
 
     `invoker_factory_for(entry_agent)` returns the BranchInvokerFactory for that
-    orchestrator (so the consumer can wire mock vs live per entry agent).
+    orchestrator (so the consumer can wire mock vs live per entry agent). `llm`
+    threads into the MutationContext; `only` restricts to a subset of entry ids.
     """
     by_entry: dict[str, list] = {}
     for b in branches():
+        if only is not None and b.entry_agent not in only:
+            continue
         by_entry.setdefault(b.entry_agent, []).append(b)
 
     agent_by_id = {a.header.agent_id: a for a in all_agents()}
@@ -148,6 +214,7 @@ def build_branch_units(
             mutators=mutators or _default_mutators(),
             criterion=criterion,
             max_rounds=max_rounds,
+            mutation_context=MutationContext(llm=llm) if llm is not None else None,
         )
         units.append(branch_unit(entry_agent, loop))
     return units
@@ -161,11 +228,24 @@ def run_improvement(
     promote_threshold: float | None = 1.0,
     project_root: Path | None = None,
     max_workers: int = 4,
+    llm: Any = None,
+    only: set[str] | None = None,
+    max_rounds: int = 2,
+    include_branches: bool = True,
 ):
-    """Run the full fleet improvement (agents + branches) and (optionally) promote."""
-    units = build_agent_units(agent_runner_factory) + build_branch_units(
-        branch_invoker_factory_for
+    """Run the full fleet improvement (agents + branches) and (optionally) promote.
+
+    `llm` is the LLMMutatorClient that powers prompt rewriting (the research).
+    `only` restricts to a subset of agent/branch ids. `include_branches` toggles
+    the per-branch optimisation pass.
+    """
+    units = build_agent_units(
+        agent_runner_factory, llm=llm, only=only, max_rounds=max_rounds,
     )
+    if include_branches:
+        units += build_branch_units(
+            branch_invoker_factory_for, llm=llm, only=only, max_rounds=max_rounds,
+        )
     return run_fleet(
         units,
         snapshots_dir=snapshots_dir,
