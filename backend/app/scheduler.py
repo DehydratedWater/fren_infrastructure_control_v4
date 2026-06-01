@@ -385,7 +385,7 @@ class Scheduler:
                 # Wrap the task prompt with a scheduled-trigger header when
                 # targeting chat/persona agents — they must not mistake a
                 # scheduled instruction for a user message.
-                if base_agent.startswith("persona/twily_chat") or base_agent.startswith("persona/fren_orchestrator"):
+                if base_agent.startswith("persona/twily_chat") or base_agent.startswith("persona/orchestrator"):
                     prompt = (
                         "## ⚙️ SCHEDULED TRIGGER — NOT A USER MESSAGE\n"
                         f"This prompt was fired by the scheduler (job: {job_id}). The user did NOT send it. "

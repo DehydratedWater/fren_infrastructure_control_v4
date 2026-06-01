@@ -21,18 +21,23 @@ cd /app/backend
 
 SERVICE="${SERVICE:-bot}"
 AGENTS_DIR="${AGENTS_DIR:-/data/agents}"
-
-# Compiled agents run `python scripts/<x>.py` from cwd=AGENTS_DIR; symlink the
-# baked-in scripts there so they resolve (PYTHONPATH already exposes app + src).
 mkdir -p "$AGENTS_DIR"
-ln -sfn /app/scripts "$AGENTS_DIR/scripts"
 
 # The bot is the single boot writer: run migrations + compile the fleet once.
+# Compile FIRST (it cleans AGENTS_DIR) so it can't clobber the scripts symlink.
 if [ "$SERVICE" = "bot" ]; then
   alembic upgrade head || echo "[entrypoint] alembic upgrade skipped/failed (continuing)"
   echo "[entrypoint] compiling fleet to $AGENTS_DIR"
   python -m app compile || echo "[entrypoint] fleet compile failed (continuing)"
 fi
+
+# Compiled agents run `python scripts/<x>.py` from cwd=AGENTS_DIR; link the
+# baked-in scripts there so they resolve (PYTHONPATH already exposes app + src).
+# rm -rf first: `ln -sfn` creates a nested dir if the target already exists as a
+# directory (e.g. a stale dir left on the persisted volume).
+rm -rf "$AGENTS_DIR/scripts"
+ln -s /app/scripts "$AGENTS_DIR/scripts"
+echo "[entrypoint] scripts linked: $(ls -1 "$AGENTS_DIR/scripts"/*.py 2>/dev/null | wc -l) entrypoints"
 
 echo "[entrypoint] starting service: $SERVICE"
 case "$SERVICE" in

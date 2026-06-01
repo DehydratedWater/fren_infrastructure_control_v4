@@ -230,7 +230,7 @@ async def trigger_chatbot(
 
     from app.telegram.state import get_postfix
 
-    agent = _agent_with_postfix("persona/fren_orchestrator", model)
+    agent = _agent_with_postfix("persona/orchestrator", model)
     header = format_header("work", model)
     clearance = "full" if is_local_model(model) else "public"
     postfix = get_postfix(model)

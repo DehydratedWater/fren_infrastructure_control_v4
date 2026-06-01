@@ -35,6 +35,7 @@ class AgentRunResult:
     tool_calls: list[ToolCallRecord] = field(default_factory=list)
     raw_stdout: str = ""
     error: str | None = None
+    run_id: str = ""
 
     @property
     def ok(self) -> bool:
@@ -98,10 +99,15 @@ def parse_opencode_events(stdout: str) -> tuple[str, list[ToolCallRecord]]:
 
 async def run_agent_opencode(
     *, agent_dir: Path, agent_name: str, prompt: str, timeout_s: float = 120,
+    extra_env: dict[str, str] | None = None,
 ) -> AgentRunResult:
     env = os.environ.copy()
     env["XDG_DATA_HOME"] = str(agent_dir / ".opencode" / "data")
     env["PWD"] = str(agent_dir)
+    # Custom context the compiled agent's own scripts read at runtime
+    # (e.g. FREN_RUN_ID / FREN_MSG_HEADER / FREN_CLEARANCE / FREN_MODEL_POSTFIX).
+    if extra_env:
+        env.update({k: str(v) for k, v in extra_env.items()})
     cmd = ["opencode", "run", "--agent", agent_name, "--format", "json", prompt]
     try:
         proc = await asyncio.create_subprocess_exec(

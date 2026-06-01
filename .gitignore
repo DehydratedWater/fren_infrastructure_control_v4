@@ -16,9 +16,24 @@ venv/
 
 # Compiled agent trees + runtime data
 /data/
-.opencode/data/
+.opencode/
 .oac/snapshots/
+.oac/promoted/
+# Local smoke-test / scratch compiled fleets
+.smoke_agents/
+*.smoke/
+# Scheduler / run state written at runtime
+run_logs/
+/config/one_time_schedule.yml
+data/scheduler_state.json
+# OAuth tokens materialised at runtime (any account suffix)
+.google_token*.json
 
 # Node (dashboard/frontend)
 node_modules/
 dist/
+
+# OS / editor cruft
+.DS_Store
+*.swp
+*~
