@@ -1,23 +1,13 @@
 #!/usr/bin/env bash
-# Materialise opencode config with the real z.ai key (env:VAR substitution is
-# unreliable), run migrations once, then start the selected service.
-# SERVICE = bot (default) | scheduler | checker.
+# Materialise the full opencode.json (z.ai worker + local-vLLM providers so
+# persona_prose / rp_prose resolve the local Qwen models — a zai-only config
+# made the prose layer fall through to api.openai.com), run migrations once,
+# then start the selected service. SERVICE = bot | scheduler | checker | compile.
 set -euo pipefail
 
-mkdir -p /root/.config/opencode
-cat > /root/.config/opencode/opencode.json <<EOF
-{
-  "\$schema": "https://opencode.ai/config.json",
-  "model": "${WORKER_MODEL:-zai-coding-plan/glm-4.5-air}",
-  "small_model": "${WORKER_MODEL:-zai-coding-plan/glm-4.5-air}",
-  "provider": {
-    "zai-coding-plan": { "options": { "apiKey": "${ZAI_API_KEY}" } }
-  }
-}
-EOF
-echo "[entrypoint] opencode config written (key length: ${#ZAI_API_KEY})"
-
 cd /app/backend
+python -m app.opencode_config
+echo "[entrypoint] opencode config written (providers: zai + local-vllm*)"
 
 SERVICE="${SERVICE:-bot}"
 AGENTS_DIR="${AGENTS_DIR:-/data/agents}"
