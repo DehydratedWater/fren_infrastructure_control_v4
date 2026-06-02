@@ -91,7 +91,17 @@ def parse_opencode_events(stdout: str) -> tuple[str, list[ToolCallRecord]]:
                 calls.append(
                     ToolCallRecord(name=name, args=args if isinstance(args, dict) else {})
                 )
-    text = "\n".join(text_parts) if text_parts else stdout
+    if text_parts:
+        text = "\n".join(text_parts)
+    elif stdout.lstrip().startswith("{"):
+        # No text part found but stdout is the JSON event stream — returning the
+        # raw JSON would poison downstream consumers (judges, parsers). The agent
+        # simply produced no assistant text (e.g. only tool calls, or a truncated
+        # run). Return empty so callers treat it as "no answer".
+        text = ""
+    else:
+        # Non-JSON stdout (e.g. a plain error message) — surface it.
+        text = stdout
     return text, calls
 
 

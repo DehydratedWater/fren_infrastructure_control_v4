@@ -31,6 +31,16 @@ class Settings(BaseSettings):
     )
     execution_backend: str = Field(default="direct", alias="EXECUTION_BACKEND")
 
+    # --- autoresearch (autoloop) --------------------------------------------
+    # The STRONG teacher model (z.ai) that proposes prompt rewrites AND judges
+    # responses. The agents themselves are tuned to run on the local qwen.
+    autoloop_teacher_model: str = Field(default="glm-5.1", alias="AUTOLOOP_TEACHER_MODEL")
+    # opencode provider/model the candidate agents are compiled+run on while
+    # being tuned (the local Qwen-27B served by vLLM).
+    autoloop_target_model: str = Field(
+        default="local-vllm-remote/qwen35-27b", alias="AUTOLOOP_TARGET_MODEL",
+    )
+
     # --- live / interactive provider (local OpenAI-compatible qwen) ---------
     local_llm_base_url: str = Field(default="", alias="LOCAL_LLM_BASE_URL")
     local_llm_model: str = Field(default="qwen3.5-27b", alias="LOCAL_LLM_MODEL")

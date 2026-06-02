@@ -1,0 +1,106 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "zai-coding-plan/glm-4.5-air",
+  "small_model": "zai-coding-plan/glm-4.5-air",
+  "provider": {
+    "zai-coding-plan": {
+      "options": {
+        "apiKey": "{env:ZAI_API_KEY}"
+      }
+    },
+    "local-vllm-remote": {
+      "options": {
+        "apiKey": "env:VLLM_API_KEY",
+        "baseURL": "http://192.168.0.42:8082/v1",
+        "timeout": 1800000
+      },
+      "models": {
+        "qwen35-27b": {
+          "id": "cyankiwi/Qwen3.5-27B-AWQ-BF16-INT8",
+          "reasoning": true,
+          "interleaved": {
+            "field": "reasoning_content"
+          },
+          "limits": {
+            "context": 262144,
+            "output": 32768
+          },
+          "options": {
+            "temperature": 0.6,
+            "topP": 0.95,
+            "topK": 20
+          }
+        }
+      }
+    },
+    "local-vllm-fast": {
+      "options": {
+        "apiKey": "env:VLLM_API_KEY",
+        "baseURL": "http://192.168.0.42:8082/v1",
+        "timeout": 1800000
+      },
+      "models": {
+        "qwen35-35b-a3b": {
+          "id": "qwen35-35b-a3b",
+          "options": {
+            "temperature": 0.6,
+            "topP": 0.95,
+            "topK": 20
+          }
+        }
+      }
+    },
+    "local-vllm-analytical": {
+      "options": {
+        "apiKey": "env:VLLM_API_KEY",
+        "baseURL": "http://192.168.0.42:8083/v1",
+        "timeout": 1800000
+      },
+      "models": {
+        "qwen35-27b-heretic": {
+          "id": "qwen35-27b-heretic",
+          "options": {
+            "temperature": 0.6,
+            "topP": 0.95,
+            "topK": 20
+          }
+        }
+      }
+    },
+    "local-vllm": {
+      "options": {
+        "apiKey": "env:VLLM_API_KEY",
+        "baseURL": "http://192.168.0.42:5502/v1",
+        "timeout": 1800000
+      },
+      "models": {
+        "glm-4.5-air-local": {
+          "id": "cyankiwi/GLM-4.5-Air-Derestricted-AWQ-4bit",
+          "options": {
+            "temperature": 0.6,
+            "topP": 0.95
+          }
+        }
+      }
+    },
+    "local-vllm-image": {
+      "options": {
+        "apiKey": "env:VLLM_API_KEY",
+        "baseURL": "http://192.168.0.95:5504/v1",
+        "timeout": 1800000
+      },
+      "models": {
+        "qwen3-8b-vl": {
+          "id": "qwen3-8b-vl",
+          "limits": {
+            "context": 25000,
+            "output": 8000
+          },
+          "options": {
+            "temperature": 0.6
+          }
+        }
+      }
+    }
+  }
+}

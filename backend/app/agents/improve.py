@@ -56,6 +56,15 @@ PASS = OptimisationCriterion(
     criteria=(Criterion(kind="pass_rate", target=1.0, hard=True),),
 )
 
+# Graded criterion for judge-scored tests: reward higher score_floor (continuous
+# 0..1) rather than all-or-nothing. The best-scoring candidate wins; a candidate
+# that lifts the score (e.g. 0.4 → 0.8) is promotable even if not perfect.
+GRADED = OptimisationCriterion(
+    name="lift-judge-score",
+    aggregation="weighted",
+    criteria=(Criterion(kind="score_floor", target=1.0, weight=1.0),),
+)
+
 
 def _default_mutators(marker_hint: str = ""):
     """Identity (control) + a prompt-rewriter; a fixed-prefix nudge optional."""
@@ -63,6 +72,46 @@ def _default_mutators(marker_hint: str = ""):
     if marker_hint:
         muts.insert(1, PromptPrefixMutator(marker_hint))
     return muts
+
+
+def make_judge_test(agent: AgentDefinition) -> AgentTest:
+    """Build a strong, graded role-fulfilment LLMJudge test for `agent`.
+
+    This is the satisfiable, continuous 0..1 signal the autoloop climbs (unlike
+    brittle substring checks). The criterion describes the agent's job from its
+    usage explanation; the prompt is a representative request (reuse an existing
+    agent_test prompt if the agent has one, else synthesise from the role).
+    """
+    from src import AgentTest, LLMJudgeEvaluator
+
+    role = (agent.usage_explanation_long or agent.usage_explanation_short
+            or agent.header.description or agent.header.agent_id)
+    # representative prompt: reuse an existing single-turn test prompt if any
+    prompt = ""
+    for t in agent.agent_tests:
+        if t.prompt:
+            prompt = t.prompt
+            break
+    if not prompt:
+        prompt = (
+            f"You are '{agent.header.agent_id}'. Demonstrate your core function on"
+            f" a realistic request a user would send you. Respond as you normally"
+            f" would."
+        )
+    criteria = (
+        f"The agent's role is: {role}\n"
+        f"Score how well the response fulfils that role for the given request:"
+        f" it should do the agent's actual job clearly and helpfully, in the"
+        f" agent's voice, without refusing, echoing the prompt, rambling"
+        f" off-task, or leaking tool/JSON mechanics into the reply."
+    )
+    return AgentTest(
+        name=f"{agent.header.agent_id}::role-fulfilment",
+        prompt=prompt,
+        evaluators=(LLMJudgeEvaluator(
+            name="role-fulfilment", criteria=criteria, pass_threshold=0.7,
+        ),),
+    )
 
 
 def _test_expectations(agent: AgentDefinition) -> list[dict[str, Any]]:
@@ -86,7 +135,7 @@ def _test_expectations(agent: AgentDefinition) -> list[dict[str, Any]]:
 
 def build_agent_evaluator(
     agent: AgentDefinition, runner_factory: AgentRunnerFactory,
-    *, failures_sink: list[dict[str, Any]] | None = None,
+    *, failures_sink: list[dict[str, Any]] | None = None, judge: Any = None,
 ):
     """Score a candidate by running the agent's embedded agent_tests.
 
@@ -107,7 +156,7 @@ def build_agent_evaluator(
         scores: list[float] = []
         for t in tests:
             output, calls = runner(version.definition, t)
-            ctx = RunContext(output=output, tool_calls=list(calls))
+            ctx = RunContext(output=output, tool_calls=list(calls), judge=judge)
             evs = list(t.evaluators)
             results = [evaluate(e, ctx) for e in evs] if evs else []
             ok = all(r.passed for r in results) if results else True
@@ -115,16 +164,21 @@ def build_agent_evaluator(
             scores.append(
                 statistics.fmean([r.score for r in results]) if results else 1.0
             )
-            if failures_sink is not None and not ok:
+            if failures_sink is not None:
+                # Capture evidence for any check that didn't fully pass (score < 1)
+                # so the rewriter learns WHAT to fix and WHY (judge reasoning).
                 for e, r in zip(evs, results):
-                    if not r.passed:
+                    if not r.passed or r.score < 1.0:
                         failures_sink.append({
                             "test": t.name,
-                            "prompt": (t.prompt or "")[:160],
+                            "prompt": (t.prompt or "")[:200],
                             "evaluator": e.kind,
-                            "expected": getattr(e, "needle", None) or getattr(e, "expected", None),
-                            "got_output": str(output)[:300],
-                            "evidence": r.evidence[:160],
+                            "criterion": getattr(e, "criteria", None)
+                            or getattr(e, "needle", None)
+                            or getattr(e, "expected", None),
+                            "score": round(r.score, 2),
+                            "got_output": str(output)[:400],
+                            "judge_reasoning": r.evidence[:250],
                         })
         return {
             "pass_rate": passes / len(tests),
@@ -141,19 +195,29 @@ def build_agent_units(
     mutators=None,
     max_rounds: int = 2,
     llm: Any = None,
+    judge: Any = None,
     only: set[str] | None = None,
+    use_judge_test: bool = False,
 ) -> list[ImprovementUnit]:
-    """One improvement unit per agent that carries agent_tests.
+    """One improvement unit per agent.
 
     `llm` (an LLMMutatorClient) is threaded into each loop's MutationContext so
-    the LLMPromptRewriter mutator can actually rewrite prompts. `only` restricts
-    to a subset of agent ids.
+    the LLMPromptRewriter mutator can actually rewrite prompts. `judge` (a
+    JudgeClient) is threaded into the RunContext so LLMJudge tests score live.
+    When `use_judge_test` is set, EVERY agent gets a generated graded
+    role-fulfilment judge test (so all agents — even those without authored
+    tests — are improvable on a continuous signal). `only` restricts to a
+    subset of agent ids.
     """
     units: list[ImprovementUnit] = []
     for agent in all_agents():
         if only is not None and agent.header.agent_id not in only:
             continue
-        if not agent.agent_tests:
+        # When using the generated judge test, every agent is improvable;
+        # otherwise only those that authored agent_tests.
+        if use_judge_test:
+            agent = agent.model_copy(update={"agent_tests": [make_judge_test(agent)]})
+        elif not agent.agent_tests:
             continue
         baseline = ComponentVersion.of(
             agent.header.agent_id, "agent", agent.model_dump(),
@@ -173,6 +237,7 @@ def build_agent_units(
             evaluator=build_agent_evaluator(
                 agent, runner_factory,
                 failures_sink=failures if llm is not None else None,
+                judge=judge,
             ),
             max_rounds=max_rounds,
             mutation_context=ctx,
@@ -229,22 +294,28 @@ def run_improvement(
     project_root: Path | None = None,
     max_workers: int = 4,
     llm: Any = None,
+    judge: Any = None,
     only: set[str] | None = None,
     max_rounds: int = 2,
     include_branches: bool = True,
+    criterion: OptimisationCriterion = PASS,
+    use_judge_test: bool = False,
 ):
     """Run the full fleet improvement (agents + branches) and (optionally) promote.
 
     `llm` is the LLMMutatorClient that powers prompt rewriting (the research).
-    `only` restricts to a subset of agent/branch ids. `include_branches` toggles
-    the per-branch optimisation pass.
+    `judge` is the JudgeClient that scores LLMJudge tests live. `criterion`
+    selects the scoring goal (use GRADED for judge-scored continuous lift).
+    `only` restricts to a subset of agent/branch ids.
     """
     units = build_agent_units(
-        agent_runner_factory, llm=llm, only=only, max_rounds=max_rounds,
+        agent_runner_factory, llm=llm, judge=judge, only=only,
+        max_rounds=max_rounds, criterion=criterion, use_judge_test=use_judge_test,
     )
     if include_branches:
         units += build_branch_units(
-            branch_invoker_factory_for, llm=llm, only=only, max_rounds=max_rounds,
+            branch_invoker_factory_for, llm=llm, only=only,
+            max_rounds=max_rounds, criterion=criterion,
         )
     return run_fleet(
         units,

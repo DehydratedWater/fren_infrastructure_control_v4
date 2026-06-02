@@ -3,9 +3,9 @@
   "version": {
     "component_id": "persona/socratic_critic",
     "kind": "agent",
-    "content_hash": "0f0cfcddd0b7281f47e2bbdaf2a37332e2681820313a79f2331176522c8287c0",
+    "content_hash": "4d41a20eeeda9381d99bc45f2e5851ef62a29cc736d26b4729a29b3e6e5092cf",
     "parent_hash": null,
-    "timestamp": "2026-06-02T01:08:32",
+    "timestamp": "2026-06-02T02:29:01",
     "author": "human",
     "definition": {
       "header": {
@@ -179,7 +179,7 @@
       "mcp_servers": [],
       "agent_tests": [
         {
-          "name": "greeting-yields-no-pushback",
+          "name": "persona/socratic_critic::role-fulfilment",
           "description": "",
           "prompt": "hi there",
           "turns": [],
@@ -188,10 +188,11 @@
           "expected_tool_calls": [],
           "evaluators": [
             {
-              "kind": "substring",
-              "name": "",
-              "needle": "NO_PUSHBACK",
-              "case_sensitive": true
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Red-team editor. Steelmans the user's point, finds one honest flaw, and rewrites the draft with a conditional concession; emits NO_PUSHBACK when there is no substrate to push on.\nScore how well the response fulfils that role for the given request: it should do the agent's actual job clearly and helpfully, in the agent's voice, without refusing, echoing the prompt, rambling off-task, or leaking tool/JSON mechanics into the reply.",
+              "judge_model": null,
+              "pass_threshold": 0.7
             }
           ],
           "timeout_s": 60.0
@@ -237,7 +238,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 1.0
+      "score_floor": 0.9
     },
     "notes": ""
   },

@@ -110,8 +110,9 @@ def _run_improve(argv: list[str]) -> None:
     import argparse
     from pathlib import Path
 
-    from app.agents.improve import run_improvement
+    from app.agents.improve import GRADED, run_improvement
     from app.agents.improve_live import (
+        ZaiJudge,
         ZaiPromptRewriter,
         live_agent_runner_factory,
         live_branch_invoker_factory_for,
@@ -122,14 +123,24 @@ def _run_improve(argv: list[str]) -> None:
     p.add_argument("--agent", action="append", default=[], help="restrict to agent id(s)")
     p.add_argument("--rounds", type=int, default=2)
     p.add_argument("--workers", type=int, default=4)
-    p.add_argument("--threshold", type=float, default=1.0, help="promote score floor")
+    p.add_argument("--threshold", type=float, default=0.75,
+                   help="promote when winner score_floor >= this (graded judge)")
     p.add_argument("--no-branches", action="store_true")
+    p.add_argument("--substring-tests", action="store_true",
+                   help="use the agents' authored (substring) tests instead of the "
+                        "generated graded judge test")
     p.add_argument("--list", action="store_true", help="list improvable agents and exit")
     args = p.parse_args(argv)
 
-    improvable = [a.header.agent_id for a in all_agents() if a.agent_tests]
+    # Default mode: generated graded judge test on EVERY agent (137 improvable).
+    use_judge_test = not args.substring_tests
+    if use_judge_test:
+        improvable = [a.header.agent_id for a in all_agents()]
+    else:
+        improvable = [a.header.agent_id for a in all_agents() if a.agent_tests]
     if args.list:
-        print(f"{len(improvable)} agents carry agent_tests (improvable):")
+        mode = "judge-test (all agents)" if use_judge_test else "authored agent_tests"
+        print(f"{len(improvable)} improvable agents [{mode}]:")
         for aid in improvable:
             print(" ", aid)
         return
@@ -138,12 +149,22 @@ def _run_improve(argv: list[str]) -> None:
     snaps = PROJECT_ROOT / ".oac" / "snapshots"
     snaps.mkdir(parents=True, exist_ok=True)
 
-    log.info(
-        "autoresearch starting: %s agents%s, rounds=%d, workers=%d, threshold=%.2f",
-        len(only) if only else len(improvable),
-        "" if only else " (all improvable)",
-        args.rounds, args.workers, args.threshold,
+    judge = None if args.substring_tests else ZaiJudge()
+    criterion = run_improvement_criterion = (
+        GRADED if use_judge_test else None
     )
+
+    log.info(
+        "autoloop starting: %s agents%s, rounds=%d, workers=%d, threshold=%.2f, "
+        "mode=%s (teacher rewrites+judges, agents tuned on local qwen)",
+        len(only) if only else len(improvable),
+        "" if only else " (all)",
+        args.rounds, args.workers, args.threshold,
+        "graded-judge" if use_judge_test else "substring",
+    )
+    kw = {}
+    if criterion is not None:
+        kw["criterion"] = criterion
     result = run_improvement(
         agent_runner_factory=live_agent_runner_factory,
         branch_invoker_factory_for=live_branch_invoker_factory_for,
@@ -152,8 +173,11 @@ def _run_improve(argv: list[str]) -> None:
         project_root=PROJECT_ROOT,
         max_workers=args.workers,
         llm=ZaiPromptRewriter(),
+        judge=judge,
+        use_judge_test=use_judge_test,
         only=only,
         max_rounds=args.rounds,
+        **kw,
         include_branches=not args.no_branches,
     )
     s = result.summary()

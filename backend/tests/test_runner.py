@@ -57,6 +57,19 @@ def test_parse_falls_back_to_raw_when_no_text_parts():
     assert text == stdout and calls == []
 
 
+def test_parse_json_stream_with_no_text_returns_empty_not_raw_json():
+    # A run that only emitted tool events (no assistant text) must NOT return the
+    # raw JSON event stream — that would poison judges/parsers downstream.
+    stdout = _events(
+        {"part": {"type": "step_start"}},
+        {"part": {"type": "tool", "tool": "bash"}},
+        {"part": {"type": "step_finish"}},
+    )
+    text, calls = parse_opencode_events(stdout)
+    assert text == ""  # no assistant text → empty, not raw JSON
+    assert [c.name for c in calls] == ["bash"]
+
+
 async def test_direct_backend_calls_provider(tmp_path, monkeypatch):
     # write a minimal compiled agent .md
     md = tmp_path / ".opencode" / "agents" / "x.md"
