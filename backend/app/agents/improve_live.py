@@ -206,17 +206,69 @@ def _prep_candidate(definition: dict[str, Any]) -> tuple[Path, str]:
     return tmp, agent_name
 
 
+def _compiled_system_prompt(tmp: Path, agent_name: str) -> str:
+    from src import load_compiled_agent
+
+    md = tmp / ".opencode" / "agents" / f"{agent_name}.md"
+    if md.exists():
+        try:
+            return load_compiled_agent(md).system_prompt or ""
+        except Exception:  # noqa: BLE001
+            return ""
+    return ""
+
+
+def _qwen_direct(system: str, user: str, *, max_tokens: int = 1200) -> str:
+    """One completion from the local Qwen with thinking DISABLED.
+
+    opencode's openai-compatible provider silently drops `chat_template_kwargs`,
+    so Qwen3.5 keeps thinking and returns empty visible content (the mass-0 bug).
+    The autoloop therefore grades via a direct call that DOES send
+    enable_thinking=false — proven to return content reliably.
+    """
+    s = get_settings()
+    base = s.local_llm_base_url or "http://192.168.0.42:8082/v1"
+    key = s.vllm_api_key if s.vllm_api_key and s.vllm_api_key != "EMPTY" else ""
+    payload = {
+        "model": "cyankiwi/Qwen3.5-27B-AWQ-BF16-INT8",
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": 0.4, "max_tokens": max_tokens,
+        "chat_template_kwargs": {"enable_thinking": False},
+    }
+    headers = {"Authorization": f"Bearer {key}"} if key else {}
+    try:
+        r = httpx.post(
+            f"{base.rstrip('/')}/chat/completions", json=payload,
+            headers=headers, timeout=180,
+        )
+        r.raise_for_status()
+        return (r.json()["choices"][0]["message"]["content"] or "").strip()
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def live_agent_runner_factory(definition: dict[str, Any]):
-    """AgentRunner that compiles THIS candidate, runs it on the local qwen via
-    opencode, and returns (output_text, tool_calls)."""
+    """AgentRunner for the judge-test autoloop.
+
+    Compiles THIS candidate (so the system prompt is the real, fully-rendered
+    one), then runs it on the local Qwen via a DIRECT call with thinking disabled
+    — the reliable path. (opencode is kept for branch/trajectory tests where tool
+    dispatch is needed.) Returns (output_text, []).
+    """
     tmp, agent_name = _prep_candidate(definition)
+    system = _compiled_system_prompt(tmp, agent_name) or definition.get(
+        "system_prompt", ""
+    )
 
     def runner(_defn: dict[str, Any], test) -> tuple[Any, list[ToolCallRecord]]:
         prompt = test.prompt or (test.turns[0].prompt if test.turns else "")
-        result = _run_sync(run_agent_opencode(
-            agent_dir=tmp, agent_name=agent_name, prompt=prompt, timeout_s=240,
-        ))
-        return result.text, list(result.tool_calls)
+        text = _qwen_direct(system, prompt)
+        if not text.strip():  # rare stochastic blank → one retry
+            text = _qwen_direct(system, prompt)
+        return text, []
 
     return runner
 

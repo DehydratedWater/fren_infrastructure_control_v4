@@ -74,36 +74,94 @@ def _default_mutators(marker_hint: str = ""):
     return muts
 
 
+_PROBE_CACHE: dict[str, str] = {}
+
+# Appended to every probe so the model returns a REAL answer, not a meta-demo.
+# (Root cause of many 0-scores: the old prompt said "demonstrate your core
+# function", so agents narrated/simulated themselves instead of doing the job.)
+_ANTI_META = (
+    "\n\nReply with your actual response for THIS request only. Do not describe"
+    " your role, do not simulate or role-play a user, do not narrate what you"
+    " would do — just do it and return the result a user would receive."
+)
+
+
+def synthesize_probe(agent: AgentDefinition) -> str:
+    """One concrete, realistic user message that exercises the agent's role.
+
+    Generated once by the teacher (GLM-5.1) and cached. A concrete task is what
+    makes the judge signal real — the old self-referential "demonstrate your
+    core function" fallback induced meta-commentary that any honest judge scores
+    0. Falls back to a direct task string if the teacher is unavailable.
+    """
+    aid = agent.header.agent_id
+    if aid in _PROBE_CACHE:
+        return _PROBE_CACHE[aid]
+    role = (agent.usage_explanation_long or agent.usage_explanation_short
+            or agent.header.description or aid)
+    msg = ""
+    try:
+        from app.agents.improve_live import _zai_chat
+        from app.settings import get_settings
+
+        sys = (
+            "You write ONE realistic user message that triggers the described"
+            " agent. CRITICAL: the message must be FULLY SELF-CONTAINED — the"
+            " agent has NO other context. If the task needs input (a text to"
+            " rewrite, data to analyse, a list, a task to categorise), INCLUDE"
+            " realistic example content INLINE in the message. Never say 'this"
+            " plan' / 'the above' / 'the task' without actually providing it."
+            " Output ONLY the user message — no quotes, no preamble."
+        )
+        usr = (
+            f"AGENT ROLE:\n{role}\n\nWrite the single, self-contained user message"
+            " now (include any needed input data inline)."
+        )
+        msg = _zai_chat(
+            get_settings().autoloop_teacher_model,
+            [{"role": "system", "content": sys}, {"role": "user", "content": usr}],
+            max_tokens=900, temperature=0.4,  # GLM-5.1 reasons; don't starve it
+        ).strip().strip('"').strip()
+    except Exception:  # noqa: BLE001
+        msg = ""
+    if not msg:
+        msg = f"Here is a real task for you: {role[:160]}. Do it now."
+    _PROBE_CACHE[aid] = msg
+    return msg
+
+
 def make_judge_test(agent: AgentDefinition) -> AgentTest:
     """Build a strong, graded role-fulfilment LLMJudge test for `agent`.
 
     This is the satisfiable, continuous 0..1 signal the autoloop climbs (unlike
-    brittle substring checks). The criterion describes the agent's job from its
-    usage explanation; the prompt is a representative request (reuse an existing
-    agent_test prompt if the agent has one, else synthesise from the role).
+    brittle substring checks). The prompt is a CONCRETE task (an authored test
+    prompt if present, else a teacher-synthesised user message) plus an
+    anti-meta guard; the criterion grades whether the reply actually DID the job.
     """
     from src import AgentTest, LLMJudgeEvaluator
 
     role = (agent.usage_explanation_long or agent.usage_explanation_short
             or agent.header.description or agent.header.agent_id)
-    # representative prompt: reuse an existing single-turn test prompt if any
-    prompt = ""
-    for t in agent.agent_tests:
-        if t.prompt:
-            prompt = t.prompt
-            break
-    if not prompt:
-        prompt = (
-            f"You are '{agent.header.agent_id}'. Demonstrate your core function on"
-            f" a realistic request a user would send you. Respond as you normally"
-            f" would."
-        )
+    # ALWAYS synthesise a SELF-CONTAINED probe. Authored agent_test prompts are
+    # written for their own (often multi-turn / mocked) harness and routinely
+    # reference context that a single-shot judge run never supplies ("rewrite the
+    # plan in Sarah's voice") — which left Qwen with an underspecified request and
+    # produced empty/flailing output scored 0. A teacher-synthesised task is
+    # complete on its own.
+    prompt = synthesize_probe(agent).rstrip() + _ANTI_META
     criteria = (
         f"The agent's role is: {role}\n"
-        f"Score how well the response fulfils that role for the given request:"
-        f" it should do the agent's actual job clearly and helpfully, in the"
-        f" agent's voice, without refusing, echoing the prompt, rambling"
-        f" off-task, or leaking tool/JSON mechanics into the reply."
+        f"The user's request is given to the agent. Score how well the response"
+        f" ACTUALLY DOES the agent's job for that request, in the agent's voice."
+        f" Score 0.0 if the response merely describes its own role, simulates or"
+        f" role-plays a user/conversation, narrates what it 'would' do, refuses,"
+        f" echoes the prompt, or leaks tool/JSON mechanics instead of answering."
+        f" Reward a concrete, correct, on-task result a user could use as-is.\n"
+        f"If instead the response is a bracketed note that the agent acted by"
+        f" invoking tools/subagents, judge whether THOSE actions are the right"
+        f" ones for this request: correct delegation or tool use for the role"
+        f" scores high; flailing on wrong, hallucinated, or blocked tools scores"
+        f" low."
     )
     return AgentTest(
         name=f"{agent.header.agent_id}::role-fulfilment",
@@ -156,7 +214,20 @@ def build_agent_evaluator(
         scores: list[float] = []
         for t in tests:
             output, calls = runner(version.definition, t)
-            ctx = RunContext(output=output, tool_calls=list(calls), judge=judge)
+            # Trajectory-aware: a handoff/tool agent's real output is its tool
+            # calls, not assistant text. Without this, every such agent scores a
+            # hard 0 (empty text) even when it delegates correctly. Show the judge
+            # the actions so it can grade their appropriateness (the rubric in
+            # make_judge_test knows to grade delegation, and penalise flailing on
+            # wrong/blocked tools).
+            judge_output = output
+            if not str(output).strip() and calls:
+                traj = " -> ".join(c.name for c in calls)
+                judge_output = (
+                    "[The agent produced no prose reply; it acted by invoking"
+                    f" tools/subagents in this order: {traj}.]"
+                )
+            ctx = RunContext(output=judge_output, tool_calls=list(calls), judge=judge)
             evs = list(t.evaluators)
             results = [evaluate(e, ctx) for e in evs] if evs else []
             ok = all(r.passed for r in results) if results else True
