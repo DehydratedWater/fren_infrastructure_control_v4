@@ -235,7 +235,10 @@ def _qwen_direct(system: str, user: str, *, max_tokens: int = 1200) -> str:
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        "temperature": 0.4, "max_tokens": max_tokens,
+        # Qwen3.5 wants temperature 1.0 for optimal generation (low temp degrades
+        # / can degenerate its output); pair with the model's recommended top-p/k.
+        "temperature": 1.0, "top_p": 0.95, "top_k": 20,
+        "max_tokens": max_tokens,
         "chat_template_kwargs": {"enable_thinking": False},
     }
     headers = {"Authorization": f"Bearer {key}"} if key else {}
