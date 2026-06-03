@@ -107,6 +107,31 @@ def parse_opencode_events(stdout: str) -> tuple[str, list[ToolCallRecord]]:
 
 # --- opencode backend -------------------------------------------------------
 
+def opencode_errors(stdout: str) -> list[str]:
+    """Pull `{"type":"error", ...}` messages out of the JSON event stream.
+
+    opencode reports failures (e.g. `Agent not found`, provider/auth errors) as
+    error events, not a non-zero exit. These MUST be surfaced — swallowing them
+    as "empty assistant text" is what made a fleet of agent-discovery failures
+    masquerade as the model "returning nothing" and score every affected agent 0.
+    """
+    out: list[str] = []
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("{") or '"type":"error"' not in line.replace(" ", ""):
+            continue
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(ev, dict) and ev.get("type") == "error":
+            e = ev.get("error") or {}
+            msg = ((e.get("data") or {}).get("message")
+                   if isinstance(e, dict) else None) or json.dumps(e)[:200]
+            out.append(str(msg))
+    return out
+
+
 async def run_agent_opencode(
     *, agent_dir: Path, agent_name: str, prompt: str, timeout_s: float = 120,
     extra_env: dict[str, str] | None = None,
@@ -138,7 +163,12 @@ async def run_agent_opencode(
     stdout = out_b.decode("utf-8", errors="replace")
     text, calls = parse_opencode_events(stdout)
     err = None
-    if proc.returncode != 0 and not text.strip():
+    # surface opencode error events (agent-not-found, provider errors, …) — never
+    # let them pass as "empty text" (see opencode_errors docstring).
+    ev_errors = opencode_errors(stdout)
+    if ev_errors:
+        err = "opencode error: " + " | ".join(ev_errors[:2])
+    elif proc.returncode != 0 and not text.strip():
         err = f"opencode exit {proc.returncode}: {err_b.decode('utf-8', 'replace')[:500]}"
     return AgentRunResult(text=text, tool_calls=calls, raw_stdout=stdout, error=err)
 
