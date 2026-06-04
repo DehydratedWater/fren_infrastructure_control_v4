@@ -139,6 +139,33 @@ def subagent_dispatch_chain(stdout: str) -> list[ToolCallRecord]:
     return chain
 
 
+def blocked_tool_attempts(stdout: str) -> int:
+    """Count tool calls the permission policy DENIED in this session.
+
+    Agents are compiled with an allow-list (`python scripts/<their tools>.py`).
+    When a tool fails, Qwen tends to debug-flail on forbidden commands
+    (`pip install`, `which python`, `ls`, `python3 -c …`) — all denied, retried
+    repeatedly, wasting the turn and tanking the score. A high count is a
+    behavioural smell (bad env or a prompt that invites flailing); unit tests
+    can't see it, but a live smoke can assert this stays low.
+    """
+    n = 0
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("{") or "prevents you from using" not in line:
+            continue
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        part = ev.get("part") if isinstance(ev, dict) else None
+        state = (part or {}).get("state") if isinstance(part, dict) else None
+        out = str((state or {}).get("output") or (state or {}).get("error") or "")
+        if "prevents you from using" in out:
+            n += 1
+    return n
+
+
 def opencode_errors(stdout: str) -> list[str]:
     """Pull `{"type":"error", ...}` messages out of the JSON event stream.
 

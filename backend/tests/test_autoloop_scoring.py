@@ -61,6 +61,23 @@ def test_opencode_errors_empty_for_normal_stream():
     assert opencode_errors(stdout) == []
 
 
+def test_blocked_tool_attempts_counts_denied_calls():
+    """Behavioural smell: an agent debug-flailing on forbidden commands. Unit
+    tests can't run the agent, but the DETECTOR a live smoke uses is tested here."""
+    from app.runtime.runner import blocked_tool_attempts
+
+    denied = {"type": "tool", "tool": "bash", "state": {
+        "status": "error", "input": {"command": "pip install pydantic"},
+        "output": "The user has specified a rule which prevents you from using "
+                  "this specific tool call."}}
+    ok = {"type": "tool", "tool": "bash", "state": {
+        "status": "completed", "input": {"command": "python scripts/x.py"},
+        "output": "done"}}
+    stdout = "\n".join(json.dumps({"part": p}) for p in (denied, ok, denied))
+    assert blocked_tool_attempts(stdout) == 2
+    assert blocked_tool_attempts(json.dumps({"part": ok})) == 0
+
+
 def test_subagent_dispatch_chain_extracts_spawned_agents():
     """An orchestrator spawns sub-agents via `…opencode_manager.py run --agent X`;
     the real dispatch chain must be pulled from those bash commands, not the raw
