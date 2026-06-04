@@ -49,3 +49,7 @@ backend/.oac/autoloop_ws/
 .oac/autoloop_ws/
 
 .oac/probe_cache.json
+
+# autoloop transient agents (installed into .opencode/agents at runtime)
+.opencode/agents/cand_*.md
+.opencode/agents/teacher_*.md

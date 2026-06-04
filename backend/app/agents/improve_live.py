@@ -234,7 +234,16 @@ def _project_root() -> Path:
 
 
 def _workspace() -> Path:
-    return _project_root() / ".oac" / "autoloop_ws"
+    # Run candidates from the real opencode PROJECT ROOT (the dir that holds
+    # opencode.json), like v3's opencode_manager — so the agent is discovered AND
+    # sessions land in <project>/.opencode/data, where you monitor the v4 project
+    # (not an isolated subdir the running opencode can't see). Walk up from the
+    # configured project_root to find opencode.json.
+    start = _project_root()
+    for d in (start, *start.parents):
+        if (d / "opencode.json").exists():
+            return d
+    return start
 
 
 def _server_healthy(port: int) -> bool:
@@ -276,14 +285,15 @@ def _ensure_workspace() -> Path:
     ws = _workspace()
     with _ws_lock:
         (ws / ".opencode" / "agents").mkdir(parents=True, exist_ok=True)
-        # opencode.json => opencode treats ws as a project => reliable discovery
+        # opencode.json => opencode treats ws as a project => reliable discovery.
+        # (ws is the project root now, so the config + scripts are already here.)
         src_cfg = _project_root() / "opencode.json"
-        if src_cfg.exists():
-            shutil.copy(src_cfg, ws / "opencode.json")
-        # scripts symlink so the agents' tools resolve at runtime
+        dst_cfg = ws / "opencode.json"
+        if src_cfg.exists() and src_cfg.resolve() != dst_cfg.resolve():
+            shutil.copy(src_cfg, dst_cfg)
         link = ws / "scripts"
         scripts = _project_root() / "scripts"
-        if scripts.exists() and not link.exists():
+        if scripts.exists() and not link.exists() and scripts.resolve() != link.resolve():
             try:
                 link.symlink_to(scripts)
             except OSError:
