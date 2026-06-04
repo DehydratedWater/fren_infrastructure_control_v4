@@ -47,3 +47,5 @@ dist/
 # autoloop opencode workspace (approach A)
 backend/.oac/autoloop_ws/
 .oac/autoloop_ws/
+
+.oac/probe_cache.json

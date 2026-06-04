@@ -17,7 +17,9 @@ criteria, into `.oac/promoted/`, where the registry picks it up next compile.
 
 from __future__ import annotations
 
+import json
 import statistics
+import threading
 from pathlib import Path
 from typing import Any, Callable
 
@@ -75,6 +77,69 @@ def _default_mutators(marker_hint: str = ""):
 
 
 _PROBE_CACHE: dict[str, str] = {}
+_PROBE_LOCK = threading.Lock()
+_PROBE_LOADED = False
+
+
+def _probe_cache_path() -> Path:
+    return PROJECT_ROOT / ".oac" / "probe_cache.json"
+
+
+def _load_probe_cache() -> None:
+    """Load synthesised probes from disk ONCE (they're stable per agent role).
+
+    Probe synthesis is a GLM-5.1 call per agent; doing 137 sequentially at
+    unit-build time stalled a whole run in setup for ~35 min. Caching to disk +
+    a parallel pre-warm (`prewarm_probes`) makes setup instant after the first time.
+    """
+    global _PROBE_LOADED
+    if _PROBE_LOADED:
+        return
+    with _PROBE_LOCK:
+        if _PROBE_LOADED:
+            return
+        try:
+            p = _probe_cache_path()
+            if p.exists():
+                _PROBE_CACHE.update(json.loads(p.read_text()))
+        except Exception:  # noqa: BLE001
+            pass
+        _PROBE_LOADED = True
+
+
+_FALLBACK_PREFIX = "Here is a real task for you:"
+
+
+def _write_probe_cache() -> None:
+    try:
+        p = _probe_cache_path()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with _PROBE_LOCK:
+            # persist only REAL synthesised probes — never the offline fallback
+            # (a transient z.ai blip must not poison the cache permanently)
+            real = {k: v for k, v in _PROBE_CACHE.items()
+                    if not v.startswith(_FALLBACK_PREFIX)}
+            p.write_text(json.dumps(real, indent=0))
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def prewarm_probes(workers: int = 12) -> int:
+    """Synthesise every agent's probe in PARALLEL and persist to disk.
+
+    Run once before an improvement run so the (sequential) unit-build phase
+    finds every probe already cached and qwen scoring starts immediately.
+    Returns the number newly synthesised.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    _load_probe_cache()
+    todo = [a for a in all_agents() if a.header.agent_id not in _PROBE_CACHE]
+    if todo:
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            list(ex.map(synthesize_probe, todo))
+        _write_probe_cache()
+    return len(todo)
 
 # Appended to every probe so the model returns a REAL answer, not a meta-demo.
 # (Root cause of many 0-scores: the old prompt said "demonstrate your core
@@ -95,6 +160,7 @@ def synthesize_probe(agent: AgentDefinition) -> str:
     0. Falls back to a direct task string if the teacher is unavailable.
     """
     aid = agent.header.agent_id
+    _load_probe_cache()
     if aid in _PROBE_CACHE:
         return _PROBE_CACHE[aid]
     role = (agent.usage_explanation_long or agent.usage_explanation_short
