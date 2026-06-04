@@ -43,36 +43,33 @@ from src import (
 )
 from src.testing.evaluation import EvaluationResult, RunContext, ToolCallRecord
 
-_ZAI_BASE = os.environ.get("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4").rstrip("/")
+# (teacher GLM calls now run through opencode, not a direct z.ai endpoint)
 
 
 def _zai_chat(model: str, messages: list[dict], *, max_tokens: int = 4000,
               temperature: float = 0.4, timeout_s: float = 180) -> str:
-    """One z.ai chat completion → assistant text ('' on any failure).
+    """One teacher (GLM) completion — RUN THROUGH OPENCODE, never the raw API.
 
-    GLM-5.1 is a reasoning model — give it generous max_tokens so reasoning
-    doesn't starve the visible answer.
+    z.ai's coding-plan is licensed for use via opencode; hammering
+    `api.z.ai/chat/completions` directly risks an account ban. So the teacher
+    (prompt rewriter, judge, probe writer) runs as an opencode agent on
+    `zai-coding-plan/<model>`, exactly like the student runs on qwen — the only
+    difference is the model. Returns assistant text ('' on failure).
     """
-    key = os.environ.get("ZAI_API_KEY", "")
-    payload = {
-        "model": model, "messages": messages,
-        "max_tokens": max_tokens, "temperature": temperature,
-    }
-    headers = {"Authorization": f"Bearer {key}"} if key else {}
-    # Retry transient z.ai failures/blanks: a dropped judge or rewriter call
-    # otherwise scores a perfectly good agent 0 (ZaiJudge returns 0 on '').
+    model_ref = model if "/" in model else f"zai-coding-plan/{model}"
+    ws, agent_name = _ensure_teacher_agent(model_ref)
+    # opencode agents take their system prompt from the compiled .md, so fold the
+    # caller's system + user messages into a single prompt turn.
+    sys_txt = "\n\n".join(m["content"] for m in messages if m.get("role") == "system")
+    usr_txt = "\n\n".join(m["content"] for m in messages if m.get("role") != "system")
+    prompt = (f"{sys_txt}\n\n---\n\n{usr_txt}" if sys_txt else usr_txt)
     for attempt in range(3):
-        try:
-            resp = httpx.post(
-                f"{_ZAI_BASE}/chat/completions", json=payload, headers=headers,
-                timeout=timeout_s,
-            )
-            resp.raise_for_status()
-            text = (resp.json()["choices"][0]["message"]["content"] or "").strip()
-            if text:
-                return text
-        except Exception:  # noqa: BLE001
-            pass
+        result = _run_sync(run_agent_opencode(
+            agent_dir=ws, agent_name=agent_name, prompt=prompt, timeout_s=timeout_s,
+        ))
+        text = str(result.text).strip()
+        if text and not result.error:
+            return text
         time.sleep(1.5 * (attempt + 1))
     return ""
 
@@ -325,6 +322,28 @@ def _warmup_discovery(ws: Path) -> None:
             time.sleep(3)
     finally:
         md.unlink(missing_ok=True)
+
+
+_TEACHER_AGENTS: dict[str, str] = {}
+
+
+def _ensure_teacher_agent(model_ref: str) -> tuple[Path, str]:
+    """Install a flat teacher agent (a GLM model) into the workspace.
+
+    Named WITHOUT the `cand_` prefix so the per-run candidate cleanup never
+    deletes it. Returns (workspace, agent_name)."""
+    ws = _ensure_workspace()
+    name = "teacher_" + re.sub(r"[^a-zA-Z0-9]", "_", model_ref)
+    if model_ref not in _TEACHER_AGENTS:
+        md = ws / ".opencode" / "agents" / f"{name}.md"
+        md.write_text(
+            f"---\nmodel: {model_ref}\n---\n"
+            "You are a precise assistant. Do exactly what the user's message asks"
+            " and return only the requested output — no preamble, no commentary,"
+            " no tool use.\n"
+        )
+        _TEACHER_AGENTS[model_ref] = name
+    return ws, name
 
 
 def _compile_candidate(definition: dict[str, Any]) -> tuple[Path, str]:
