@@ -392,11 +392,14 @@ def live_agent_runner_factory(definition: dict[str, Any]):
         # Two distinct retryable conditions: (a) a surfaced opencode error, and
         # (b) Qwen3.x's stochastic EMPTY turn (no text, no tools). Retry both with
         # a short backoff; a real answer breaks early. Discovery is now reliable,
-        # so this only soaks up genuine model/transient blanks.
+        # so this only soaks up genuine model/transient blanks. The runtime env is
+        # passed so the agent's `python scripts/*.py` tools import app deps (else
+        # tool agents flail on ModuleNotFoundError and score 0).
         result = None
         for attempt in range(5):
             result = _run_sync(run_agent_opencode(
                 agent_dir=ws, agent_name=agent_name, prompt=prompt, timeout_s=300,
+                extra_env=_branch_env(),
             ))
             if (str(result.text).strip() or result.tool_calls) and not result.error:
                 break
@@ -425,13 +428,26 @@ def _ensure_fleet_compiled() -> Path:
 
 
 def _branch_env() -> dict[str, str]:
-    """The runtime an orchestrator needs to spawn sub-agents: uv on PATH, the DB,
-    and the project context."""
-    import os as _os
+    """The runtime an orchestrator's `python scripts/<tool>.py` and sub-agent
+    spawns actually need.
 
+    The orchestrator's bash runs bare `python scripts/X.py`, which otherwise hits
+    the SYSTEM python (no pydantic, no app deps, no PYTHONPATH) and fails to import
+    `app.tools.*`. Put the autoloop's own deps-having interpreter first on PATH and
+    propagate PYTHONPATH so those scripts run exactly like production.
+    """
+    import os as _os
+    import sys
+
+    venv_bin = str(Path(sys.executable).parent)  # interpreter that HAS the v4 deps
+    paths = [venv_bin, str(Path.home() / ".local" / "bin"),  # uv
+             str(Path.home() / ".opencode" / "bin")]         # opencode
     extra = {
-        "PATH": _os.environ.get("PATH", "")
-        + ":" + str(Path.home() / ".local" / "bin"),
+        "PATH": ":".join(paths) + ":" + _os.environ.get("PATH", ""),
+        # the run is launched with PYTHONPATH=<backend>:<OpenCodeCompilerV2>;
+        # propagate it so `app.tools.*` and `src` import in the subprocess
+        "PYTHONPATH": _os.environ.get("PYTHONPATH", "")
+        or f"{_project_root()}:{Path(__file__).parents[4]}",
     }
     for k in ("DATABASE_URL", "VLLM_API_KEY", "ZAI_API_KEY",
               "FREN_RUN_ID", "FREN_CLEARANCE"):
