@@ -61,6 +61,23 @@ def test_opencode_errors_empty_for_normal_stream():
     assert opencode_errors(stdout) == []
 
 
+def test_subagent_dispatch_chain_extracts_spawned_agents():
+    """An orchestrator spawns sub-agents via `…opencode_manager.py run --agent X`;
+    the real dispatch chain must be pulled from those bash commands, not the raw
+    `bash` tool names."""
+    from app.runtime.runner import subagent_dispatch_chain
+
+    stdout = "\n".join([
+        json.dumps({"part": {"type": "tool", "tool": "bash", "state": {"input": {
+            "command": "uv run scripts/opencode_manager.py run --agent context_analyzer 'hi'"}}}}),
+        json.dumps({"part": {"type": "tool", "tool": "read"}}),
+        json.dumps({"part": {"type": "tool", "tool": "bash", "state": {"input": {
+            "command": "uv run scripts/opencode_manager.py run --agent persona/thinking 'x'"}}}}),
+    ])
+    chain = subagent_dispatch_chain(stdout)
+    assert [c.name for c in chain] == ["context_analyzer", "persona/thinking"]
+
+
 # --- 2. teacher runs THROUGH opencode, not the raw z.ai API -----------------
 
 def test_zai_chat_routes_through_opencode_not_raw_api(monkeypatch):

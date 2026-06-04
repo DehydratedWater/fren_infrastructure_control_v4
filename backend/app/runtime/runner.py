@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -106,6 +107,37 @@ def parse_opencode_events(stdout: str) -> tuple[str, list[ToolCallRecord]]:
 
 
 # --- opencode backend -------------------------------------------------------
+
+def subagent_dispatch_chain(stdout: str) -> list[ToolCallRecord]:
+    """Extract the ORCHESTRATOR's sub-agent dispatch chain from the event stream.
+
+    v4 orchestrators spawn sub-agents via `bash … opencode_manager.py run --agent
+    <name> …` (primary spawn), not the Task tool — so the raw tool calls are all
+    `bash` and the real chain is hidden in the bash command. Pull the dispatched
+    agent names out so branch/path grading can see the trajectory.
+    """
+    chain: list[ToolCallRecord] = []
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("{") or "--agent" not in line:
+            continue
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        part = ev.get("part") if isinstance(ev, dict) else None
+        if not isinstance(part, dict):
+            continue
+        state = part.get("state") if isinstance(part.get("state"), dict) else {}
+        inp = state.get("input") if isinstance(state.get("input"), dict) else {}
+        cmd = inp.get("command") or part.get("args", {}).get("command") or ""
+        if "--agent" not in cmd:
+            continue
+        m = re.search(r"--agent\s+[\"']?([A-Za-z0-9_/.-]+)", cmd)
+        if m:
+            chain.append(ToolCallRecord(name=m.group(1), args={"via": "spawn"}))
+    return chain
+
 
 def opencode_errors(stdout: str) -> list[str]:
     """Pull `{"type":"error", ...}` messages out of the JSON event stream.

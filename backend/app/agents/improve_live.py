@@ -406,20 +406,63 @@ def live_agent_runner_factory(definition: dict[str, Any]):
     return runner
 
 
+_fleet_compiled = False
+
+
+def _ensure_fleet_compiled() -> Path:
+    """Compile the FULL fleet into the workspace once, so an orchestrator candidate
+    can actually spawn its sub-agents (which it does via
+    `uv run scripts/opencode_manager.py run --agent <name>`). Without the whole
+    fleet present + the real runtime, orchestrators flail on bash and score 0."""
+    global _fleet_compiled
+    ws = _ensure_workspace()
+    with _ws_lock:
+        if not _fleet_compiled:
+            from app.agents.compile import compile_fleet
+            compile_fleet(target=ws, variants=[DEFAULT_WORKER], clean=False)
+            _fleet_compiled = True
+    return ws
+
+
+def _branch_env() -> dict[str, str]:
+    """The runtime an orchestrator needs to spawn sub-agents: uv on PATH, the DB,
+    and the project context."""
+    import os as _os
+
+    extra = {
+        "PATH": _os.environ.get("PATH", "")
+        + ":" + str(Path.home() / ".local" / "bin"),
+    }
+    for k in ("DATABASE_URL", "VLLM_API_KEY", "ZAI_API_KEY",
+              "FREN_RUN_ID", "FREN_CLEARANCE"):
+        if _os.environ.get(k):
+            extra[k] = _os.environ[k]
+    extra.setdefault("FREN_RUN_ID", "autoloop")
+    return extra
+
+
 def live_branch_invoker_factory_for(entry_agent: str):
-    """BranchInvokerFactory that drives `entry_agent` live on the local qwen."""
+    """BranchInvokerFactory: drive a candidate ORCHESTRATOR live on qwen, with the
+    whole fleet present so it can spawn its sub-agents, and capture the spawn
+    chain (parsed from the `--agent` bash dispatches) for path grading."""
 
     def factory(definition: dict[str, Any]):
-        tmp, agent_name = _prep_candidate(definition)
+        ws = _ensure_fleet_compiled()
+        _, agent_name = _compile_candidate(definition)
 
         def invoke(test):
             from src.testing.branch import BranchTrajectory
 
+            from app.runtime.runner import subagent_dispatch_chain
+
             prompt = test.prompt or (test.turns[0].prompt if test.turns else "")
             result = _run_sync(run_agent_opencode(
-                agent_dir=tmp, agent_name=agent_name, prompt=prompt, timeout_s=300,
+                agent_dir=ws, agent_name=agent_name, prompt=prompt,
+                timeout_s=600, extra_env=_branch_env(),
             ))
-            return BranchTrajectory(output=result.text, tool_calls=list(result.tool_calls))
+            # the real dispatch chain is the spawned sub-agents, not the raw bash
+            chain = subagent_dispatch_chain(result.raw_stdout) or list(result.tool_calls)
+            return BranchTrajectory(output=result.text, tool_calls=chain)
 
         return invoke
 
