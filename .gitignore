@@ -43,3 +43,7 @@ dist/
 
 # autoresearch run log (transient)
 .autoresearch.log
+
+# autoloop opencode workspace (approach A)
+backend/.oac/autoloop_ws/
+.oac/autoloop_ws/

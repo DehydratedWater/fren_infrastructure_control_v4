@@ -19,7 +19,12 @@ import asyncio
 import json
 import os
 import re
+import secrets
+import shutil
+import subprocess
 import tempfile
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -54,15 +59,22 @@ def _zai_chat(model: str, messages: list[dict], *, max_tokens: int = 4000,
         "max_tokens": max_tokens, "temperature": temperature,
     }
     headers = {"Authorization": f"Bearer {key}"} if key else {}
-    try:
-        resp = httpx.post(
-            f"{_ZAI_BASE}/chat/completions", json=payload, headers=headers,
-            timeout=timeout_s,
-        )
-        resp.raise_for_status()
-        return (resp.json()["choices"][0]["message"]["content"] or "").strip()
-    except Exception:  # noqa: BLE001
-        return ""
+    # Retry transient z.ai failures/blanks: a dropped judge or rewriter call
+    # otherwise scores a perfectly good agent 0 (ZaiJudge returns 0 on '').
+    for attempt in range(3):
+        try:
+            resp = httpx.post(
+                f"{_ZAI_BASE}/chat/completions", json=payload, headers=headers,
+                timeout=timeout_s,
+            )
+            resp.raise_for_status()
+            text = (resp.json()["choices"][0]["message"]["content"] or "").strip()
+            if text:
+                return text
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(1.5 * (attempt + 1))
+    return ""
 
 
 # --- teacher 1: the prompt rewriter (GLM-5.1) ------------------------------
@@ -206,6 +218,131 @@ def _prep_candidate(definition: dict[str, Any]) -> tuple[Path, str]:
     return tmp, agent_name
 
 
+# --- Approach A: stable opencode project workspace + warm server -----------
+# Mirrors v3's `scripts/opencode_manager.py`: candidates are graded by running
+# `opencode run` from a STABLE project dir (carrying opencode.json so opencode
+# treats it as a project) with FLAT agent names — the two things that make agent
+# discovery reliable. An ad-hoc temp dir with nested/slashed names yields
+# "Agent not found" ~50-70% of the time, which (silently swallowed as empty
+# output) was the real cause of the autoloop's mass-zeros. A warm dedicated
+# opencode web server keeps the project + model hot for high-concurrency runs.
+
+_WS_PORT = int(os.environ.get("AUTOLOOP_OPENCODE_PORT", "4097"))
+_ws_lock = threading.Lock()
+_ws_ready = False
+
+
+def _project_root() -> Path:
+    return Path(get_settings().project_root)
+
+
+def _workspace() -> Path:
+    return _project_root() / ".oac" / "autoloop_ws"
+
+
+def _server_healthy(port: int) -> bool:
+    try:
+        return httpx.get(f"http://127.0.0.1:{port}/api/health", timeout=2.0).status_code == 200
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _ensure_server(ws: Path) -> None:
+    """Warm a dedicated opencode web server for the workspace (best-effort).
+
+    `opencode run` does not attach to it, but it keeps the project registered and
+    the model hot, mirroring v3's proven high-concurrency setup. A separate port
+    from any production server avoids collisions.
+    """
+    if _server_healthy(_WS_PORT):
+        return
+    env = os.environ.copy()
+    env["XDG_DATA_HOME"] = str(ws / ".opencode" / "data")
+    try:
+        subprocess.Popen(
+            ["opencode", "web", "--hostname", "127.0.0.1", "--port", str(_WS_PORT)],
+            cwd=str(ws), env=env,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except FileNotFoundError:
+        return
+    for _ in range(30):
+        if _server_healthy(_WS_PORT):
+            return
+        time.sleep(1)
+
+
+def _ensure_workspace() -> Path:
+    """Create/refresh the stable project workspace once (thread-safe)."""
+    global _ws_ready
+    ws = _workspace()
+    with _ws_lock:
+        (ws / ".opencode" / "agents").mkdir(parents=True, exist_ok=True)
+        # opencode.json => opencode treats ws as a project => reliable discovery
+        src_cfg = _project_root() / "opencode.json"
+        if src_cfg.exists():
+            shutil.copy(src_cfg, ws / "opencode.json")
+        # scripts symlink so the agents' tools resolve at runtime
+        link = ws / "scripts"
+        scripts = _project_root() / "scripts"
+        if scripts.exists() and not link.exists():
+            try:
+                link.symlink_to(scripts)
+            except OSError:
+                pass
+        if not _ws_ready:
+            # clear last run's candidate agents (once, before any worker compiles)
+            for old in (ws / ".opencode" / "agents").glob("cand_*.md"):
+                old.unlink(missing_ok=True)
+            _ensure_server(ws)
+            _warmup_discovery(ws)
+            _ws_ready = True
+    return ws
+
+
+def _warmup_discovery(ws: Path) -> None:
+    """Prime the warm server's agent discovery before grading starts.
+
+    A freshly (re)started opencode server has a rescan lag: the FIRST dynamically
+    added `cand_*.md` isn't found yet (subsequent ones are). Without this, the
+    first agent of every run mis-scores 0. Run a throwaway flat candidate until it
+    resolves, so real grading never eats the lag.
+    """
+    target_model = get_settings().autoloop_target_model
+    md = ws / ".opencode" / "agents" / "cand_warmup.md"
+    md.write_text(
+        f"---\nmodel: {target_model}\n---\n"
+        "You are a warmup probe. Reply with a single short sentence.\n"
+    )
+    try:
+        for _ in range(8):
+            r = _run_sync(run_agent_opencode(
+                agent_dir=ws, agent_name="cand_warmup", prompt="say ok", timeout_s=60,
+            ))
+            if not r.error and str(r.text).strip():
+                break
+            time.sleep(3)
+    finally:
+        md.unlink(missing_ok=True)
+
+
+def _compile_candidate(definition: dict[str, Any]) -> tuple[Path, str]:
+    """Compile a candidate and install it FLAT-named into the workspace.
+
+    Returns (workspace_dir, flat_agent_name)."""
+    ws = _ensure_workspace()
+    tmp = Path(tempfile.mkdtemp(prefix="oac_cc_"))
+    try:
+        nested = _compile_one(definition, tmp)  # e.g. "persona/responding-primary"
+        src_md = tmp / ".opencode" / "agents" / f"{nested}.md"
+        flat = f"cand_{secrets.token_hex(5)}"
+        shutil.copy(src_md, ws / ".opencode" / "agents" / f"{flat}.md")
+        return ws, flat
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def live_agent_runner_factory(definition: dict[str, Any]):
     """AgentRunner for the judge-test autoloop.
 
@@ -214,26 +351,27 @@ def live_agent_runner_factory(definition: dict[str, Any]):
     runtime (thinking on, tools available). Returns (final_text, tool_calls) — the
     judge then reviews that real output, and the teacher improves the prompt.
 
-    Qwen3.5 at temperature 1.0 occasionally returns an empty turn (stochastic), so
-    a blank-with-no-tools result is retried once before it is scored.
+    The candidate is installed FLAT-named into a stable opencode project
+    workspace (approach A, mirroring v3's opencode_manager) so the agent is
+    discovered reliably — an ad-hoc temp dir yields "Agent not found" and a
+    mass-zero run.
     """
-    tmp, agent_name = _prep_candidate(definition)
+    ws, agent_name = _compile_candidate(definition)
 
     def runner(_defn: dict[str, Any], test) -> tuple[Any, list[ToolCallRecord]]:
         prompt = test.prompt or (test.turns[0].prompt if test.turns else "")
-        # Qwen3.x via opencode returns an EMPTY turn ~50-70% of the time: its
-        # thinking eats the turn and no answer surfaces, and opencode cannot send
-        # enable_thinking=false (it drops chat_template_kwargs). Until the vLLM is
-        # served thinking-OFF by default (see framework note
-        # docs/lessons/thinking-models-and-opencode-scoring.md), retry empties a
-        # few times so a stochastic blank isn't mis-scored as a real failure.
+        # Two distinct retryable conditions: (a) a surfaced opencode error, and
+        # (b) Qwen3.x's stochastic EMPTY turn (no text, no tools). Retry both with
+        # a short backoff; a real answer breaks early. Discovery is now reliable,
+        # so this only soaks up genuine model/transient blanks.
         result = None
-        for _ in range(4):
+        for attempt in range(5):
             result = _run_sync(run_agent_opencode(
-                agent_dir=tmp, agent_name=agent_name, prompt=prompt, timeout_s=300,
+                agent_dir=ws, agent_name=agent_name, prompt=prompt, timeout_s=300,
             ))
-            if str(result.text).strip() or result.tool_calls:
+            if (str(result.text).strip() or result.tool_calls) and not result.error:
                 break
+            time.sleep(2)
         return result.text, list(result.tool_calls)
 
     return runner
