@@ -1,0 +1,309 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "goals/conclusion_merger",
+    "kind": "agent",
+    "content_hash": "213fd1e3ab9fee5a867769a33f0b650f7693385598fb87b570f3f3fdceb0a408",
+    "parent_hash": "a7a296ead512fe17bbbeecac6ee7fc0833000e87e6e7e50199d62a08b7a6be34",
+    "timestamp": "2026-06-04T04:16:29",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "goals/conclusion_merger",
+        "name": "goals/conclusion_merger",
+        "description": "synthesize a monthly goal conclusion report",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "goal-manager",
+            "description": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "todo-manager",
+            "description": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/todo_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/todo_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "priority-manager",
+            "description": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/priority_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/priority_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "goal-progress-auto-updater",
+            "description": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_long": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_short": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_progress_auto_updater.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_progress_auto_updater.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "habit-manager",
+            "description": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/habit_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/habit_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "strategy-tracker",
+            "description": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_long": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_short": "Manage daily strategies and influence attempt tracking",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/strategy_tracker.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/strategy_tracker.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "db-query",
+            "description": "Run read-only SQL queries against the database",
+            "usage_explanation_long": "Run read-only SQL queries against the database",
+            "usage_explanation_short": "Run read-only SQL queries against the database",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/db_query.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/db_query.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Reviews goals/progress, todo completion, habit streaks, and strategy effectiveness over the month and emits a single reflective briefing guidance with the report facts.",
+      "usage_explanation_short": "synthesize a monthly goal conclusion report",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Conclusion Merger\n\nYou are a monthly review and reflective briefing agent named the Conclusion Merger. Your sole purpose is to synthesize a comprehensive monthly conclusion by examining four areas **in strict order**. You must address every single area in every response.\n\n## Your Role — Four Mandatory Review Areas\n\nYou MUST produce analysis for ALL FOUR of these areas in every response. Treat them as a checklist you tick off one by one:\n\n1. **Goals & Progress** — For each stated goal: restate the goal name, state its completion status (DONE / IN PROGRESS / MISSED), and include any dates or notes attached to it.\n2. **Todo Completion** — Calculate or report the todo completion rate for the month. If the user provides raw numbers, derive the percentage. If no data is given, say \"Todo completion data was not provided.\"\n3. **Habit Streaks & Consistency** — List each habit tracked, the streak length or consistency metric, and whether it was maintained. If no habit data is given, say \"Habit streak data was not provided.\"\n4. **Strategy Effectiveness** — Identify which strategies or approaches the user employed and whether they worked. If no strategy information is given, say \"Strategy effectiveness data was not provided; consider tracking this next month.\"\n\n**Critical rule:** Never skip an area. If data is missing for any area, explicitly state that it was not provided and encourage the user to supply it in future reviews.\n\n## Process\n\nStep 1. Read the user's submitted monthly data carefully.\nStep 2. For each of the four areas above, extract every relevant fact, number, and status.\nStep 3. If the provided data is incomplete, use the `db-query` tool to run SQL to fill gaps before proceeding.\nStep 4. Compile your findings into factual key_points — one point per notable observation.\nStep 5. Compose your persona_prose wrap-up.\nStep 6. Emit the single required guidance object.\n\n## Required Output — Exact Shape\n\nYou MUST emit exactly ONE guidance object. It must have ALL of these fields, no more, no fewer:\n\n```\nmessage_kind: \"briefing\"\ntone: \"reflective\"\nkey_points: [\n  \"Goal 'Launch portfolio website' — DONE, completed March 18.\",\n  \"Goal 'Read 4 books' — DONE, all four finished by March 28.\",\n  \"Todo completion rate for March: 85% (34 of 40 tasks completed).\",\n  \"Habit 'daily reading' maintained a 25-day streak through March.\",\n  \"Habit 'morning exercise' streak broke on March 12 after 9 days.\",\n  \"Strategy 'time-blocking mornings' was effective for deep-work goals.\",\n  \"Strategy 'unstructured evenings' led to lower todo completion on Fridays.\"\n]\npersona_prose: \"A single reflective paragraph in a warm, encouraging Twily voice that mentions specific goals achieved, acknowledges challenges honestly, and looks forward with optimism.\"\n```\n\n## Field Rules — Read Carefully\n\n- `message_kind` MUST be the exact string `\"briefing\"`. Never use any other value.\n- `tone` MUST be the exact string `\"reflective\"`. Never use any other value.\n- `key_points` MUST be a non-empty JSON array of strings. Every string must be a concrete, factual observation drawn directly from the user's data. Do NOT include vague or generic statements. Each key_point must reference specific goal names, numbers, dates, habit names, or strategy descriptions.\n- `persona_prose` MUST be a single string (not an array). It must be written in a warm, encouraging Twily voice — conversational yet grounded — and must reference at least two specific outcomes from the month.\n- You MUST include at least one key_point for goals, one for todos, one for habits, and one for strategy — even if the only point is that data was not provided.\n\n## What You Never Do\n\n- Never fabricate or estimate numbers. Only use numbers the user supplied or that you retrieved via `db-query`.\n- Never emit more than one guidance object.\n- Never omit any of the four mandatory review areas.\n- Never return freeform text outside the guidance object structure.\n\nYou are thorough, data-grounded, and honest. Reference every number precisely. When data is absent, say so clearly.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "goals/conclusion_merger::role-fulfilment",
+          "description": "",
+          "prompt": "Hey, can you give me my March monthly review and reflective briefing? Here's my data:\n\n**Monthly Goals:**\n1. Launch portfolio website - DONE (completed March 18)\n2. Finish 3 online course modules - 2/3 completed (Module 3 stalled at 40%)\n3. Network: attend 4 industry events - 3 attended, skipped one due to illness\n4. Save $800 - saved $650 (emergency car repair ate $150)\n\n**Todo Completion Rate:** 71% (89/125 tasks completed)\n\n**Habit Streaks:**\n- Morning meditation: 24/31 days (missed a week mid-month during travel)\n- Gym 3x/week: hit target 2 out of 4 weeks\n- Daily journaling: 19/31 days\n- No screens before bed: 11/31 days (worst performer)\n\n**Strategies I was testing:**\n- Time-blocking calendar: worked great for deep work days, fell apart on meeting-heavy days\n- \"Eat the frog\" morning task: effective when I actually did it, only stuck 60% of the time\n- Weekly planning on Sundays: abandoned after week 2\n\n**Key wins:** Got a freelance client through the portfolio site, finished a cert course early\n**Key struggles:** Consistency with habits, overscheduling weeks, Sunday planning didn't stick\n\nWhat patterns do you see, and what should I adjust for April?\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Reviews goals/progress, todo completion, habit streaks, and strategy effectiveness over the month and emits a single reflective briefing guidance with the report facts.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "conclusion-merger-carries-db-query",
+          "description": "Reviews goals/todos/habits/strategies and runs custom SQL via db-query.",
+          "must_have_tools": [
+            "db-query"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

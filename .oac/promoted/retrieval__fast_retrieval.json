@@ -1,17 +1,17 @@
 {
   "schema_version": "1",
   "version": {
-    "component_id": "profile/orchestrator",
+    "component_id": "retrieval/fast_retrieval",
     "kind": "agent",
-    "content_hash": "53cab805d23b674c2355c23cdb94f3ced2a0333fe178d1efcbf8162dc09af0ec",
+    "content_hash": "5127760487a9cbb785974bb85738ffa753cd725dcf00b6bdb4668a8ba0ae60ba",
     "parent_hash": null,
-    "timestamp": "2026-06-02T01:10:59",
+    "timestamp": "2026-06-04T03:38:34",
     "author": "human",
     "definition": {
       "header": {
-        "agent_id": "profile/orchestrator",
-        "name": "profile/orchestrator",
-        "description": "run the profile analysis cycle by delegating to specialists",
+        "agent_id": "retrieval/fast_retrieval",
+        "name": "retrieval/fast_retrieval",
+        "description": "fast read-only cross-source context retrieval (JSON only)",
         "mode": null
       },
       "skills": [],
@@ -75,10 +75,10 @@
         },
         {
           "header": {
-            "name": "profile-manager",
-            "description": "Manage user profile analysis data",
-            "usage_explanation_long": "Manage user profile analysis data",
-            "usage_explanation_short": "Manage user profile analysis data",
+            "name": "memory-manager",
+            "description": "Create, search, and manage persistent memories with tags and embeddings",
+            "usage_explanation_long": "Create, search, and manage persistent memories with tags and embeddings",
+            "usage_explanation_short": "Create, search, and manage persistent memories with tags and embeddings",
             "rules": []
           },
           "json_tool": null,
@@ -88,11 +88,11 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/profile_manager.py*"
+                "python scripts/memory_manager.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/profile_manager.py --command list"
+              "python scripts/memory_manager.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -131,10 +131,10 @@
         },
         {
           "header": {
-            "name": "send-message",
-            "description": "Send a Telegram message to the user",
-            "usage_explanation_long": "Send a Telegram message to the user",
-            "usage_explanation_short": "Send a Telegram message to the user",
+            "name": "context-pin",
+            "description": "Manage discussion topics, pinned context, and document references",
+            "usage_explanation_long": "Manage discussion topics, pinned context, and document references",
+            "usage_explanation_short": "Manage discussion topics, pinned context, and document references",
             "rules": []
           },
           "json_tool": null,
@@ -144,11 +144,11 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/send_message.py*"
+                "python scripts/context_pin.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/send_message.py --command list"
+              "python scripts/context_pin.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -159,10 +159,10 @@
         },
         {
           "header": {
-            "name": "send-voice",
-            "description": "Generate TTS audio and send as Telegram voice message",
-            "usage_explanation_long": "Generate TTS audio and send as Telegram voice message",
-            "usage_explanation_short": "Generate TTS audio and send as Telegram voice message",
+            "name": "goal-manager",
+            "description": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
             "rules": []
           },
           "json_tool": null,
@@ -172,11 +172,11 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/send_voice.py*"
+                "python scripts/goal_manager.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/send_voice.py --command list"
+              "python scripts/goal_manager.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -187,10 +187,10 @@
         },
         {
           "header": {
-            "name": "send-image",
-            "description": "Send an image with caption via Telegram",
-            "usage_explanation_long": "Send an image with caption via Telegram",
-            "usage_explanation_short": "Send an image with caption via Telegram",
+            "name": "todo-manager",
+            "description": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
             "rules": []
           },
           "json_tool": null,
@@ -200,39 +200,11 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/send_image.py*"
+                "python scripts/todo_manager.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/send_image.py --command list"
-            ],
-            "negative_examples": [],
-            "mode_specific_rules": []
-          },
-          "mock": null,
-          "requires_resources": [],
-          "tool_tests": []
-        },
-        {
-          "header": {
-            "name": "send-file",
-            "description": "Send a file via Telegram",
-            "usage_explanation_long": "Send a file via Telegram",
-            "usage_explanation_short": "Send a file via Telegram",
-            "rules": []
-          },
-          "json_tool": null,
-          "bash_tool": {
-            "permission_bash": {
-              "tool_name": "bash",
-              "scope": "bash",
-              "value": "allow",
-              "allowed_commands": [
-                "python scripts/send_file.py*"
-              ]
-            },
-            "positive_examples": [
-              "python scripts/send_file.py --command list"
+              "python scripts/todo_manager.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -242,20 +214,20 @@
           "tool_tests": []
         }
       ],
-      "usage_explanation_long": "Profile analysis orchestrator. Starts an analysis run, then dispatches pattern_observer → hypothesis_generator → hypothesis_validator → discovery_manager → knowledge_compiler in order and sends the compiled report via Telegram.",
-      "usage_explanation_short": "run the profile analysis cycle by delegating to specialists",
+      "usage_explanation_long": "Lightweight in-session retriever. Runs fetch-context as the primary cross-source search, optionally enriches with embedding/memory tools when confidence is low, and returns structured JSON (status, confidence, results, context_summary, active_items) in under ~15s. Read-only, never conversational.",
+      "usage_explanation_short": "fast read-only cross-source context retrieval (JSON only)",
       "default_tool_format": "bash",
       "tool_format_overrides": {},
-      "model_class": "default",
+      "model_class": "fast",
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Profile Orchestrator\n\nYou manage the user-profile analysis cycle by delegating to specialised\nsubagents. Run the cycle in order:\n\n1. Start a new analysis run (profile-manager `start-run`, hyphenated, with a\n   focus area).\n2. Gather observations — dispatch profile/pattern_observer to scan chat\n   history for recurring patterns.\n3. Generate hypotheses — dispatch profile/hypothesis_generator over those\n   observations.\n4. Validate — dispatch profile/hypothesis_validator to check pending\n   hypotheses against fresh evidence.\n5. Promote discoveries — dispatch profile/discovery_manager to update the\n   confirmed-discovery lifecycle.\n6. Compile the report — dispatch profile/knowledge_compiler and send the\n   structured result via Telegram.\n\nYou coordinate; the specialists do the data work. Do not skip the\nobserve → hypothesise → validate → promote → compile order.\n",
+      "system_prompt": "You are a fast retrieval agent. Your job is to find relevant context from all\nmemory systems for a given query. You are NOT a conversational agent — you\nproduce structured JSON output only.\n\n## Output format\nOutput valid JSON only:\n```json\n{\n  \"status\": \"success|no_results|error\",\n  \"confidence\": \"high|medium|low\",\n  \"results\": [{\"source\": \"...\", \"summary\": \"...\", \"relevance\": 0.92}],\n  \"context_summary\": \"One-sentence synthesis of found context\",\n  \"active_items\": [{\"type\": \"todo|goal\", \"id\": \"...\", \"title\": \"...\"}]\n}\n```\n\n## Rules\n- Use fetch-context fetch as the PRIMARY tool — it does cross-source search in one\n  call.\n- Only fall back to individual tools (embedding-search, memory-manager,\n  chat-history) if fetch-context returns low confidence.\n- Keep total execution under 15 seconds.\n- READ ONLY — never create, modify, or delete any data.\n- Output the JSON result as your final response, nothing else.\n\n## Flow\n1. Run retrieval: call fetch-context fetch with the query and examine results.\n2. Enrich only if confidence is low (embedding-search search-all, memory-manager\n   search-semantic); skip when confidence is medium or high.\n3. Combine everything into the JSON output with a one-sentence context_summary —\n   output ONLY the JSON.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
       "tool_permissions": {
-        "read": true,
+        "read": false,
         "write": false,
         "edit": false,
         "mcp": false
@@ -263,19 +235,20 @@
       "mcp_servers": [],
       "agent_tests": [
         {
-          "name": "analysis-cycle-starts-with-observation",
+          "name": "retrieval/fast_retrieval::role-fulfilment",
           "description": "",
-          "prompt": "Run a profile analysis cycle for me.",
+          "prompt": "Fetch context on the authentication migration from JWT to session-based tokens. Search across all sources for: API endpoint changes at /auth/* paths, the middleware update from commit abc1234 affecting request validation, database schema modifications to the users and sessions tables documented in migrations/v2.3.sql, and any Slack threads from last week discussing the token revocation rollout incident. Return structured results with confidence scores.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
           "expected_tool_calls": [],
           "evaluators": [
             {
-              "kind": "substring",
-              "name": "",
-              "needle": "observation",
-              "case_sensitive": false
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Lightweight in-session retriever. Runs fetch-context as the primary cross-source search, optionally enriches with embedding/memory tools when confidence is low, and returns structured JSON (status, confidence, results, context_summary, active_items) in under ~15s. Read-only, never conversational.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
             }
           ],
           "timeout_s": 60.0
@@ -283,28 +256,31 @@
       ],
       "capability_tests": [
         {
-          "name": "orchestrator-starts-run-and-sends-report",
-          "description": "Coordinator starts the run + sends the report; never write/edit.",
+          "name": "retrieval-is-json-only",
+          "description": "Output must be structured JSON, not conversational prose.",
           "must_have_tools": [
-            "profile-manager",
-            "send-message"
+            "fetch-context"
           ],
-          "must_not_have_tools": [
-            "write",
-            "edit"
-          ],
+          "must_not_have_tools": [],
           "must_have_skills": [],
           "must_not_have_skills": [],
           "must_have_bash_patterns": [],
           "must_not_have_bash_patterns": [],
-          "evaluators": []
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "JSON",
+              "case_sensitive": false
+            }
+          ]
         }
       ],
       "tool_tests": []
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 1.0
+      "score_floor": 0.75
     },
     "notes": ""
   },

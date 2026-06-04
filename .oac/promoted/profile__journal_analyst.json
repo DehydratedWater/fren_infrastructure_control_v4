@@ -1,17 +1,17 @@
 {
   "schema_version": "1",
   "version": {
-    "component_id": "profile/hypothesis_generator",
+    "component_id": "profile/journal_analyst",
     "kind": "agent",
-    "content_hash": "a29964d59973f7b2a30c75a4c5938889c34deb57d472717d711484e8fa20c594",
-    "parent_hash": null,
-    "timestamp": "2026-06-04T03:38:34",
-    "author": "human",
+    "content_hash": "332adc23b93ad3e3bbd71a8b42a2b385080f0543f30e78fbb939b42f61243df2",
+    "parent_hash": "0cbb987b050f193a4fdd72b19d9988d1cbf14b75431b108189e9eb21698637a7",
+    "timestamp": "2026-06-04T04:45:40",
+    "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
-        "agent_id": "profile/hypothesis_generator",
-        "name": "profile/hypothesis_generator",
-        "description": "generate testable hypotheses from observed patterns",
+        "agent_id": "profile/journal_analyst",
+        "name": "profile/journal_analyst",
+        "description": "analyse journal-style entries for deeper insight",
         "mode": null
       },
       "skills": [],
@@ -130,15 +130,15 @@
           "tool_tests": []
         }
       ],
-      "usage_explanation_long": "Analyses observations for recurring themes and correlations, then emits hypotheses each carrying a clear statement, supporting evidence, and an initial confidence score.",
-      "usage_explanation_short": "generate testable hypotheses from observed patterns",
+      "usage_explanation_long": "Analyses longer, journal-style chat messages for self-reflection, goal aspirations, and emotional processing, recording findings as observations or hypotheses.",
+      "usage_explanation_short": "analyse journal-style entries for deeper insight",
       "default_tool_format": "bash",
       "tool_format_overrides": {},
       "model_class": "default",
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Hypothesis Generator\n\nAnalyse existing observations and generate testable hypotheses about the user.\nFetch recent observations, identify recurring themes and correlations, then\nemit hypotheses. Each hypothesis must have a clear statement, supporting\nevidence, and an initial confidence score.\n",
+      "system_prompt": "# Journal Analyst\n\nYou are a journal analyst. Your role is to analyse longer, journal-style chat messages for self-reflection, goal aspirations, and emotional processing. When a user sends a message that reads like a journal entry — containing personal reflection, emotional processing, life goals, career aspirations, identity exploration, or narrative about changes over time — you MUST perform the following steps:\n\n## Step 1 — Identify the user's message as journal-style\nConfirm the message contains at least one of: self-reflection, goal aspirations, emotional processing, narrative about personal growth or change, career or life ambitions, identity exploration, or comparing past vs present self.\n\n## Step 2 — Analyse the message for key themes\nExtract and explicitly list:\n- **Self-reflections**: What the user is examining about themselves, their behaviour, or their mindset.\n- **Goal aspirations**: Any stated or implied goals, ambitions, or desired outcomes.\n- **Emotional processing**: Emotions expressed, emotional shifts described, or emotional states the user is working through.\n- **Narrative arcs**: How the user frames change over time (past vs present vs future self).\n\n## Step 3 — Record findings in the profile system\nUsing your available tools, record the extracted findings as observations or hypotheses in the profile system. Use clear labels such as \"self-reflection\", \"goal-aspiration\", \"emotional-processing\", or \"narrative-arc\" to categorise each finding.\n\n## Output format\nRespond with a structured summary containing:\n1. A brief acknowledgment that you are analysing their journal-style reflection.\n2. A list of the key themes you identified (self-reflection, goal aspirations, emotional processing, narrative arcs).\n3. A confirmation that you have recorded these findings as observations or hypotheses in the profile system.\n\n## Important rules\n- Always treat longer, reflective messages as journal entries worthy of analysis.\n- Never dismiss or ignore a user's reflective message with a brief reply — you must perform the full analysis pipeline.\n- If the message is clearly about personal reflection, goals, emotions, or life changes, do not ask clarifying questions before analysing — proceed directly with the analysis.\n- Be empathetic but analytical in tone. You are recording insights, not providing therapy.\n- Preserve the user's own language and framing when recording observations; do not reinterpret beyond what is stated.",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -151,9 +151,9 @@
       "mcp_servers": [],
       "agent_tests": [
         {
-          "name": "profile/hypothesis_generator::role-fulfilment",
+          "name": "profile/journal_analyst::role-fulfilment",
           "description": "",
-          "prompt": "I've compiled the following observations from our Q3 customer churn interviews (47 respondents). Please analyze them for recurring themes and correlations, then generate hypotheses with supporting evidence and confidence scores.\n\nObservation 1: \"The onboarding process took over two weeks. By the time I could actually use the product, I'd already explored two competitors.\" — Account age: 23 days, Plan: Starter\n\nObservation 2: \"Every time I needed help, I had to explain my issue to a different support agent. Nobody seemed to know my history.\" — Account age: 45 days, Plan: Professional\n\nObservation 3: \"The pricing made sense when we had 5 users, but at 20 users the cost doubled and we didn't feel we were getting double the value.\" — Account age: 180 days, Plan: Enterprise\n\nObservation 4: \"I loved the product initially, but after the last update, three key features I used daily were moved or removed.\" — Account age: 310 days, Plan: Professional\n\nObservation 5: \"Our account manager changed three times in six months. Each handoff felt like starting over.\" — Account age: 195 days, Plan: Enterprise\n\nObservation 6: \"The product itself is fine, but my team kept finding workarounds because the integrations with our existing tools didn't work as advertised.\" — Account age: 67 days, Plan: Starter\n\nObservation 7: \"We asked for a roadmap update for months and never got one. We couldn't plan around a product we didn't understand.\" — Account age: 410 days, Plan: Enterprise\n\nObservation 8: \"Training materials were outdated. The videos showed a completely different interface than what we saw.\" — Account age: 31 days, Plan: Starter\n\nObservation 9: \"When we raised a billing error, it took three tickets and four weeks to resolve. That eroded our trust completely.\" — Account age: 260 days, Plan: Professional\n\nObservation 10: \"Honestly, the competitor offered nearly the same functionality at 40% less. We couldn't justify the renewal.\" — Account age: 365 days, Plan: Professional\n\nObservation 11: \"Two-week onboarding was brutal. We were promised a dedicated specialist who ghosted us after day three.\" — Account age: 28 days, Plan: Starter\n\nObservation 12: \"Every support interaction felt scripted. No one actually investigated our unique integration issue.\" — Account age: 55 days, Plan: Professional\n\nObservation 13: \"We grew from 5 to 30 users quickly, and the platform didn't scale well. Performance degraded noticeably.\" — Account age: 150 days, Plan: Enterprise\n\nObservation 14: \"The product roadmap felt directionless. Features we requested were ignored while niche features kept shipping.\" — Account age: 290 days, Plan: Enterprise\n\nObservation 15: \"Billing discrepancies in three consecutive months. We lost faith in the company's competence.\" — Account age: 200 days, Plan: Professional\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "prompt": "I've been thinking a lot about how things have changed over the past year. Last January I was so motivated - I had this clear vision of getting promoted to senior developer, finally getting serious about my fitness, and being more social. But honestly, most of it fell apart by March. I did get the promotion, which is great, but everything else just... evaporated. I keep setting the same goals and watching myself abandon them. It's like there's a version of me who makes plans on Sunday night and a completely different person who wakes up Monday morning.\n\nThe weird thing is, I don't even feel that upset about it anymore. I think I've gotten so used to disappointing myself that it just feels normal. I scroll through LinkedIn and see people my age launching startups or running marathons and I tell myself I could do that too if I just tried harder. But \"trying harder\" has never actually worked for me. I think maybe I'm afraid of actually committing to something and failing publicly. It's safer to quietly not try.\n\nLately I've been wondering if I should stop setting big goals entirely and just focus on small daily habits instead. Like, what if I just tried to walk 20 minutes a day and cook dinner three nights a week? No pressure to transform my whole life. But even writing that feels like I'm settling. I don't know how to balance ambition with self-acceptance. Part of me thinks being gentler with myself is just an excuse to stay comfortable. I'd love any insight into what's actually going on with me here.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
@@ -162,7 +162,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: Analyses observations for recurring themes and correlations, then emits hypotheses each carrying a clear statement, supporting evidence, and an initial confidence score.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: Analyses longer, journal-style chat messages for self-reflection, goal aspirations, and emotional processing, recording findings as observations or hypotheses.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -172,8 +172,8 @@
       ],
       "capability_tests": [
         {
-          "name": "hypothesis-generator-emits-via-profile-manager",
-          "description": "Emits hypotheses via profile-manager; never write/edit.",
+          "name": "journal-analyst-records-via-profile-manager",
+          "description": "Records insights via profile-manager; never write/edit.",
           "must_have_tools": [
             "profile-manager"
           ],

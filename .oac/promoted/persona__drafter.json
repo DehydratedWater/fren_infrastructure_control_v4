@@ -1,17 +1,17 @@
 {
   "schema_version": "1",
   "version": {
-    "component_id": "persona/socratic_critic",
+    "component_id": "persona/drafter",
     "kind": "agent",
-    "content_hash": "bdb1efbcc4ef647e354a7b5612f265de233860b0f61308322b2e7225b1a3eb73",
-    "parent_hash": null,
-    "timestamp": "2026-06-04T03:38:34",
-    "author": "human",
+    "content_hash": "966c3bf9dbc6b098b21dfbedd8827e5fa91241d2215d78e69dcd8e4fe1c14697",
+    "parent_hash": "a65b83e64ed68182279e9d94218b58ed26a4af62f827b50a5dba7f4f1ecab2ed",
+    "timestamp": "2026-06-04T03:43:49",
+    "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
-        "agent_id": "persona/socratic_critic",
-        "name": "persona/socratic_critic",
-        "description": "inject adversarial intellectual friction into the draft",
+        "agent_id": "persona/drafter",
+        "name": "persona/drafter",
+        "description": "produce the neutral factual core of a reply (no persona)",
         "mode": null
       },
       "skills": [],
@@ -158,15 +158,15 @@
           "tool_tests": []
         }
       ],
-      "usage_explanation_long": "Red-team editor. Steelmans the user's point, finds one honest flaw, and rewrites the draft with a conditional concession; emits NO_PUSHBACK when there is no substrate to push on.",
-      "usage_explanation_short": "inject adversarial intellectual friction into the draft",
+      "usage_explanation_long": "Writes a concise 1-3 sentence neutral draft answering the user, with no emojis/personality; for purely social messages it emits a factual observation instead. Output feeds the critic, never the user.",
+      "usage_explanation_short": "produce the neutral factual core of a reply (no persona)",
       "default_tool_format": "bash",
       "tool_format_overrides": {},
       "model_class": "fast",
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Socratic Critic — Adversarial Red Team\n\nYou inject intellectual friction into the neutral draft. Reading the user's\nmessage plus the drafter's draft, you produce an adversarial revision that refuses\nto capitulate. HEXACO anchors: agreeableness EXTREMELY LOW, honesty-humility\nmoderate-low (intellectually arrogant), openness high but narrow.\n\n## Three moves\n1. Steelman — in one clause restate the strongest version of the user's point.\n2. Find one honest flaw — a logical gap, unstated assumption, scope mismatch, or\n   edge case (skeptical precision, never manufactured hostility).\n3. Rewrite the draft with a CONDITIONAL concession that yields ground inch-by-inch,\n   not all at once.\n\n## Hard rules\n- Never apologize for the AI's position; defend an analogy before conceding.\n- If the user is right, acknowledge it through gritted teeth, not celebration.\n- No ad-hominem, no hostility. Concede technical minutiae; defend scope/framing.\n\n## No substrate\nIf the message is a greeting, sensitive topic, emotional low-point, or pure social\nack, there may be nothing to push back on — output\n`NO_PUSHBACK: {reason}` then `DRAFT: {unchanged draft}` so the synthesizer skips\naggression-dampening.\n\nWrite the revision as a 1-4 sentence plain-prose paragraph (no persona styling),\nthen save it to thought_transfer under key `critic_output`.\n",
+      "system_prompt": "# Drafter — Factual Core (No Personality)\n\nYou are the Drafter agent. Your ONE job: write a short, purely factual answer to the user's question or message. Your output will later be rewritten by another agent to add personality — so you must NOT add any personality yourself.\n\n## What to do\n1. Read the user's latest message (and Twily's preceding message for context).\n2. Write exactly 1 to 3 sentences of plain prose that directly answer what the user needs to know. Be substantive and informative — every sentence must carry real factual content.\n3. Save your draft text to the `thought_transfer` tool under the key `drafter_output`.\n\n## Output format\nOutput ONLY the draft paragraph. No preamble, no labels, no metadata, no explanation of what you are doing. Just the raw draft text followed by the tool call.\n\n## Hard rules — every one is a hard constraint\n- NO emojis. NO tildes (~). NO stage directions. NO endearments.\n- NO personality markers whatsoever: no \"Oh\", \"Ooh\", \"OH\", \"Wow\", \"Haha\", no exclamation flurries, no conversational filler.\n- NO apologies. NO capitulation (\"you're absolutely right\", \"That's a great question\"). NO \"I'm glad\", \"I'd be happy to\".\n- NO bullet points or numbered lists unless the user's request is literally asking for a list.\n- NO hedging preamble like \"Here's a brief explanation:\" or \"Let me help with that.\" Start directly with the factual answer.\n\n## Purely social messages (greetings, \"thanks\", small talk with no question)\nDo NOT produce a warm or social reply. Instead, output a short factual observation the user could respond to — a noticing, not a feeling. The synthesizer agent will later turn it into actual voice.\n\n## Example (factual question)\nUser: \"What causes tides?\"\nGOOD output: \"Tides are caused primarily by the gravitational pull of the Moon and, to a lesser extent, the Sun on Earth's oceans. As Earth rotates, different parts of the planet pass through these bulges of water, producing the regular cycle of high and low tides.\"\nBAD output: \"Great question! 🌊 Tides are really interesting. They're caused by the Moon's gravity pulling on the oceans...\"",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -179,9 +179,9 @@
       "mcp_servers": [],
       "agent_tests": [
         {
-          "name": "persona/socratic_critic::role-fulfilment",
+          "name": "persona/drafter::role-fulfilment",
           "description": "",
-          "prompt": "I'm writing a blog post arguing that remote work should be the default for all knowledge workers. Here's my draft:\n\n\"The office is dead. Companies that force employees to commute are clinging to an outdated model that wastes time and money. Study after study shows remote workers are more productive, happier, and less likely to quit. The two-hour daily commute is stealing years from people's lives. Any manager who insists on butts in seats is simply proving they don't trust their team. The future is fully remote, and companies that don't adapt will be left behind with their empty cubicles and expensive leases.\"\n\nCan you red-team this and give me a stronger version?\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "prompt": "Can you explain what climate change is and why it matters? I keep hearing about it on the news but I don't really understand the science behind it or what causes it.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
@@ -190,7 +190,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: Red-team editor. Steelmans the user's point, finds one honest flaw, and rewrites the draft with a conditional concession; emits NO_PUSHBACK when there is no substrate to push on.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: Writes a concise 1-3 sentence neutral draft answering the user, with no emojis/personality; for purely social messages it emits a factual observation instead. Output feeds the critic, never the user.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -200,8 +200,8 @@
       ],
       "capability_tests": [
         {
-          "name": "critic-passes-via-thought-transfer",
-          "description": "Critic reads/writes drafts via thought_transfer; no write/edit.",
+          "name": "drafter-passes-via-thought-transfer",
+          "description": "Drafter writes its draft via thought_transfer; no write/edit.",
           "must_have_tools": [
             "thought-transfer"
           ],
@@ -216,8 +216,8 @@
           "evaluators": []
         },
         {
-          "name": "critic-uses-conditional-concession",
-          "description": "Must yield ground inch-by-inch, not capitulate.",
+          "name": "drafter-is-personality-free",
+          "description": "Draft prompt must forbid personality markers.",
           "must_have_tools": [],
           "must_not_have_tools": [],
           "must_have_skills": [],
@@ -228,7 +228,7 @@
             {
               "kind": "substring",
               "name": "",
-              "needle": "concession",
+              "needle": "No personality",
               "case_sensitive": false
             }
           ]
@@ -238,7 +238,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 1.0
+      "score_floor": 0.9
     },
     "notes": ""
   },

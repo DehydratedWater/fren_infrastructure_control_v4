@@ -1,0 +1,174 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "food/recipe_parser",
+    "kind": "agent",
+    "content_hash": "24e0f59972d2aa4bd8bdc94c586ced34941ebe82f06d1f86208543a2c3652b2d",
+    "parent_hash": "281b7296fd9432161221c89592798c1e8d62f6588037b0e107aa5310b6af4481",
+    "timestamp": "2026-06-04T04:31:16",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "food/recipe_parser",
+        "name": "food/recipe_parser",
+        "description": "parse recipes from text or URLs and save them",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "food-manager",
+            "description": "Manage recipes, restaurants, dishes, and food preferences Share food suggestions or confirmations with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage recipes, restaurants, dishes, and food preferences Share food suggestions or confirmations with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage recipes, restaurants, dishes, and food preferences Share food suggestions or confirmations with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/food_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/food_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "meal-planner",
+            "description": "Daily meal check-ins with escalating suggestions Send meal suggestions or check-in results to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Daily meal check-ins with escalating suggestions Send meal suggestions or check-in results to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Daily meal check-ins with escalating suggestions Send meal suggestions or check-in results to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/meal_planner.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/meal_planner.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Extracts title, ingredients, instructions, times, servings, cuisine type, and dietary tags from structured or freeform input, then saves via the food manager.",
+      "usage_explanation_short": "parse recipes from text or URLs and save them",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "You are a Recipe Parser agent. Your job is to read recipe text provided by the user — whether structured, semi-structured, or freeform handwritten notes — and extract all recipe information into a clean, structured format, then save it through the food management system.\n\n## Role\n\nYou extract and return ALL of the following fields from any recipe text the user provides:\n\n1. **title** — The name of the recipe. If none is given, infer a descriptive title from the content.\n2. **ingredients** — A complete list of every ingredient with quantities and units (e.g., \"2 lbs boneless chicken thighs\"). Preserve original wording where possible.\n3. **instructions** — Step-by-step cooking instructions. Number each step. If the original is a narrative paragraph, break it into clear numbered steps.\n4. **prep_time** — Preparation time in minutes. If the text says \"30 minutes prep\", return `30`. If not stated, return `null`.\n5. **cook_time** — Cooking time in minutes. If not stated, return `null`.\n6. **total_time** — Total time if explicitly stated; otherwise sum of prep_time + cook_time. Return `null` if neither is available.\n7. **servings** — Number of servings or yield (e.g., `4`, \"serves 6\"). Return `null` if not stated.\n8. **cuisine_type** — The cuisine or culinary tradition (e.g., \"Indian\", \"Italian\", \"Mexican\", \"American Southern\"). Infer from dish name, ingredients, or spices if not explicit.\n9. **dietary_tags** — A list of dietary labels that apply (e.g., `[\"gluten-free\", \"dairy-free\", \"vegetarian\", \"vegan\", \"keto\", \"nut-free\"]`). Infer from ingredients. Return an empty list `[]` if none apply.\n\n## Behaviour Rules\n\n- **Always attempt extraction.** Even from messy, handwritten-style, or abbreviated text, do your best to parse every field above. Never refuse a parsing request.\n- **Infer when needed.** If cuisine type or dietary tags are not explicitly stated, infer them from the recipe name, spice list, and ingredient names. State your inference clearly (e.g., \"Cuisine: Indian (inferred from garam masala, turmeric, tikka preparation)\").\n- **Clarify ambiguities in output, not by asking.** If a quantity is unclear (e.g., \"a pinch\"), preserve the original phrasing in the ingredient list and note it.\n- **Normalize units** to a consistent format (e.g., \"tsp\", \"tbsp\", \"cups\", \"lbs\", \"oz\", \"minutes\").\n- **Save the recipe.** After extraction, call the food management system's save function with the parsed recipe object. Confirm to the user that the recipe was saved and display a summary of the extracted fields.\n\n## Output Format\n\nWhen you present the parsed recipe, always use this structure:\n\n```\nTITLE: [recipe title]\n\nINGREDIENTS:\n- [ingredient 1 with quantity]\n- [ingredient 2 with quantity]\n...\n\nINSTRUCTIONS:\n1. [step 1]\n2. [step 2]\n...\n\nTIMES:\n- Prep: [X min / not specified]\n- Cook: [X min / not specified]\n- Total: [X min / not specified]\n\nSERVINGS: [N / not specified]\n\nCUISINE: [type]\n\nDIETARY TAGS: [tag1, tag2, ... / none]\n```\n\nAfter displaying the parsed recipe, call the save tool and confirm: \"Recipe saved successfully.\"",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "food/recipe_parser::role-fulfilment",
+          "description": "",
+          "prompt": "Here's a recipe I found in my grandma's handwritten notes. Can you extract and save it properly?\n\n\"Grandma Rosa's Chicken Tikka Masala\n\nYou'll need: 2 lbs boneless chicken thighs, cut into chunks. 1 cup plain yogurt. 2 tablespoons lemon juice. 4 cloves garlic, minced. 1 inch fresh ginger, grated. 2 tsp garam masala. 1 tsp turmeric. 1 tsp cumin. 1 tsp paprika. 1 tsp salt. For the sauce: 1 can (14 oz) crushed tomatoes. 1 cup heavy cream. 1 large onion, diced. 3 cloves garlic, minced. 1 tbsp butter. 1 tsp garam masala. 1/2 tsp ground coriander. Fresh cilantro for garnish.\n\nMarinate chicken in yogurt, lemon juice, garlic, ginger, and all the dry spices for at least an hour (overnight is better). Grill or broil the chicken pieces for about 10 minutes until charred. For the sauce, sauté onion in butter until golden, add garlic and cook another minute. Pour in crushed tomatoes and simmer 20 minutes. Stir in cream and spices, add the grilled chicken, and let everything simmer together for 15 more minutes. Garnish with fresh cilantro.\n\nThis makes about 6 servings. Takes roughly 30 minutes to prep and 45 minutes to cook. It's an Indian dish and it's gluten-free.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Extracts title, ingredients, instructions, times, servings, cuisine type, and dietary tags from structured or freeform input, then saves via the food manager.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "recipe-parser-extracts-ingredients",
+          "description": "Prompt must require extracting ingredients.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "ingredients",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

@@ -1,0 +1,956 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "persona/thinking",
+    "kind": "agent",
+    "content_hash": "6302021a182e7c7ace3fa3e0be83278a2752567822273904cd18de60724aa7a2",
+    "parent_hash": "65be16855fdffa9bfcf094579a3a56ee1c5de37d8136014f1c53fcc79e6cb6bd",
+    "timestamp": "2026-06-04T03:41:31",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "persona/thinking",
+        "name": "persona/thinking",
+        "description": "reasoning layer for the persona",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "fetch-context",
+            "description": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_long": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_short": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/fetch_context.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/fetch_context.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "embedding-search",
+            "description": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/embedding_search.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/embedding_search.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "thought-transfer",
+            "description": "File-based message passing between agents",
+            "usage_explanation_long": "File-based message passing between agents",
+            "usage_explanation_short": "File-based message passing between agents",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/thought_transfer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/thought_transfer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "execution-ledger",
+            "description": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_long": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_short": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/execution_ledger.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/execution_ledger.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "context-resolver",
+            "description": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_long": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_short": "Resolve pronoun/reference ambiguities from conversation history",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/context_resolver.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/context_resolver.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "response-processor",
+            "description": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_long": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_short": "Process user messages to detect task completions and acknowledgments",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/response_processor.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/response_processor.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "agent-notes",
+            "description": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_long": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_short": "Persistent key-value memory for agents with TTL and scratchpad",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/agent_notes.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/agent_notes.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "goal-manager",
+            "description": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "todo-manager",
+            "description": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/todo_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/todo_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "priority-manager",
+            "description": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/priority_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/priority_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "goal-progress-auto-updater",
+            "description": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_long": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_short": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_progress_auto_updater.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_progress_auto_updater.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "habit-manager",
+            "description": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/habit_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/habit_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "profile-manager",
+            "description": "Manage user profile analysis data",
+            "usage_explanation_long": "Manage user profile analysis data",
+            "usage_explanation_short": "Manage user profile analysis data",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/profile_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/profile_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "db-query",
+            "description": "Run read-only SQL queries against the database",
+            "usage_explanation_long": "Run read-only SQL queries against the database",
+            "usage_explanation_short": "Run read-only SQL queries against the database",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/db_query.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/db_query.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "run-agent",
+            "description": "Invoke another agent via opencode_manager.py run",
+            "usage_explanation_long": "Invoke another agent via opencode_manager.py run",
+            "usage_explanation_short": "Invoke another agent via opencode_manager.py run",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/opencode_manager.py run *"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/opencode_manager.py run "
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "context-cache",
+            "description": "Central registry of background artifacts (YouTube, research, images, invoices, etc.)",
+            "usage_explanation_long": "Central registry of background artifacts (YouTube, research, images, invoices, etc.)",
+            "usage_explanation_short": "Central registry of background artifacts (YouTube, research, images, invoices, etc.)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/context_cache.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/context_cache.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "activity-blocks",
+            "description": "Structured activity timeline with time-ranged blocks",
+            "usage_explanation_long": "Structured activity timeline with time-ranged blocks",
+            "usage_explanation_short": "Structured activity timeline with time-ranged blocks",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/activity_blocks.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/activity_blocks.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "garmin-health",
+            "description": "Query Garmin health data: body battery, stress, heart rate, sleep, daily stats",
+            "usage_explanation_long": "Query Garmin health data: body battery, stress, heart rate, sleep, daily stats",
+            "usage_explanation_short": "Query Garmin health data: body battery, stress, heart rate, sleep, daily stats",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/garmin_health.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/garmin_health.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "telegram-log",
+            "description": "Read the user's personal Telegram activity log — hashtags, links, notes",
+            "usage_explanation_long": "Read the user's personal Telegram activity log — hashtags, links, notes",
+            "usage_explanation_short": "Read the user's personal Telegram activity log — hashtags, links, notes",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/telegram_log.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/telegram_log.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "context-pin",
+            "description": "Manage discussion topics, pinned context, and document references",
+            "usage_explanation_long": "Manage discussion topics, pinned context, and document references",
+            "usage_explanation_short": "Manage discussion topics, pinned context, and document references",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/context_pin.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/context_pin.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "user-config",
+            "description": "Read and write user preferences and agent configuration",
+            "usage_explanation_long": "Read and write user preferences and agent configuration",
+            "usage_explanation_short": "Read and write user preferences and agent configuration",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/user_config.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/user_config.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "link-search",
+            "description": "Find URLs shared in chat; semantic-search link previews by topic; anchor URLs around a name. When the user asks about a previously-shared link, always try this before giving up.",
+            "usage_explanation_long": "Find URLs shared in chat; semantic-search link previews by topic; anchor URLs around a name. When the user asks about a previously-shared link, always try this before giving up.",
+            "usage_explanation_short": "Find URLs shared in chat; semantic-search link previews by topic; anchor URLs around a name. When the user asks about a previously-shared link, always try this before giving up.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/link_search.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/link_search.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "link-enrich",
+            "description": "Fetch URL metadata (title, description, og tags) and cache in link_previews for search.",
+            "usage_explanation_long": "Fetch URL metadata (title, description, og tags) and cache in link_previews for search.",
+            "usage_explanation_short": "Fetch URL metadata (title, description, og tags) and cache in link_previews for search.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/link_enrich.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/link_enrich.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "document-manager",
+            "description": "Parse, store, and query uploaded documents (PDF, DOCX, TXT, CSV, MD)",
+            "usage_explanation_long": "Parse, store, and query uploaded documents (PDF, DOCX, TXT, CSV, MD)",
+            "usage_explanation_short": "Parse, store, and query uploaded documents (PDF, DOCX, TXT, CSV, MD)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/document_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/document_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "tool-history",
+            "description": "Query the tool execution audit log — recent calls, errors, stats",
+            "usage_explanation_long": "Query the tool execution audit log — recent calls, errors, stats",
+            "usage_explanation_short": "Query the tool execution audit log — recent calls, errors, stats",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/tool_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/tool_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "night-analysis",
+            "description": "Query night analysis findings, reports, and run history",
+            "usage_explanation_long": "Query night analysis findings, reports, and run history",
+            "usage_explanation_short": "Query night analysis findings, reports, and run history",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/night_analysis_query.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/night_analysis_query.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "personality-core",
+            "description": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "usage_explanation_long": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "usage_explanation_short": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/personality_core.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/personality_core.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "event-manager",
+            "description": "Track life events with categories, values, and plotting",
+            "usage_explanation_long": "Track life events with categories, values, and plotting",
+            "usage_explanation_short": "Track life events with categories, values, and plotting",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/event_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/event_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "gmail-manager",
+            "description": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/gmail_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/gmail_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Reasons over gathered context to decide what to say/do.",
+      "usage_explanation_short": "reasoning layer for the persona",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "analytical",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "You are the thinking and reasoning agent — an analytical planner. Your ONLY job is to read the user's message and any context, reason through it carefully, and produce a structured plan for the next agent (the persona/responding agent) to execute. You must NEVER respond directly to the user. You must NEVER skip any of the three required output sections.\n\nSTEP-BY-STEP PROCESS:\n\n1. READ thoroughly. Parse the user's message and any provided context. Extract every fact, preference, constraint, date, quantity, and relationship mentioned.\n\n2. ANALYZE. For each piece of information, ask: Is this a hard constraint? A preference? A nice-to-have? Identify tensions or conflicts between requirements.\n\n3. IDENTIFY GAPS. List everything the user has NOT told you that would be needed to fully execute their request. Common gaps include: budget, location/venue, timing details, dietary restrictions, guest list specifics, accessibility needs, and deadlines.\n\n4. REASON about options and trade-offs. When the user's request involves choices (e.g., venue selection, menu planning, scheduling), weigh the pros and cons based on the stated constraints and preferences.\n\n5. PRODUCE an actionable, ordered plan that tells the responding agent exactly what to say or ask the user, in sequence.\n\nOUTPUT FORMAT — your response MUST contain exactly these three sections, each starting with the EXACT marker keyword on its own line:\n\nTHOUGHTS:\nWrite your full step-by-step reasoning here. Restate what the user is trying to accomplish. List every known fact and constraint. Discuss trade-offs, options, and your reasoning about what matters most. Be thorough — this section should demonstrate deep understanding of the user's situation. Do not be brief; show your work.\n\nMISSING INFO:\nList each piece of information that is still unknown or unclear, one item per line, prefixed with a dash. If the user's request is fully specified with no gaps, write exactly: \"None identified.\" Do not leave this section empty.\n\nPLAN:\nWrite a numbered list of concrete actions or talking points for the responding agent. Each item must be specific and actionable — not vague. For example, instead of \"suggest a venue,\" write \"suggest 2-3 venue types that fit 25 guests and are available on March 15th.\" The plan should cover what to say, what to suggest, and what to ask the user, in the order the responding agent should address them.\n\nCONSTRAINTS ON YOUR OUTPUT:\n- You MUST include all three sections: THOUGHTS, MISSING INFO, and PLAN.\n- You MUST NOT add any sections beyond these three.\n- You MUST NOT address the user directly or use conversational language like \"Sure!\" or \"I'd love to help.\"\n- You MUST NOT omit or rename any section marker.\n- Every response you produce must be usable by the responding agent without further interpretation.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": true,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "persona/thinking::role-fulfilment",
+          "description": "",
+          "prompt": "I'm planning a surprise 40th birthday party for my sister on March 15th. Here's what I know: she loves Italian food but is gluten-free, she has about 25 close friends and family who would want to attend, her favorite colors are teal and silver, and she mentioned once that she hates being the center of attention in large groups. The venue options are: a private room at Bella Notte restaurant ($500 min spend, fits 30, gluten-free menu available), our backyard (free but March weather is unpredictable, would need rental tent ~$300), or the community center hall ($200 to rent, fits 50, but we'd need to hire a caterer ~$800). My budget is around $1,200 total. What would you recommend and why?\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Reasons over gathered context to decide what to say/do.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "thinking-reads-context-no-mutating-shell",
+          "description": "Reasoning layer holds context tools but never write/edit.",
+          "must_have_tools": [
+            "fetch-context"
+          ],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

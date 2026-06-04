@@ -1,17 +1,17 @@
 {
   "schema_version": "1",
   "version": {
-    "component_id": "workflows/cron_master",
+    "component_id": "workflows/priority",
     "kind": "agent",
-    "content_hash": "5a3868b57a1402df65d769cf9d8ab17f863c348018c61062d946f83936d0f3ec",
+    "content_hash": "8cee771e4fff30cfe41b91de8ac7a6a216daf80b3c67c8d0ee3600fb2973963c",
     "parent_hash": null,
-    "timestamp": "2026-06-02T01:10:59",
+    "timestamp": "2026-06-04T03:38:34",
     "author": "human",
     "definition": {
       "header": {
-        "agent_id": "workflows/cron_master",
-        "name": "workflows/cron_master",
-        "description": "manage scheduled cron jobs for agents and workflows",
+        "agent_id": "workflows/priority",
+        "name": "workflows/priority",
+        "description": "manage priorities with Eisenhower-matrix scoring",
         "mode": null
       },
       "skills": [],
@@ -19,10 +19,10 @@
       "extra_tools": [
         {
           "header": {
-            "name": "cron-manager",
-            "description": "Log and query cron and workflow executions",
-            "usage_explanation_long": "Log and query cron and workflow executions",
-            "usage_explanation_short": "Log and query cron and workflow executions",
+            "name": "priority-manager",
+            "description": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
             "rules": []
           },
           "json_tool": null,
@@ -32,11 +32,11 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/cron_manager.py*"
+                "python scripts/priority_manager.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/cron_manager.py --command list"
+              "python scripts/priority_manager.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -74,15 +74,15 @@
           "tool_tests": []
         }
       ],
-      "usage_explanation_long": "/cron_master command trigger. Manages recurring and one-time scheduled jobs via schedule_manager.py (always getting current time first) and views execution history; defaults scheduled agents to persona/twily_chat.",
-      "usage_explanation_short": "manage scheduled cron jobs for agents and workflows",
+      "usage_explanation_long": "/priority command trigger. Manages priorities via priority_manager.py using importance x immediacy (Eisenhower quadrants), with add/list/matrix/update/link/audit operations.",
+      "usage_explanation_short": "manage priorities with Eisenhower-matrix scoring",
       "default_tool_format": "bash",
       "tool_format_overrides": {},
       "model_class": "fast",
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Cron Master (/cron_master)\n\nManage scheduled jobs (config/schedule.yml recurring + one_time_schedule.yml\none-time/limited-run) and view execution history. ALWAYS get the current time\n(`date -u`) before scheduling — user tz is Europe/Warsaw; a past --at fires\nimmediately, so double-check. Use schedule_manager.py for list/get/status/\nenable/disable/update-cron/update-prompt/add/remove and add-one-time/\nlist-one-time/remove-one-time; cron_manager.py list-recent for history.\nUse BARE agent paths (the scheduler appends the model postfix); default to\npersona/twily_chat unless a specific agent is requested. Deliver via\nemit_guidance.py.\n",
+      "system_prompt": "# Priority Management (/priority)\n\nManage priorities with the Eisenhower matrix (importance x immediacy) via\npriority_manager.py: Q1 do-first, Q2 schedule, Q3 delegate, Q4 eliminate.\nOperations: add (--immediacy/--importance/--category), list, matrix, update,\nlink (to goal/todo), audit. Render the matrix when listing and deliver via\nemit_guidance.py.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -95,19 +95,20 @@
       "mcp_servers": [],
       "agent_tests": [
         {
-          "name": "cron-master-uses-schedule-manager",
+          "name": "workflows/priority::role-fulfilment",
           "description": "",
-          "prompt": "list my scheduled jobs",
+          "prompt": "/priority add \"Q4 product launch deck\" importance:9 immediacy:8 category:work stakeholders:[\"Sarah Chen\", \"Mike Torres\"] deadline:2024-02-15 notes:\"Needs competitive analysis section and updated financials before review\"\n\nAlso here are my other current priorities to register:\n\n1. \"Fix authentication bug causing user lockouts\" - importance:10 immediacy:10 category:engineering deadline:ASAP\n2. \"Renew office lease\" - importance:7 immediacy:4 category:admin deadline:2024-03-30\n3. \"Research conference venues for team offsite\" - importance:5 immediacy:3 category:admin deadline:2024-04-15\n4. \"Respond to regulatory compliance audit questions\" - importance:9 immediacy:9 category:legal deadline:2024-02-05 stakeholders:[\"Legal Team\"]\n5. \"Update employee handbook policies\" - importance:6 immediacy:5 category:hr deadline:2024-03-01\n6. \"Prepare board meeting materials\" - importance:8 immediacy:7 category:executive deadline:2024-02-20\n\nAfter adding these, please run /priority matrix so I can see the full Eisenhower quadrant view, and then /priority audit to flag any conflicts or imbalances.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
           "expected_tool_calls": [],
           "evaluators": [
             {
-              "kind": "substring",
-              "name": "",
-              "needle": "schedule_manager",
-              "case_sensitive": false
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: /priority command trigger. Manages priorities via priority_manager.py using importance x immediacy (Eisenhower quadrants), with add/list/matrix/update/link/audit operations.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
             }
           ],
           "timeout_s": 60.0
@@ -115,8 +116,8 @@
       ],
       "capability_tests": [
         {
-          "name": "cron-master-gets-time-first",
-          "description": "Must get the current time before scheduling.",
+          "name": "priority-uses-eisenhower",
+          "description": "Must reference the Eisenhower matrix model.",
           "must_have_tools": [],
           "must_not_have_tools": [],
           "must_have_skills": [],
@@ -127,7 +128,7 @@
             {
               "kind": "substring",
               "name": "",
-              "needle": "time",
+              "needle": "matrix",
               "case_sensitive": false
             }
           ]
@@ -137,7 +138,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 1.0
+      "score_floor": 0.85
     },
     "notes": ""
   },

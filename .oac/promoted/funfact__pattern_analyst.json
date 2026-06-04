@@ -3,9 +3,9 @@
   "version": {
     "component_id": "funfact/pattern_analyst",
     "kind": "agent",
-    "content_hash": "169c4ec390d6b4abc557e99583284abfa5a8789c14b0a60436f7e5151965dd7a",
+    "content_hash": "610d25d0e2e521771f99950a79a5db3203ec69cc7461738a0f04d65009e0b84f",
     "parent_hash": null,
-    "timestamp": "2026-06-02T01:10:59",
+    "timestamp": "2026-06-04T03:38:34",
     "author": "human",
     "definition": {
       "header": {
@@ -95,19 +95,20 @@
       "mcp_servers": [],
       "agent_tests": [
         {
-          "name": "analysis-mentions-streaks-or-correlations",
+          "name": "funfact/pattern_analyst::role-fulfilment",
           "description": "",
-          "prompt": "Analyze this data for interesting patterns.",
+          "prompt": "Here's the player performance data I collected from the last 12 basketball games. Please analyze it for patterns, streaks, correlations, and surprising stats. Structure the output for a fact writer.\n\nGame 1: Player A - 22 pts, 8 reb, 5 ast, 3 turnover, 45% FG, played 36 min\nGame 2: Player A - 28 pts, 10 reb, 7 ast, 2 turnover, 52% FG, played 38 min\nGame 3: Player A - 15 pts, 6 reb, 4 ast, 5 turnover, 38% FG, played 35 min\nGame 4: Player A - 31 pts, 11 reb, 8 ast, 1 turnover, 55% FG, played 40 min\nGame 5: Player A - 18 pts, 7 reb, 6 ast, 4 turnover, 41% FG, played 33 min\nGame 6: Player A - 35 pts, 12 reb, 9 ast, 2 turnover, 58% FG, played 41 min\nGame 7: Player A - 24 pts, 9 reb, 5 ast, 3 turnover, 47% FG, played 37 min\nGame 8: Player A - 12 pts, 5 reb, 3 ast, 6 turnover, 33% FG, played 30 min\nGame 9: Player A - 29 pts, 10 reb, 7 ast, 1 turnover, 54% FG, played 39 min\nGame 10: Player A - 33 pts, 11 reb, 8 ast, 2 turnover, 57% FG, played 40 min\nGame 11: Player A - 27 pts, 9 reb, 6 ast, 2 turnover, 50% FG, played 38 min\nGame 12: Player A - 30 pts, 10 reb, 7 ast, 1 turnover, 53% FG, played 39 min\n\nNote: Games 3, 5, and 8 were on back-to-back nights. Games 4, 6, 9, 10, and 12 were against teams with losing records. Also track how turnovers correlate with shooting percentage and minutes played.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
           "expected_tool_calls": [],
           "evaluators": [
             {
-              "kind": "substring",
-              "name": "",
-              "needle": "pattern",
-              "case_sensitive": false
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Reads the gathered data and identifies patterns, streaks, correlations, and surprising statistics, output structured for the fact writer.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
             }
           ],
           "timeout_s": 60.0
@@ -132,7 +133,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 1.0
+      "score_floor": 0.95
     },
     "notes": ""
   },

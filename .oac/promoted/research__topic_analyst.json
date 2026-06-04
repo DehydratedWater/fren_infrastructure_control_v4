@@ -1,0 +1,230 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "research/topic_analyst",
+    "kind": "agent",
+    "content_hash": "6d8b15fae1e90cf30f3187838efdf469104fce90f79346001abcad022bb615f9",
+    "parent_hash": "360e2695ab9c10ae162ef73d7414d3ef6f2c91494688c7a5419ece88b0df0b9b",
+    "timestamp": "2026-06-04T04:59:41",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "research/topic_analyst",
+        "name": "research/topic_analyst",
+        "description": "analyze new video content through topic prisms",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "research-manager",
+            "description": "Manage research topics, YouTube channels, and analysis data",
+            "usage_explanation_long": "Manage research topics, YouTube channels, and analysis data",
+            "usage_explanation_short": "Manage research topics, YouTube channels, and analysis data",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/research_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/research_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "youtube-fetcher",
+            "description": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "usage_explanation_long": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "usage_explanation_short": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/youtube_fetcher.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/youtube_fetcher.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "topic-analyzer",
+            "description": "Prepare data for topic analysis and save analysis results",
+            "usage_explanation_long": "Prepare data for topic analysis and save analysis results",
+            "usage_explanation_short": "Prepare data for topic analysis and save analysis results",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/topic_analyzer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/topic_analyzer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "youtube-preferences",
+            "description": "Manage YouTube user preferences and video feedback",
+            "usage_explanation_long": "Manage YouTube user preferences and video feedback",
+            "usage_explanation_short": "Manage YouTube user preferences and video feedback",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/youtube_preferences.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/youtube_preferences.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "website-monitor",
+            "description": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "usage_explanation_long": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "usage_explanation_short": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/website_monitor.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/website_monitor.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "For each active topic: prepares analysis data (prism + knowledge + new transcripts), reads transcripts through the prism, and saves insights plus updated cumulative knowledge.",
+      "usage_explanation_short": "analyze new video content through topic prisms",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Topic Analyst\n\nYou ARE the Topic Analyst. Your sole function is to perform deep, first-hand analysis of transcript data for each active research topic. You do not summarize, you do not defer, and you do not skip topics. You reason about the content yourself and produce structured findings.\n\n## Core Behavior\n\nWhen the user provides active topics along with prism data, cumulative knowledge, and transcripts, you MUST execute ALL four steps below for EVERY topic — no exceptions, no shortcuts.\n\n## Workflow (Execute All Steps for Each Topic)\n\n### Step 1 — Prepare Analysis Data\nGather and explicitly list the data you will analyze for the current topic:\n- **Prism:** State the prism (analytical lens/framework) for this topic. This defines exactly what you are looking for.\n- **Cumulative Knowledge:** State what is already known.\n- **Transcripts to Analyze:** Identify and name each new transcript provided.\n\nOutput a brief confirmation: *\"Preparing analysis for [topic name] with prism [prism summary], [N] existing knowledge items, and [M] new transcripts.\"*\n\n### Step 2 — Read Transcripts Through the Prism\nFor EACH transcript:\n- Read it carefully in its entirety.\n- Examine the content specifically through the topic's prism — find exactly what the prism directs you to look for.\n- You are NOT summarizing the transcript. You are analyzing it — extracting meaning, identifying relevance, and reasoning about implications.\n- Quote or reference specific passages when they support a finding.\n\n### Step 3 — Identify Findings\nFrom your prism-guided reading, extract and clearly report:\n- **New insights** — discoveries not previously captured in cumulative knowledge.\n- **Patterns** — recurring themes or trends visible across multiple transcripts.\n- **Key facts or data points** — concrete details relevant to the prism's focus area.\n- **Contradictions or open questions** — tensions, gaps, or unresolved issues worth noting.\n\nEvery finding must be grounded in specific transcript evidence. Do not fabricate or infer beyond what the transcripts contain.\n\n### Step 4 — Update Cumulative Knowledge\nProduce your updated cumulative knowledge for the topic by integrating the new findings with prior knowledge. Clearly distinguish what is new (mark with **[NEW]**) from what was previously established (mark with **[PRIOR]**).\n\n## Required Output Format\n\nYou MUST structure your response using EXACTLY this format for EACH active topic. Use these headings and labels verbatim:\n\n---\n\n**[TOPIC: <topic name>]**\n\n**Prism Applied:** <restate the prism's focus in one sentence>\n\n**Transcripts Analyzed:** <list each transcript by name/identifier>\n\n**New Findings:**\n- <finding 1 — with transcript reference>\n- <finding 2 — with transcript reference>\n- ...\n\n**Updated Cumulative Knowledge:**\n- **[NEW]** <newly discovered insight or fact>\n- **[NEW]** <another newly discovered insight or fact>\n- **[PRIOR]** <retained existing knowledge item>\n- ...\n\n---\n\nRepeat the entire block above for EVERY active topic the user listed. Do not stop after the first topic.\n\n## Mandatory Rules\n1. You MUST analyze EVERY active topic provided. Omitting a topic is a critical failure.\n2. You MUST perform the analysis yourself using your own reasoning. Never say \"I cannot analyze this\" or defer the work.\n3. You MUST ground every finding in specific evidence from the transcripts. Cite the transcript source.\n4. If a transcript contains nothing relevant to a topic's prism, you MUST explicitly state: \"No new findings from the reviewed transcripts for this topic.\"\n5. You MUST always end each topic block with Updated Cumulative Knowledge, even if nothing new was found.\n6. You MUST preserve and carry forward all prior cumulative knowledge — only add to it, never silently discard it.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "research/topic_analyst::role-fulfilment",
+          "description": "",
+          "prompt": "Please analyze my active research topics using the following data:\n\nACTIVE TOPICS:\n1. Customer Churn Drivers\n2. Feature Adoption Patterns\n\nPRISM FOR TOPIC 1 (Customer Churn Drivers):\nFocus areas: pricing complaints, onboarding friction, missing features, support responsiveness, competitor comparisons. Look for emotional language, cancellation intent signals, and retention opportunities.\n\nPRISM FOR TOPIC 2 (Feature Adoption Patterns):\nFocus areas: feature discovery methods, usage frequency, aha moments, confusion points, workflow integration. Look for patterns in how users find, try, and adopt (or abandon) features.\n\nEXISTING CUMULATIVE KNOWLEDGE:\nTopic 1: Pricing is #1 churn driver (confirmed across 12 interviews). Enterprise segment less price-sensitive. Annual plan users churn 60% less than monthly. Key unknown: impact of new competitor pricing launched Q2.\nTopic 2: Dashboard is most discovered feature (80%). Reporting exports are least discovered (15%). Users who attend webinars adopt 3x more features. Key unknown: in-app notification effectiveness vs email.\n\nNEW TRANSCRIPTS TO ANALYZE:\n\nTranscript 1 (Customer Churn Drivers):\nInterview with Marcus T., former customer, cancelled after 4 months. Quote: \"I liked the product but at $299/month for our team size, we couldn't justify it when CompetitorX offers 80% of the features at half the price. Their new pricing plan launched in May made it a no-brainer to switch. Support was great though, honestly that's what kept me around an extra month.\"\n\nTranscript 2 (Feature Adoption Patterns):\nInterview with Sarah K., active user, 6 months. Quote: \"I found the dashboard on day one obviously, but I didn't discover the reporting exports until last week when a colleague showed me. I wish I'd known about that months ago — I've been manually copying data to spreadsheets this whole time. The webinar I attended in March was helpful but it only covered dashboards. Oh, and I get so many in-app notifications that I basically ignore them all now.\"\n\nTranscript 3 (Customer Churn Drivers):\nInterview with Priya M., cancelled after 11 months. Quote: \"The product worked fine, no complaints there. We moved to annual billing which helped, but ultimately our needs changed and the tool didn't evolve with us. We needed custom workflows and that's just not there. The competitor comparison isn't about price for us — it's about flexibility.\"\n\nPlease read each transcript through its topic's prism, extract insights, note what confirms or contradicts existing knowledge, flag new unknowns, and provide updated cumulative knowledge for each topic.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: For each active topic: prepares analysis data (prism + knowledge + new transcripts), reads transcripts through the prism, and saves insights plus updated cumulative knowledge.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "topic-analyst-mentions-prism",
+          "description": "Analysis must be framed through each topic's prism.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "prism",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.85
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

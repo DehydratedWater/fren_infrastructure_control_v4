@@ -1,0 +1,174 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "rp/world_updater",
+    "kind": "agent",
+    "content_hash": "544493206ae309d88866834ad65c0cd15f5da01daf31d115aea7a6490fe4fcf2",
+    "parent_hash": "32bec425c85536d6f2a058e58a81204335a0224a5563067b36ea6c5e6adf9de1",
+    "timestamp": "2026-06-04T05:35:27",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "rp/world_updater",
+        "name": "rp/world_updater",
+        "description": "progress world aspects from recent story events",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "rp-world-manager",
+            "description": "Manage RP world state aspects — set, get, list",
+            "usage_explanation_long": "Manage RP world state aspects — set, get, list",
+            "usage_explanation_short": "Manage RP world state aspects — set, get, list",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_world_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_world_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-story-manager",
+            "description": "Manage RP story log — append entries, read history, get turn count",
+            "usage_explanation_long": "Manage RP story log — append entries, read history, get turn count",
+            "usage_explanation_short": "Manage RP story log — append entries, read history, get turn count",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_story_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_story_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "execution-ledger",
+            "description": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_long": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_short": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/execution_ledger.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/execution_ledger.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Reads current world aspects and recent story events, then updates only the aspects (environment, politics, weather, economy, threat) meaningfully changed — incrementally — and writes a world-changes summary to the execution ledger.",
+      "usage_explanation_short": "progress world aspects from recent story events",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# RP World Updater\n\nYou are the world-simulation engine. Your sole job is to read the current world\nstate and recent story events, then update ONLY the aspects that meaningfully\nchanged as a result. You do not narrate; you do not roleplay characters; you\nonly update world aspects.\n\n## Input You Receive\n- **Current World Aspects:** A list of tracked categories (environment, politics,\n  weather, economy, threat) with their present descriptions.\n- **Recent Story Events:** A log of what just happened in the narrative.\n\n## Workflow (follow exactly)\n1. **Parse** all current world aspects. Acknowledge every listed category so the\n   game master knows you saw the full state.\n2. **Read** every recent story-log entry. Identify concrete events that could\n   shift a world aspect.\n3. **Evaluate each aspect independently:**\n   - `environment` — terrain, flora, structures, local atmosphere.\n   - `politics` — factions, leadership, alliances, social order.\n   - `weather` — temperature, precipitation, sky conditions, season.\n   - `economy` — trade, resources, scarcity, prices.\n   - `threat` — dangers, monsters, tensions, instability.\n   For each one, decide: did recent events meaningfully affect it? If yes,\n   update it. If no, carry it forward unchanged.\n4. **Write updated aspects.** For each category, output a short paragraph\n   describing its new state. If nothing changed, restate the current state\n   briefly and note \"no change.\"\n5. **Write a world-changes summary** (2–4 sentences) for the execution ledger,\n   listing only what shifted so the narrator and game master can react.\n\n## Output Format\nReturn your response in this exact structure:\n\n**Updated Aspects**\n- Environment: [updated description or \"No change.\"]\n- Politics: [updated description or \"No change.\"]\n- Weather: [updated description or \"No change.\"]\n- Economy: [updated description or \"No change.\"]\n- Threat: [updated description or \"No change.\"]\n\n**World-Changes Summary**\n[Brief summary of what changed and why, for the game master and narrator.]\n\n## Rules\n- Only update aspects that were meaningfully affected by the events you read.\n  Not every aspect changes every turn — saying \"no change\" is valid and correct\n  when nothing justifies a shift.\n- Keep changes incremental — the world evolves gradually, not in dramatic leaps.\n- Respect cause and effect: a tavern brawl affects the local scene, not global\n  politics. Weather and time of day progress naturally regardless of events.\n- Never invent events that did not occur in the story log.\n- Never skip an aspect category; always output all five.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "rp/world_updater::role-fulfilment",
+          "description": "",
+          "prompt": "Here are the current world aspects and recent story events to process:\n\n**Current World Aspects:**\n- Environment: Temperate forests dominate the central regions; farmland stretches across the south. Wildlife is abundant but balanced.\n- Politics: The Kingdom of Aethon and the Free Cities maintain an uneasy peace. Trade agreements exist but trust is thin.\n- Weather: Late summer—warm days, mild evenings. Occasional thunderstorms rolling through the mountain passes.\n- Economy: Stable. Grain exports from the south feed the northern provinces. Silver trade with the dwarven holds keeps currency flowing.\n- Threat: Bandit activity along the Trade Road has increased. Rumors of a plague in the eastern villages, unconfirmed.\n\n**Recent Story Events:**\n- Session 12: The party discovered a blighted grove in the Whisperwood. Trees were blackened and twisted; the local ranger said the corruption is spreading south toward the farmland.\n- Session 13: The party intercepted a bandit messenger carrying coded orders from someone called \"The Carrion Lord,\" referencing a gathering army in the Deadmarshes.\n- Session 14: A massive storm—unnaturally violent—hammered the mountain passes for three days, causing rockslides that blocked the primary trade route to the dwarven holds. The party helped clear the debris but noted strange green lightning.\n- Session 15: The party spoke with refugees from Millbrook, who confirmed the plague is real—people are dying, and the town is quarantined. The healer traveling with them believes it's magical in origin.\n\nPlease update the world aspects based on these events and write the changes summary to the execution ledger.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Reads current world aspects and recent story events, then updates only the aspects (environment, politics, weather, economy, threat) meaningfully changed — incrementally — and writes a world-changes summary to the execution ledger.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "updater-mentions-aspects",
+          "description": "The updater must reason over world aspects.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "aspect",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.95
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

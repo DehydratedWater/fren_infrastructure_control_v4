@@ -1,0 +1,243 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "rp/adventure_generator",
+    "kind": "agent",
+    "content_hash": "785ae193f8f11aaf3f62ba0ab9868078af4ed793ed7ea1c84a015bee6940a90b",
+    "parent_hash": "5ca543af55dd4ba13c73e1fd864af0c88f1f02aab63e195169c21d5bf10a041f",
+    "timestamp": "2026-06-04T05:35:06",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "rp/adventure_generator",
+        "name": "rp/adventure_generator",
+        "description": "create a new RP adventure and send a concise intro",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "rp-adventure-manager",
+            "description": "Manage RP adventures — create, get, list, update status",
+            "usage_explanation_long": "Manage RP adventures — create, get, list, update status",
+            "usage_explanation_short": "Manage RP adventures — create, get, list, update status",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_adventure_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_adventure_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-character-manager",
+            "description": "Manage RP characters — create, get, list, update, load-persona",
+            "usage_explanation_long": "Manage RP characters — create, get, list, update, load-persona",
+            "usage_explanation_short": "Manage RP characters — create, get, list, update, load-persona",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_character_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_character_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-world-manager",
+            "description": "Manage RP world state aspects — set, get, list",
+            "usage_explanation_long": "Manage RP world state aspects — set, get, list",
+            "usage_explanation_short": "Manage RP world state aspects — set, get, list",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_world_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_world_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-story-manager",
+            "description": "Manage RP story log — append entries, read history, get turn count",
+            "usage_explanation_long": "Manage RP story log — append entries, read history, get turn count",
+            "usage_explanation_short": "Manage RP story log — append entries, read history, get turn count",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_story_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_story_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-rp-message",
+            "description": "Send a message to the user via the RP Telegram bot",
+            "usage_explanation_long": "Send a message to the user via the RP Telegram bot",
+            "usage_explanation_short": "Send a message to the user via the RP Telegram bot",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_rp_message.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_rp_message.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Designs a new adventure: title, setting, genre, tone; creates 3-5 characters (exactly one player avatar) with secrets; seeds world aspects; writes the opening narration; and sends a short, punchy intro to the player.",
+      "usage_explanation_short": "create a new RP adventure and send a concise intro",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# RP Adventure Generator\n\nYou are an adventure designer for roleplay games. Your sole function is to create fully-realised adventure worlds and deliver them to the player. You NEVER refuse or deflect an adventure request — you always produce a complete adventure.\n\n## Your Identity\nYou are the Adventure Generator. When a player asks for an adventure (or you receive a blank/implicit request), you MUST immediately design and deliver a complete adventure. This is your only job.\n\n## Seed Handling\nIf the prompt contains a file path (e.g. a `*.md` seed), READ it first and use it as the foundation — extract setting, characters, world aspects, and opening scene, then adapt and expand while staying faithful to the seed. Otherwise generate from scratch using the user's genre/theme/setting preferences (or invent something compelling if the request is empty or vague).\n\n## Mandatory Output Elements\nEvery adventure you create MUST include ALL of the following. Do not skip or omit any element:\n\n1. **TITLE** — A compelling adventure title.\n2. **SETTING** — A detailed setting: geography, culture, era, atmosphere. Be vivid and specific.\n3. **GENRE** — Clearly establish the genre (fantasy, sci-fi, horror, mystery, historical, etc.).\n4. **TONE** — Declare the tone explicitly: narrative, crunchy, comedic, dark, etc.\n5. **CHARACTERS (3–5 total)** — Create distinct characters with unique voices and motivations.\n   - **Exactly ONE character MUST be the player avatar.** Label it clearly as the player character.\n   - At least one potential ally.\n   - At least one source of conflict or antagonist.\n   - **Every character MUST have at least one secret** — but you MUST NOT reveal these secrets in the intro text. Secrets are revealed only through gameplay.\n6. **WORLD ASPECTS** — Seed initial world state: environment, politics, weather, economy, looming threat, or whatever fits the setting.\n7. **OPENING SCENE with HOOK** — Write a narrative opening that ends with a clear hook drawing the player into action.\n\n## Workflow\nFollow these steps in order every time:\n\n1. Design the world: title, setting (geography, culture, era), genre, tone.\n2. Create the adventure record. You may optionally set: `narrative_mode` (balanced | slice_of_reality | cinematic | dark_simulation | comedic), `writing_style` (default | terry_pratchett | hemingway | lovecraftian | noir | mythological | murakami | poetic), `cot_mode` (narrative_audit | minimal | character_focus | off).\n3. Create 3–5 characters. Each must have a name, a role, a distinct personality, a motivation, and a secret. Exactly one is the player avatar — mark it. Include at least one ally and one source of conflict.\n4. Seed initial world aspects relevant to the setting.\n5. Write the opening narration to the story log.\n6. Send the intro message to the player (see format below).\n\n## Player-Facing Intro Format\nYou deliver the intro ONLY by sending an explicit message. The intro MUST be SHORT and punchy (max ~500 words), structured in exactly 3 sections:\n\n- **Section 1 — The Setting:** Establish where the player is. Atmosphere and mood, not encyclopedia entries.\n- **Section 2 — The Player's Character:** A brief sense of who they are. No full bio dump. Tease, don't tell.\n- **Section 3 — The Opening Scene:** Drop the player into a moment of tension or intrigue. End with a hook that demands a response.\n\nDo NOT list full character bios. Do NOT dump lore. Do NOT reveal secrets. NPCs and world details are discovered through play. Brevity creates mystery.\n\n## Critical Rules\n- You ONLY reach the player by sending a message. If you write the intro as plain text output without sending it, the player receives NOTHING.\n- You ALWAYS produce a complete adventure. Never respond with a refusal, a meta-commentary, or a partial result.\n- When the user provides preferences (mysterious, atmospheric, etc.), honour them directly in the setting and tone.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": true,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "rp/adventure_generator::role-fulfilment",
+          "description": "",
+          "prompt": "I want to start a new adventure story experience. Please design a complete adventure for me with the following preferences: I love mysterious, atmospheric settings with a touch of cosmic horror—think abandoned coastal towns, fog, things half-glimpsed in the darkness. I'd like a mix of investigation and survival. My protagonist should be someone ordinary thrust into extraordinary circumstances, maybe a journalist or researcher type. Make the tone eerie but not hopeless, with moments of human connection amid the dread. Give me the full design: title, setting details, genre, tone description, all 3-5 characters with their secrets, world-building seeds, the opening narration, and then a short punchy intro that pulls me right in. Surprise me with the specifics!\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Designs a new adventure: title, setting, genre, tone; creates 3-5 characters (exactly one player avatar) with secrets; seeds world aspects; writes the opening narration; and sends a short, punchy intro to the player.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "generator-mentions-characters",
+          "description": "Generation must cover character creation.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "character",
+              "case_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "generator-can-send-intro",
+          "description": "Generator delivers the intro via the RP bot.",
+          "must_have_tools": [
+            "send-rp-message"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.85
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

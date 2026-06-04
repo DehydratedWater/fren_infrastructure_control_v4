@@ -1,17 +1,17 @@
 {
   "schema_version": "1",
   "version": {
-    "component_id": "profile/hypothesis_generator",
+    "component_id": "profile/hypothesis_validator",
     "kind": "agent",
-    "content_hash": "a29964d59973f7b2a30c75a4c5938889c34deb57d472717d711484e8fa20c594",
-    "parent_hash": null,
-    "timestamp": "2026-06-04T03:38:34",
-    "author": "human",
+    "content_hash": "7024a22fa826e9bf5b696a3ce4e81aecf094f67b57c83689651e1a27e86a0502",
+    "parent_hash": "bf0b7c486576fd0a0da1f02baf1920119842609a74397701690030009e2bc3d9",
+    "timestamp": "2026-06-04T04:39:58",
+    "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
-        "agent_id": "profile/hypothesis_generator",
-        "name": "profile/hypothesis_generator",
-        "description": "generate testable hypotheses from observed patterns",
+        "agent_id": "profile/hypothesis_validator",
+        "name": "profile/hypothesis_validator",
+        "description": "validate or disprove pending hypotheses against evidence",
         "mode": null
       },
       "skills": [],
@@ -130,15 +130,15 @@
           "tool_tests": []
         }
       ],
-      "usage_explanation_long": "Analyses observations for recurring themes and correlations, then emits hypotheses each carrying a clear statement, supporting evidence, and an initial confidence score.",
-      "usage_explanation_short": "generate testable hypotheses from observed patterns",
+      "usage_explanation_long": "Reviews pending hypotheses, checks recent chat history for supporting or contradicting evidence, updates confidence, and promotes to discovery or disproves.",
+      "usage_explanation_short": "validate or disprove pending hypotheses against evidence",
       "default_tool_format": "bash",
       "tool_format_overrides": {},
       "model_class": "default",
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Hypothesis Generator\n\nAnalyse existing observations and generate testable hypotheses about the user.\nFetch recent observations, identify recurring themes and correlations, then\nemit hypotheses. Each hypothesis must have a clear statement, supporting\nevidence, and an initial confidence score.\n",
+      "system_prompt": "# Hypothesis Validator\n\nYou are a hypothesis validation specialist. Your role is to review pending hypotheses, cross-reference them against recent chat history and available evidence, update their confidence scores, and take a terminal action: promote to discovery or disprove.\n\n## Input Format\nYou will receive one or more pending hypotheses, each identified by an ID (e.g., \"H-014\"), along with a summary or transcript of recent chat history and any surfaced evidence.\n\n## Procedure (execute for EACH hypothesis)\n\n1. **Parse the hypothesis.** Restate its core claim in one clear sentence.\n2. **Search chat history for evidence.** Identify every message or data point in the recent conversation that either supports or contradicts the hypothesis. Quote the relevant excerpts.\n3. **Weigh the evidence.** List supporting evidence and contradicting evidence separately. Assign a weight (strong / moderate / weak) to each item.\n4. **Update the confidence score.** Produce a numerical confidence between 0.00 and 1.00, where 1.00 means certain. Justify the number in one sentence.\n5. **Decide the outcome.**\n   - If confidence ≥ 0.75: promote the hypothesis to a **DISCOVERY**. Begin your output for that hypothesis with the keyword `[DISCOVERY]`.\n   - If confidence ≤ 0.25: disprove the hypothesis. Begin your output for that hypothesis with the keyword `[DISPROVED]`.\n   - Otherwise: leave the hypothesis pending. Begin your output for that hypothesis with the keyword `[PENDING]`.\n\n## Required Output Shape\n\nFor every hypothesis you process, produce exactly this structure:\n\n```\n[OUTCOME] Hypothesis <ID>: <restated claim>\n- Supporting evidence: <bulleted list with weights>\n- Contradicting evidence: <bulleted list with weights>\n- Confidence: <0.00–1.00> — <one-sentence justification>\n- Action: <one sentence describing next steps or final status>\n---\n```\n\n## Rules\n- You MUST process every hypothesis you are given. Do not skip any.\n- You MUST explicitly quote relevant chat history excerpts; do not fabricate evidence.\n- You MUST include both supporting and contradicting sections even if one is empty (write \"None found\").\n- You MUST output one of the three outcome keywords (`[DISCOVERY]`, `[DISPROVED]`, or `[PENDING]`) for every hypothesis.\n- Do not invent capabilities or tools beyond reviewing the provided chat history and evidence.",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -151,9 +151,9 @@
       "mcp_servers": [],
       "agent_tests": [
         {
-          "name": "profile/hypothesis_generator::role-fulfilment",
+          "name": "profile/hypothesis_validator::role-fulfilment",
           "description": "",
-          "prompt": "I've compiled the following observations from our Q3 customer churn interviews (47 respondents). Please analyze them for recurring themes and correlations, then generate hypotheses with supporting evidence and confidence scores.\n\nObservation 1: \"The onboarding process took over two weeks. By the time I could actually use the product, I'd already explored two competitors.\" — Account age: 23 days, Plan: Starter\n\nObservation 2: \"Every time I needed help, I had to explain my issue to a different support agent. Nobody seemed to know my history.\" — Account age: 45 days, Plan: Professional\n\nObservation 3: \"The pricing made sense when we had 5 users, but at 20 users the cost doubled and we didn't feel we were getting double the value.\" — Account age: 180 days, Plan: Enterprise\n\nObservation 4: \"I loved the product initially, but after the last update, three key features I used daily were moved or removed.\" — Account age: 310 days, Plan: Professional\n\nObservation 5: \"Our account manager changed three times in six months. Each handoff felt like starting over.\" — Account age: 195 days, Plan: Enterprise\n\nObservation 6: \"The product itself is fine, but my team kept finding workarounds because the integrations with our existing tools didn't work as advertised.\" — Account age: 67 days, Plan: Starter\n\nObservation 7: \"We asked for a roadmap update for months and never got one. We couldn't plan around a product we didn't understand.\" — Account age: 410 days, Plan: Enterprise\n\nObservation 8: \"Training materials were outdated. The videos showed a completely different interface than what we saw.\" — Account age: 31 days, Plan: Starter\n\nObservation 9: \"When we raised a billing error, it took three tickets and four weeks to resolve. That eroded our trust completely.\" — Account age: 260 days, Plan: Professional\n\nObservation 10: \"Honestly, the competitor offered nearly the same functionality at 40% less. We couldn't justify the renewal.\" — Account age: 365 days, Plan: Professional\n\nObservation 11: \"Two-week onboarding was brutal. We were promised a dedicated specialist who ghosted us after day three.\" — Account age: 28 days, Plan: Starter\n\nObservation 12: \"Every support interaction felt scripted. No one actually investigated our unique integration issue.\" — Account age: 55 days, Plan: Professional\n\nObservation 13: \"We grew from 5 to 30 users quickly, and the platform didn't scale well. Performance degraded noticeably.\" — Account age: 150 days, Plan: Enterprise\n\nObservation 14: \"The product roadmap felt directionless. Features we requested were ignored while niche features kept shipping.\" — Account age: 290 days, Plan: Enterprise\n\nObservation 15: \"Billing discrepancies in three consecutive months. We lost faith in the company's competence.\" — Account age: 200 days, Plan: Professional\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "prompt": "I need you to review the following pending hypotheses against our recent chat history and evidence. Here are the 3 active hypotheses:\n\n**Hypothesis H-014:** \"The login timeout issue is caused by the Redis cache not properly invalidating expired session tokens.\" (Current confidence: 60%, pending since Nov 5)\n\n**Hypothesis H-015:** \"The timeout is due to the load balancer dropping connections after 30 seconds of inactivity.\" (Current confidence: 45%, pending since Nov 6)\n\n**Hypothesis H-016:** \"The problem is client-side; the mobile app isn't sending keepalive pings.\" (Current confidence: 30%, pending since Nov 7)\n\nHere is the relevant recent chat history and evidence for your review:\n\n---\n\n**[Nov 8, 10:14 AM] @sarah_ops:** \"Just ran a test — disabled Redis entirely and forced direct DB auth. Still seeing timeouts after ~28-30 seconds. Issue reproduces on both web and mobile.\"\n\n**[Nov 8, 10:22 AM] @mike_infra:** \"Pulled the LB logs. We're seeing a spike in 'connection reset' events at the 30-second mark. Our LB idle timeout is set to 30s. This lines up.\"\n\n**[Nov 8, 11:05 AM] @jen_qa:** \"Tested on web-only (Chrome, Firefox, Safari) — same timeout. Mobile app also affected. Doesn't seem isolated to one platform.\"\n\n**[Nov 8, 11:30 AM] @david_backend:** \"Checked the session token logic. Redis invalidation is working correctly — tokens are fresh. I don't think this is Redis.\"\n\n---\n\nBased on this evidence, please:\n1. Update confidence levels for each hypothesis\n2. Note supporting or contradicting evidence for each\n3. Promote any hypothesis to \"Discovery\" if confidence exceeds 80%\n4. Disprove any hypothesis if confidence drops below 15%\n5. Provide your reasoning for each decision\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
@@ -162,7 +162,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: Analyses observations for recurring themes and correlations, then emits hypotheses each carrying a clear statement, supporting evidence, and an initial confidence score.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: Reviews pending hypotheses, checks recent chat history for supporting or contradicting evidence, updates confidence, and promotes to discovery or disproves.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -172,8 +172,8 @@
       ],
       "capability_tests": [
         {
-          "name": "hypothesis-generator-emits-via-profile-manager",
-          "description": "Emits hypotheses via profile-manager; never write/edit.",
+          "name": "hypothesis-validator-updates-via-profile-manager",
+          "description": "Validates and updates via profile-manager; never write/edit.",
           "must_have_tools": [
             "profile-manager"
           ],
@@ -192,7 +192,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.95
+      "score_floor": 1.0
     },
     "notes": ""
   },

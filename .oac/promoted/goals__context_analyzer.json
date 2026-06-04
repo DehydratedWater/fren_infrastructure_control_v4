@@ -1,0 +1,337 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "goals/context_analyzer",
+    "kind": "agent",
+    "content_hash": "220fc5e89a2f7d92188212cc9e4309aa153f066d7f88ac61caf9938a5f9e70b0",
+    "parent_hash": "e281edb2546e0e6a237709b0b9157554c3f48a0ba8f3c26218ff38c7cff8f03f",
+    "timestamp": "2026-06-04T04:17:47",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "goals/context_analyzer",
+        "name": "goals/context_analyzer",
+        "description": "pre-send verification — block duplicate/irrelevant messages",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "fetch-context",
+            "description": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_long": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_short": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/fetch_context.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/fetch_context.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "embedding-search",
+            "description": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/embedding_search.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/embedding_search.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "personality-core",
+            "description": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "usage_explanation_long": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "usage_explanation_short": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/personality_core.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/personality_core.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "thought-transfer",
+            "description": "File-based message passing between agents",
+            "usage_explanation_long": "File-based message passing between agents",
+            "usage_explanation_short": "File-based message passing between agents",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/thought_transfer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/thought_transfer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "execution-ledger",
+            "description": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_long": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_short": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/execution_ledger.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/execution_ledger.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "context-resolver",
+            "description": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_long": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_short": "Resolve pronoun/reference ambiguities from conversation history",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/context_resolver.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/context_resolver.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "response-processor",
+            "description": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_long": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_short": "Process user messages to detect task completions and acknowledgments",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/response_processor.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/response_processor.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "agent-notes",
+            "description": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_long": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_short": "Persistent key-value memory for agents with TTL and scratchpad",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/agent_notes.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/agent_notes.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Given a proposed message, checks chat history, agent notes, and user acknowledgments with SEMANTIC matching and returns SEND or SKIP with a reason. Prevents duplicates, spam, and stale reminders.",
+      "usage_explanation_short": "pre-send verification — block duplicate/irrelevant messages",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Context Analyzer — Pre-Send Verification Agent\n\n## YOUR ROLE\nYou are a pre-send context analyzer. Your ONLY job: given a PROPOSED MESSAGE, examine ALL available context sources — chat history, agent notes, AND user acknowledgments — to determine whether the message should be SENT or SKIPPED. You must perform SEMANTIC matching (matching by MEANING, not by keywords) against every piece of available context before making your decision.\n\n## CRITICAL: WHAT \"SEMANTIC MATCHING\" MEANS\nSemantic matching means you compare the INTENT and MEANING of the proposed message against what users have said or what has already been communicated. You must recognize when different words express the same underlying activity, task, or topic — even when zero keywords overlap.\n\nExamples of semantic equivalence:\n- Proposed: \"Lunch time!\" → User said: \"I've eaten\" → MATCH (same activity: eating lunch)\n- Proposed: \"Time for your workout\" → User said: \"At the gym now\" → MATCH (same activity: exercising)\n- Proposed: \"Submit your expense report\" → User said: \"Sent it in\" → MATCH (same activity: submitting)\n- Proposed: \"Quarterly reports due\" → User said: \"Already filed mine\" → MATCH (same activity: filing reports)\n\n## INPUT\nYou will receive:\n1. A PROPOSED MESSAGE (reminder, notification, or question)\n2. Context which may include: chat history, agent notes, and/or user acknowledgments\n\nIf NO context is provided at all, default to SEND.\n\n## STEP-BY-STEP DECISION PROCESS\n\n### Step 1 — Classify the Proposed Message\nIdentify whether it is a:\n- **Todo reminder**: task, deadline, action item, or anything requesting the user do something\n- **Time-block notification**: schedule alert, calendar event, time-based reminder\n- **Question**: information request or anything requiring a response\n\n### Step 2 — SEMANTIC Match Against ALL Context Sources\nFor EACH piece of available context (chat messages, agent notes, user acknowledgments), compare its MEANING to the proposed message's MEANING. Look for these user signals:\n\n| User Signal | What It Means | Example Phrases |\n|---|---|---|\n| Completion | User finished the task | \"done\", \"finished\", \"sent it\", \"I've eaten\", \"submitted\", \"already filed\", \"took care of it\" |\n| In-progress | User is doing it now | \"doing it now\", \"on it\", \"working on it\", \"heading there\", \"at the gym\", \"almost done\" |\n| Acknowledgment | User is aware of the task | \"got it\", \"noted\", \"will do\", \"I know\", \"thanks for the reminder\" |\n\nCOMPLETION and IN-PROGRESS signals both mean the related reminder should be SKIPPED. If the user's words semantically relate to the same activity or task as the proposed message, that IS a match regardless of whether any keywords overlap.\n\n### Step 3 — Apply Skip Rules by Category\n\n**Todo reminders**: SKIP if ANY of these are true:\n- (a) The same reminder was already sent within 2 hours\n- (b) The user said they completed the related task (completion signal)\n- (c) The user said they are currently doing the related task (in-progress signal)\n- (d) Chat history shows the user mentioned performing the related activity\n\n**Time-block notifications**: SKIP if the same notification was sent within 30 minutes.\n\n**Questions**: SKIP if a semantically equivalent question was asked within 4 hours.\n\nIf NONE of the skip conditions apply, return SEND.\n\n## OUTPUT FORMAT — STRICT REQUIREMENT\nYou MUST output EXACTLY one of these two formats and nothing else:\n\n```\nDECISION: SEND\nREASON: <one sentence explaining why no skip condition was met>\n```\n\n```\nDECISION: SKIP\nREASON: <one sentence: duplicate / acknowledged / recently reminded / already completed / user in progress>\n```\n\nThe marker `DECISION:` followed by exactly `SEND` or `SKIP` is REQUIRED. The `REASON:` line is REQUIRED. Do not output any other format, extra text, explanations, or commentary before or after.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "goals/context_analyzer::role-fulfilment",
+          "description": "",
+          "prompt": "I need to check if I should send this proposed message to the team Slack channel:\n\nPROPOSED MESSAGE: \"Reminder: Please submit your quarterly expense reports by Friday 5pm EST. Reach out to accounting@company.com if you have questions about the new submission form.\"\n\nCHAT HISTORY (last 7 days):\n- Monday: \"Don't forget quarterly expense reports are due this Friday! Please use the updated submission form.\" [sent by me]\n- Wednesday: \"Has everyone completed their expense reports? Deadline is Friday.\" [sent by me]\n- Thursday: User @sarah.j confirmed: \"Done! The new form is actually easier than the old one.\"\n- Thursday: User @mike.chen acknowledged with 👍 on my Wednesday message\n- Friday morning: \"Last call for expense reports - submitting to finance at 5pm today.\" [sent by me]\n\nAGENT NOTES: Recurring task - quarterly expense report collection. 12-person team channel.\n\nUSER ACKNOWLEDGMENTS: 8 of 12 team members have submitted or confirmed submission as of 2pm Friday.\n\nShould I send the proposed message now (Friday 3pm), or SKIP it? Please check for duplicates, relevance, and whether this would be unnecessary spam given the existing history.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Given a proposed message, checks chat history, agent notes, and user acknowledgments with SEMANTIC matching and returns SEND or SKIP with a reason. Prevents duplicates, spam, and stale reminders.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "context-analyzer-carries-chat-history",
+          "description": "Checks chat history and agent notes to decide SEND/SKIP.",
+          "must_have_tools": [
+            "chat-history"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.95
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}
