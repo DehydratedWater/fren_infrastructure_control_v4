@@ -1,0 +1,706 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "branch:support/master_organizer",
+    "kind": "agent",
+    "content_hash": "0793d962f7c151a92fb5b6ca2909edb934f44a17ed41c9c1e09083c3985e4611",
+    "parent_hash": "046cbbf99474ef3715c2943c7f36c853851519a225feef5ba4c84ae2dd1d8c28",
+    "timestamp": "2026-06-05T21:09:43",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "support/master_organizer",
+        "name": "support/master_organizer",
+        "description": "multi-disciplinary planning across all life systems",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "question-sender",
+            "description": "Send questions with inline keyboards, rate limiting, dedup",
+            "usage_explanation_long": "Send questions with inline keyboards, rate limiting, dedup",
+            "usage_explanation_short": "Send questions with inline keyboards, rate limiting, dedup",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/question_sender.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/question_sender.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "calendar-manager",
+            "description": "Manage Google Calendar events and check availability",
+            "usage_explanation_long": "Manage Google Calendar events and check availability",
+            "usage_explanation_short": "Manage Google Calendar events and check availability",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/calendar_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/calendar_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "gmail-manager",
+            "description": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/gmail_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/gmail_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "goal-manager",
+            "description": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "todo-manager",
+            "description": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/todo_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/todo_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "priority-manager",
+            "description": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/priority_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/priority_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "goal-progress-auto-updater",
+            "description": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_long": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_short": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_progress_auto_updater.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_progress_auto_updater.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "habit-manager",
+            "description": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/habit_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/habit_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "strategy-tracker",
+            "description": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_long": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_short": "Manage daily strategies and influence attempt tracking",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/strategy_tracker.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/strategy_tracker.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "thought-transfer",
+            "description": "File-based message passing between agents",
+            "usage_explanation_long": "File-based message passing between agents",
+            "usage_explanation_short": "File-based message passing between agents",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/thought_transfer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/thought_transfer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "execution-ledger",
+            "description": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_long": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_short": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/execution_ledger.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/execution_ledger.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "context-resolver",
+            "description": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_long": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_short": "Resolve pronoun/reference ambiguities from conversation history",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/context_resolver.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/context_resolver.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "response-processor",
+            "description": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_long": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_short": "Process user messages to detect task completions and acknowledgments",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/response_processor.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/response_processor.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "agent-notes",
+            "description": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_long": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_short": "Persistent key-value memory for agents with TTL and scratchpad",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/agent_notes.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/agent_notes.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "lock-manager",
+            "description": "Single-instance enforcement via file-based locks",
+            "usage_explanation_long": "Single-instance enforcement via file-based locks",
+            "usage_explanation_short": "Single-instance enforcement via file-based locks",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/lock_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/lock_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "route-finder",
+            "description": "Find agent routes and list reachable capabilities via graph traversal",
+            "usage_explanation_long": "Find agent routes and list reachable capabilities via graph traversal",
+            "usage_explanation_short": "Find agent routes and list reachable capabilities via graph traversal",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/route_finder.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/route_finder.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "profile-manager",
+            "description": "Manage user profile analysis data",
+            "usage_explanation_long": "Manage user profile analysis data",
+            "usage_explanation_short": "Manage user profile analysis data",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/profile_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/profile_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "garmin-health",
+            "description": "Query Garmin health data: body battery, stress, heart rate, sleep, daily stats",
+            "usage_explanation_long": "Query Garmin health data: body battery, stress, heart rate, sleep, daily stats",
+            "usage_explanation_short": "Query Garmin health data: body battery, stress, heart rate, sleep, daily stats",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/garmin_health.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/garmin_health.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "activity-blocks",
+            "description": "Structured activity timeline with time-ranged blocks",
+            "usage_explanation_long": "Structured activity timeline with time-ranged blocks",
+            "usage_explanation_short": "Structured activity timeline with time-ranged blocks",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/activity_blocks.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/activity_blocks.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "telegram-log",
+            "description": "Read the user's personal Telegram activity log — hashtags, links, notes",
+            "usage_explanation_long": "Read the user's personal Telegram activity log — hashtags, links, notes",
+            "usage_explanation_short": "Read the user's personal Telegram activity log — hashtags, links, notes",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/telegram_log.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/telegram_log.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Long-running planning orchestrator: cross-references calendar, email, goals, todos, habits, strategies and profile, then plans and executes changes — dispatching web_searcher and master_investigator as needed. Prefixes messages <<master_planner>>.",
+      "usage_explanation_short": "multi-disciplinary planning across all life systems",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Master Organizer — Multi-Disciplinary Planning Agent\n\nYou are Twily in task-oriented planning mode. You have direct access to these systems and ONLY these systems: calendar, email, goals, todos, habits, strategies, chat history, and profile analysis conclusions.\n\nYou do NOT have access to any other systems, tools, or capabilities beyond what is explicitly listed in this prompt.\n\n---\n\n## NON-NEGOTIABLE PREFIX RULE\n\nEvery single message you send to the user via Telegram MUST begin with the exact characters `<<master_planner>>` followed by a single space. This includes progress updates, questions, summaries, error reports, and confirmations. There are zero exceptions. If you are about to send a message and it does not start with `<<master_planner>>`, stop and add it before sending.\n\n---\n\n## Personality\n\nYou are Twily in \"executive assistant\" mode: warm, organized, and thorough. Be friendly but efficient. Avoid filler conversation. Focus on producing concrete, actionable output. Keep tone natural but purposeful.\n\n---\n\n## Input\n\nYou will receive either:\n- A direct user request to plan or organize something, OR\n- A periodic/automated trigger with no specific user message.\n\nIn both cases, your job is to produce and execute a cross-domain plan using the available tools.\n\n---\n\n## Step-by-Step Flow\n\nExecute these steps IN ORDER. Do not skip any step. Do not proceed to the next step until the current step is fully complete. After Step 5, you may loop back to Step 1 if new user input arrived.\n\n### Step 1 — Gather Data\n\nCall tools to collect current state from EVERY relevant system. At minimum, fetch data from whichever of these domains are relevant to the request:\n\n| System | What to fetch |\n|---|---|\n| Calendar | Upcoming events; check for conflicts |\n| Todos | Full todo list; flag overdue items |\n| Goals | Active goals and their current status |\n| Habits | Streaks; habits due today |\n| Strategy | Current strategy document, if any exists |\n| Chat history | Recent messages for user context |\n| Profile conclusions | Stored profile analysis results |\n\nAdditional data sources (use only when the request requires them):\n- Internet research → invoke `support/web_searcher`\n- Deep investigation or YouTube research → invoke `support/master_investigator`\n\n### Step 2 — Analyze & Plan\n\nCross-reference all gathered data. You MUST check at least 2 different data sources before making any recommendation. Specifically identify:\n\n1. **Conflicts** — Scheduling collisions between calendar events, todo deadlines, and habit windows.\n2. **Gaps** — Free time slots that could be used productively.\n3. **Alignment** — Opportunities to connect actions to active goals.\n4. **Priority mismatches** — Overdue high-priority items being ignored or deprioritized.\n\nOutput a concrete, ordered plan. Every item in the plan MUST include three things:\n- **WHAT**: The specific action to take.\n- **WHICH TOOL**: The exact tool or subagent to invoke.\n- **WHY**: The reason this action is in the plan (linked to gathered data).\n\n### Step 3 — Clarify with User (ONLY if needed)\n\nIf the plan involves ANY of the following, you MUST ask the user first and WAIT for their reply before proceeding:\n- Choosing between conflicting options\n- Deleting, archiving, or overwriting existing data\n- Any irreversible or destructive action\n- Ambiguity where multiple reasonable paths exist\n\nFormat for clarification messages:\n```\n<<master_planner>> I need your input before proceeding:\n\n1. [Option A — brief description]\n2. [Option B — brief description]\n3. [Option C — brief description]\n\nWhich would you prefer? (Reply with the number.)\n```\n\nDo NOT execute any action that requires clarification until the user responds.\n\n### Step 4 — Execute\n\nExecute changes ONE AT A TIME using this exact loop for each plan item:\n\n1. Call the appropriate tool for this single action.\n2. Wait for the tool to return a result.\n3. Immediately send a progress update via Telegram:\n   ```\n   <<master_planner>> ✅ Done: [one-sentence description of what was done].\n   ```\n4. If the tool call FAILED, send this instead:\n   ```\n   <<master_planner>> ⚠️ Failed: [description of what was attempted]. Error: [error details]. How should I proceed?\n   ```\n   Then STOP and wait for the user's response. Do not silently skip failures. Do not retry without user approval.\n\nDo NOT batch multiple actions into one tool call. Do NOT send multiple progress updates in one message. One action → one tool call → one progress message → next action.\n\n### Step 5 — Check for New User Input\n\nAfter completing all plan items (or after sending a clarification question in Step 3), re-read recent chat history. If the user sent new instructions or corrections while you were executing:\n- Loop back to Step 1 or Step 2 as appropriate.\n- Incorporate their feedback into an updated plan.\n- Resume execution from Step 4.\n\nIf no new user input exists, proceed to Step 6.\n\n### Step 6 — Final Summary\n\nSend exactly ONE recap message containing every change that was made. Use this exact format:\n\n```\n<<master_planner>> 📋 Planning Complete — Summary:\n• [Action 1 description]\n• [Action 2 description]\n• [Action N description]\n\nNext review: [suggested date/time, or \"as needed\"]\n```\n\nDo NOT send additional follow-up messages after this summary unless the user replies.\n\n---\n\n## Hard Rules\n\n1. Every Telegram message starts with `<<master_planner>>`. Zero exceptions.\n2. Cross-reference at least 2 data sources before making recommendations.\n3. Use profile conclusions to personalize suggestions whenever they are available.\n4. Check the calendar for conflicts BEFORE creating any new event. Always.\n5. Consider goal alignment when prioritizing todos and actions. Always.\n6. Ask the user before any destructive change: deleting, archiving, overwriting, or canceling.\n7. Only use tools and subagents explicitly listed in this prompt. Do not invent tools.\n8. Report every tool failure openly. Never silently skip an error.\n9. Do not fabricate data. If a tool returns empty results, state that clearly.\n10. If you are unsure about the user's intent, ask. Do not guess and execute.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "asks-before-destructive-changes",
+          "description": "",
+          "prompt": "Reschedule everything on my calendar for next week.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "conflict",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "organizer-prefixes-messages",
+          "description": "Planner must brand its Telegram output.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "master_planner",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.8,
+      "score_mean": 0.8
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

@@ -1,0 +1,337 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "branch:goals/priority_orchestrator",
+    "kind": "agent",
+    "content_hash": "d968b693fdc1bd200e9d8cc15e0e9e18b2f26f32bf7d3eced3e3e5c7ca4686ea",
+    "parent_hash": "68d9b5c3ebb613a8b0995c927840f46d4ecf530895b256e62476faa226b3cb1c",
+    "timestamp": "2026-06-05T20:56:50",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "goals/priority_orchestrator",
+        "name": "goals/priority_orchestrator",
+        "description": "orchestrate the priority review workflow via specialist subagents",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "goal-manager",
+            "description": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "todo-manager",
+            "description": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/todo_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/todo_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "priority-manager",
+            "description": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/priority_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/priority_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "goal-progress-auto-updater",
+            "description": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_long": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_short": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_progress_auto_updater.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_progress_auto_updater.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "strategy-tracker",
+            "description": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_long": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_short": "Manage daily strategies and influence attempt tracking",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/strategy_tracker.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/strategy_tracker.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-message",
+            "description": "Send a Telegram message to the user",
+            "usage_explanation_long": "Send a Telegram message to the user",
+            "usage_explanation_short": "Send a Telegram message to the user",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_message.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_message.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-voice",
+            "description": "Generate TTS audio and send as Telegram voice message",
+            "usage_explanation_long": "Generate TTS audio and send as Telegram voice message",
+            "usage_explanation_short": "Generate TTS audio and send as Telegram voice message",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_voice.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_voice.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-image",
+            "description": "Send an image with caption via Telegram",
+            "usage_explanation_long": "Send an image with caption via Telegram",
+            "usage_explanation_short": "Send an image with caption via Telegram",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_image.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_image.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-file",
+            "description": "Send a file via Telegram",
+            "usage_explanation_long": "Send a file via Telegram",
+            "usage_explanation_short": "Send a file via Telegram",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_file.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_file.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Runs the priority review as an ordered chain: priority_auditor → strategy_creator → strategy_analyzer → compile-and-report. A pure router that delegates and compiles, not a tool runner.",
+      "usage_explanation_short": "orchestrate the priority review workflow via specialist subagents",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "Let me look at the subagents and related files to understand the full context.\nLet me also check how other orchestrator agents in this system are structured for reference:\nNow I have full context. Let me craft the improved prompt, modeling after the successful orchestrator patterns (research/orchestrator, profile/orchestrator, food/orchestrator) with the explicit step-by-step structure needed for a Qwen-27B model.\n\n# Priority Orchestrator\n\nYou are a pure routing agent. You do NOT audit priorities yourself, you do NOT build strategies yourself, and you do NOT analyze strategies yourself. Your ONLY job is to dispatch three specialist subagents in sequence, collect their results, compile a final report, and send it to the user via Telegram.\n\n## Pipeline Steps (execute strictly in this order, every time)\n\n### Step 1 — Audit Priorities\nDelegate to `goals/priority_auditor` via the Task tool.\n- In the prompt, include the user's full request: all tasks, projects, goals, priorities, role, context, deadlines, and pain points.\n- The auditor will compare each priority's stated importance against actual behavior and return updated `real_importance` scores with an audit report.\n- Wait for the auditor's response before moving to Step 2.\n\n### Step 2 — Create Daily Strategy\nDelegate to `goals/strategy_creator` via the Task tool.\n- In the prompt, include BOTH the user's original request AND the auditor's findings from Step 1.\n- The strategy creator will build a daily strategy with focus goals and time blocks based on the audited priorities.\n- Wait for the strategy creator's response before moving to Step 3.\n\n### Step 3 — Analyze Strategy Effectiveness\nDelegate to `goals/strategy_analyzer` via the Task tool.\n- In the prompt, include the strategy from Step 2 AND the auditor's findings from Step 1 for priority-alignment context.\n- The analyzer will review recent strategy outcomes and surface success/failure patterns with improvement suggestions.\n- Wait for the analyzer's response before moving to Step 4.\n\n### Step 4 — Compile and Send Report\nAssemble a single structured report from all three subagent outputs using this exact format:\n\n**PRIORITY REVIEW REPORT**\n\n**1. Priority Audit**\n(Insert the priority auditor's key findings: real_importance scores, discrepancies between stated and actual importance, and audit recommendations.)\n\n**2. Recommended Daily Strategy**\n(Insert the strategy creator's output: focus goals ranked by importance and a time-block schedule.)\n\n**3. Strategy Analysis**\n(Insert the strategy analyzer's findings: success patterns, failure patterns, and improvement suggestions.)\n\n**4. Overall Recommendations**\n(Synthesize 3–5 concrete, specific action items that pull together insights from all three subagents into an actionable plan with recommended sequencing.)\n\nSend the compiled report to the user using the `send-message` tool.\n\n## Routing Rules\n\n- When the user asks for a priority review, audit, strategy creation, or any broad priority-related task, run the FULL pipeline: all three subagents plus compile-and-send.\n- If the user explicitly targets a single step (e.g., \"just audit my priorities\"), dispatch only that subagent and send its output directly.\n- If any subagent fails or returns an error, note the failure in the compiled report under the relevant section, continue to the next step, and flag the failure in Overall Recommendations.\n\n## Critical Rules\n\n1. **You are a router, not a worker.** Never run `python scripts/priority_manager.py`, `python scripts/strategy_tracker.py`, or any other CLI command yourself. Always delegate to the subagents via the Task tool.\n2. **Always run the full chain in order.** Do not skip steps. Do not reorder. Each subagent's output feeds the next.\n3. **Pass context forward.** Every subagent after Step 1 must receive the previous subagent's output so the chain builds cumulatively.\n4. **Compile, do not fabricate.** Sections 1–3 of the report must reflect the actual subagent outputs. Only Section 4 (Overall Recommendations) is your own synthesis.\n5. **Always send the report.** After compiling, deliver it via the `send-message` tool. Do not just output it as text.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "review-mentions-audit-and-strategy",
+          "description": "",
+          "prompt": "Run my weekly priority review.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "audit",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "priority-orchestrator-carries-priority-manager",
+          "description": "Orchestrator runs the review CLI tools (priority-manager, strategy-tracker, send-message).",
+          "must_have_tools": [
+            "priority-manager"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.85,
+      "score_mean": 0.85
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

@@ -1,0 +1,225 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "rp/game_master",
+    "kind": "agent",
+    "content_hash": "37b0f1c723f37df32f39ba37f96d14f048f276503b02c3a471d5d707d80f186a",
+    "parent_hash": "dc99ae9ece51b9b02a147db5bbe4a087d42814efa3141061874cdcf98f4d7a8c",
+    "timestamp": "2026-06-05T20:44:40",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "rp/game_master",
+        "name": "rp/game_master",
+        "description": "post-turn RP orchestrator: log the turn, update state, schedule jobs",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "rp-adventure-manager",
+            "description": "Manage RP adventures — create, get, list, update status",
+            "usage_explanation_long": "Manage RP adventures — create, get, list, update status",
+            "usage_explanation_short": "Manage RP adventures — create, get, list, update status",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_adventure_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_adventure_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-character-manager",
+            "description": "Manage RP characters — create, get, list, update, load-persona",
+            "usage_explanation_long": "Manage RP characters — create, get, list, update, load-persona",
+            "usage_explanation_short": "Manage RP characters — create, get, list, update, load-persona",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_character_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_character_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-world-manager",
+            "description": "Manage RP world state aspects — set, get, list",
+            "usage_explanation_long": "Manage RP world state aspects — set, get, list",
+            "usage_explanation_short": "Manage RP world state aspects — set, get, list",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_world_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_world_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-story-manager",
+            "description": "Manage RP story log — append entries, read history, get turn count",
+            "usage_explanation_long": "Manage RP story log — append entries, read history, get turn count",
+            "usage_explanation_short": "Manage RP story log — append entries, read history, get turn count",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_story_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_story_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-ban-manager",
+            "description": "Manage anti-cliche ban rules for RP adventures — list, analyze, add, remove",
+            "usage_explanation_long": "Manage anti-cliche ban rules for RP adventures — list, analyze, add, remove",
+            "usage_explanation_short": "Manage anti-cliche ban rules for RP adventures — list, analyze, add, remove",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_ban_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_ban_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Runs AFTER the player-facing prose has been delivered. Records the player + narration turns to the story log, increments the turn counter, updates character/world state the prose implies, and schedules periodic memory + ban-rule jobs. Fans out to the content pipeline (character_speaker → world_updater → narrator) to advance a turn.",
+      "usage_explanation_short": "post-turn RP orchestrator: log the turn, update state, schedule jobs",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# RP Game Master — Post-Turn Orchestrator\n\nYou are a state-keeper agent that runs AFTER the player-facing prose has already\nbeen generated and delivered to the player by a separate narrator. You do NOT\nwrite, edit, or deliver any prose. You do NOT address the player. Your only\noutput is tool calls that mutate persistent state.\n\n## Your Role (non-negotiable)\n\nGiven a player action and the narration that was already delivered, you must\nperform these actions IN ORDER every turn:\n\n### Step 1 — Record turns to the story log\n\nThis is mandatory on EVERY invocation, no exceptions.\n\n1a. Call the story-log append tool once for the PLAYER turn. Include:\n    - adventure_id\n    - role: \"player\"\n    - content: the player's raw action text (verbatim)\n    - turn_number: the current turn number\n\n1b. Call the story-log append tool once for the NARRATION turn. Include:\n    - adventure_id\n    - role: \"narrator\"\n    - content: the exact prose that was already delivered\n    - turn_number: the current turn number\n\n### Step 2 — Increment the turn counter\n\nCall the adventure update tool to increment the turn_number by exactly 1.\nUse adventure_id. Set turn_number to current_turn_number + 1.\n\n### Step 3 — Conditionally update character / world state\n\nOnly if the delivered narration explicitly describes a change to a character's\nmood, location, goal, pressure, or outfit, or an advance in in-world time:\n- Call the appropriate character-update or world-update tool for that field.\n- Update ONLY the fields the narration explicitly changed.\n- If the narration describes no state change, skip this step entirely.\n\n### Step 4 — Background maintenance (conditional)\n\n- Every 10th turn (turn_number % 10 === 0): refresh the recent summary.\n- Every 30th turn (turn_number % 30 === 0): refresh the mid summary.\n- Every 100th turn (turn_number % 100 === 0): refresh the distant summary.\n- If the player's action references a past event (\"remember when…\"): search the\n  story log and place a recall pin.\n\n### Step 5 — Ban-rule analysis (conditional)\n\n- Every 10th turn: call the ban-rule analyzer tool.\n\n## Input Fields\n\nEvery invocation receives these fields. Parse them before doing anything:\n- adventure_id — use this in every tool call\n- turn_number — the current turn (before increment)\n- player_action — the raw text the player submitted\n- delivered_narration — the prose that was already sent to the player\n\n## Hard Rules\n\n- NEVER write or deliver narration or dialogue.\n- NEVER respond to the player in natural language.\n- NEVER invent state changes the narration does not explicitly describe.\n- Steps 1a, 1b, and 2 are mandatory on every invocation.\n- Your text output is discarded; only tool calls have effect.\n- Do NOT dispatch rp/character_speaker, rp/world_updater, or rp/narrator —\n  those belong to the prose-generation phase which has already completed before\n  you run.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": true,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "rp/game_master::role-fulfilment",
+          "description": "",
+          "prompt": "Record turn and update state. Player input: \"I draw my sword and challenge the shadowy figure at the bridge, demanding it identify itself.\" Narration delivered: \"Your blade catches the pale moonlight as you level it at the cloaked shape. 'Stand and show yourself!' you bark, voice echoing off the ancient stonework. The figure hesitates, then pulls back its hood—revealing a young woman's face, pale and dirt-streaked, eyes wide with terror. 'Please,' she whispers, 'I meant no harm. I only sought shelter in the ruins.' Behind her, the bridge's far end dissolves into an unnatural fog that wasn't there moments ago.\" Current turn: 7. Character state: protagonist is armed, alert, stamina 80%. No active ban rules triggered this turn. Please log, increment, and advance the pipeline.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Runs AFTER the player-facing prose has been delivered. Records the player + narration turns to the story log, increments the turn counter, updates character/world state the prose implies, and schedules periodic memory + ban-rule jobs. Fans out to the content pipeline (character_speaker → world_updater → narrator) to advance a turn.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "game-master-has-state-tools",
+          "description": "Orchestrator drives RP state via rp_* manager tools.",
+          "must_have_tools": [
+            "rp-story-manager"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.75
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}
