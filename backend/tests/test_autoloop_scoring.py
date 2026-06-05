@@ -61,6 +61,51 @@ def test_opencode_errors_empty_for_normal_stream():
     assert opencode_errors(stdout) == []
 
 
+def test_make_branch_judge_test_grades_outcome_not_path():
+    """Non-single-shot test for orchestrators: grade the OUTCOME (with the dispatch
+    path as a soft hint), not a brittle path-match."""
+    import app.agents.improve as im
+    from src import BranchTest
+
+    b = BranchTest(name="food/orchestrator::suggest", entry_agent="food/orchestrator",
+                   prompt="Suggest a quick dinner.", path=("food/food_suggester",))
+    t = im.make_branch_judge_test(b)
+    assert "Suggest a quick dinner." in t.prompt
+    assert isinstance(t.evaluators[0], LLMJudgeEvaluator)
+    crit = t.evaluators[0].criteria
+    assert "FINAL RESPONSE" in crit and "food/food_suggester" in crit  # outcome + soft hint
+
+
+def test_build_branch_evaluator_judges_full_session_outcome():
+    """The orchestrator is run as a full multi-step session; when it acts via
+    tools with no prose, the evaluator shows the JUDGE the dispatch chain."""
+    import app.agents.improve as im
+    from src import BranchTest
+    from src.improvement.version import ComponentVersion
+    from src.testing.branch import BranchTrajectory
+
+    b = BranchTest(name="x::y", entry_agent="x", prompt="do the task", path=("a", "b"))
+    seen = {}
+
+    class FakeJudge:
+        def judge(self, criteria, target, *, model=None):
+            seen["target"] = str(target)
+            return {"pass": True, "score": 0.9, "reasoning": "outcome ok"}
+
+    def invoker_factory(_defn):
+        def invoke(_test):
+            # acted via tools, produced no prose
+            return BranchTrajectory(output="", tool_calls=[
+                ToolCallRecord(name="a"), ToolCallRecord(name="b")])
+        return invoke
+
+    ev = im.build_branch_evaluator([b], invoker_factory, judge=FakeJudge())
+    metrics = ev(ComponentVersion.of("x", "agent", {"system_prompt": "p", "name": "x"}))
+    # the judge saw the dispatch chain (not an empty string)
+    assert "acted via" in seen["target"] and "a -> b" in seen["target"]
+    assert metrics["score_floor"] == 0.9
+
+
 def test_blocked_tool_attempts_counts_denied_calls():
     """Behavioural smell: an agent debug-flailing on forbidden commands. Unit
     tests can't run the agent, but the DETECTOR a live smoke uses is tested here."""

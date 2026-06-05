@@ -383,6 +383,91 @@ def build_agent_units(
     return units
 
 
+def make_branch_judge_test(branch) -> AgentTest:
+    """A NON-single-shot outcome test for an orchestrator branch.
+
+    Unlike an agent's one-turn judge test, a branch runs the orchestrator as a
+    FULL multi-step opencode session (it may take many internal steps and/or spawn
+    sub-agents). We grade the OUTCOME — did the final response fulfil the user's
+    request — not a brittle dispatch-path match (orchestrators frequently do the
+    work themselves rather than dispatch the documented chain, which is fine).
+    The expected sub-agent path is offered to the judge as a soft hint only.
+    """
+    from src import AgentTest, LLMJudgeEvaluator
+
+    task = branch.prompt or (branch.turns[0].prompt if getattr(branch, "turns", None)
+                             else "") or branch.name
+    path = " -> ".join(branch.path) if getattr(branch, "path", None) else ""
+    criteria = (
+        f"An ORCHESTRATOR agent received this request: \"{task}\".\n"
+        f"Score 0..1 how well its FINAL RESPONSE accomplishes that request for the"
+        f" user — a complete, on-task, useful result. The agent may EITHER do the"
+        f" work itself OR delegate to sub-agents"
+        + (f" (a reasonable plan would involve: {path})" if path else "")
+        + "; both are fine as long as the request is fulfilled. Score 0 if it"
+        " refuses, stalls, loops, errors out, or returns nothing usable."
+    )
+    return AgentTest(
+        name=f"{branch.name}::outcome",
+        prompt=task,
+        evaluators=(LLMJudgeEvaluator(
+            name="branch-outcome", criteria=criteria, pass_threshold=0.7,
+        ),),
+    )
+
+
+def build_branch_evaluator(
+    branch_tests: list, invoker_factory: BranchInvokerFactory,
+    *, judge: Any = None, failures_sink: list[dict[str, Any]] | None = None,
+):
+    """Score an orchestrator candidate by running each of its branches as a full
+    multi-step session and judging the outcome (+ surfacing the dispatch chain)."""
+
+    def evaluator(version: ComponentVersion) -> dict[str, float]:
+        if failures_sink is not None:
+            failures_sink.clear()
+        if not branch_tests:
+            return {"pass_rate": 1.0, "score_floor": 1.0}
+        invoke = invoker_factory(version.definition)
+        passes = 0
+        scores: list[float] = []
+        for bt in branch_tests:
+            jt = make_branch_judge_test(bt)
+            traj = invoke(bt)
+            output = traj.output
+            chain = [c.name for c in (traj.tool_calls or [])]
+            # if the orchestrator acted only via dispatch/tools (no prose), show
+            # the judge what it DID so it can grade the actions, not an empty turn.
+            if not str(output).strip() and chain:
+                output = "[orchestrator produced no prose; it acted via: " \
+                         + " -> ".join(chain) + "]"
+            ctx = RunContext(output=output, tool_calls=list(traj.tool_calls or []),
+                             judge=judge)
+            results = [evaluate(e, ctx) for e in jt.evaluators]
+            ok = all(r.passed for r in results) if results else True
+            passes += 1 if ok else 0
+            scores.append(
+                statistics.fmean([r.score for r in results]) if results else 1.0
+            )
+            if failures_sink is not None:
+                for e, r in zip(jt.evaluators, results):
+                    if not r.passed or r.score < 1.0:
+                        failures_sink.append({
+                            "test": jt.name,
+                            "criterion": getattr(e, "criteria", None),
+                            "score": round(r.score, 2),
+                            "dispatch_chain": chain[:8],
+                            "got_output": str(output)[:400],
+                            "judge_reasoning": r.evidence[:250],
+                        })
+        return {
+            "pass_rate": passes / len(branch_tests),
+            "score_floor": min(scores) if scores else 1.0,
+        }
+
+    return evaluator
+
+
 def build_branch_units(
     invoker_factory_for: Callable[[str], BranchInvokerFactory],
     *,
@@ -390,7 +475,9 @@ def build_branch_units(
     mutators=None,
     max_rounds: int = 2,
     llm: Any = None,
+    judge: Any = None,
     only: set[str] | None = None,
+    use_judge_test: bool = False,
 ) -> list[ImprovementUnit]:
     """One improvement unit per branch.
 
@@ -408,16 +495,37 @@ def build_branch_units(
     units: list[ImprovementUnit] = []
     for entry_agent, tests in by_entry.items():
         entry_def = agent_by_id[entry_agent].model_dump()
-        loop = build_branch_loop(
-            entry_agent=entry_agent,
-            entry_definition=entry_def,
-            tests=tests,
-            invoker_factory=invoker_factory_for(entry_agent),
-            mutators=mutators or _default_mutators(),
-            criterion=criterion,
-            max_rounds=max_rounds,
-            mutation_context=MutationContext(llm=llm) if llm is not None else None,
-        )
+        if use_judge_test:
+            # NON-single-shot grading: run the orchestrator as a full multi-step
+            # session per branch and judge the OUTCOME (the only signal that works
+            # for orchestrators — a continuous 0..1 the teacher can climb).
+            baseline = ComponentVersion.of(entry_agent, "agent", entry_def)
+            failures: list[Any] = []
+            ctx = (MutationContext(llm=llm, criterion=criterion, failures=failures)
+                   if llm is not None else None)
+            loop = IterativeLoop(
+                baseline=baseline,
+                mutators=mutators or _default_mutators(),
+                criterion=criterion,
+                evaluator=build_branch_evaluator(
+                    tests, invoker_factory_for(entry_agent),
+                    judge=judge,
+                    failures_sink=failures if llm is not None else None,
+                ),
+                max_rounds=max_rounds,
+                mutation_context=ctx,
+            )
+        else:
+            loop = build_branch_loop(
+                entry_agent=entry_agent,
+                entry_definition=entry_def,
+                tests=tests,
+                invoker_factory=invoker_factory_for(entry_agent),
+                mutators=mutators or _default_mutators(),
+                criterion=criterion,
+                max_rounds=max_rounds,
+                mutation_context=MutationContext(llm=llm) if llm is not None else None,
+            )
         units.append(branch_unit(entry_agent, loop))
     return units
 
@@ -451,8 +559,9 @@ def run_improvement(
     )
     if include_branches:
         units += build_branch_units(
-            branch_invoker_factory_for, llm=llm, only=only,
+            branch_invoker_factory_for, llm=llm, judge=judge, only=only,
             max_rounds=max_rounds, criterion=criterion,
+            use_judge_test=use_judge_test,
         )
     return run_fleet(
         units,
