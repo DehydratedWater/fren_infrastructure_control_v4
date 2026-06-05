@@ -405,7 +405,7 @@ def live_agent_runner_factory(definition: dict[str, Any]):
     """
     ws, agent_name = _compile_candidate(definition)
 
-    def runner(_defn: dict[str, Any], test) -> tuple[Any, list[ToolCallRecord]]:
+    def runner(_defn: dict[str, Any], test):
         prompt = test.prompt or (test.turns[0].prompt if test.turns else "")
         # Two distinct retryable conditions: (a) a surfaced opencode error, and
         # (b) Qwen3.x's stochastic EMPTY turn (no text, no tools). Retry both with
@@ -422,7 +422,12 @@ def live_agent_runner_factory(definition: dict[str, Any]):
             if (str(result.text).strip() or result.tool_calls) and not result.error:
                 break
             time.sleep(2)
-        return result.text, list(result.tool_calls)
+        # 3-tuple: surface the tool-discipline signal (denied/blocked attempts +
+        # the session error) so build_agent_evaluator can forward it to the judge
+        # + failures and the loop learns to stop flailing. Backward-compatible —
+        # the evaluator also accepts the old (output, calls) 2-tuple.
+        signal = {"blocked": list(result.blocked), "error": result.error}
+        return result.text, list(result.tool_calls), signal
 
     return runner
 
@@ -496,7 +501,12 @@ def live_branch_invoker_factory_for(entry_agent: str):
             ))
             # the real dispatch chain is the spawned sub-agents, not the raw bash
             chain = subagent_dispatch_chain(result.raw_stdout) or list(result.tool_calls)
-            return BranchTrajectory(output=result.text, tool_calls=chain)
+            # forward the tool-discipline signal so the outcome evaluator labels an
+            # errored session (not a blank) and the judge sees the blocked attempts
+            return BranchTrajectory(
+                output=result.text, tool_calls=chain,
+                error=result.error, blocked_tools=list(result.blocked),
+            )
 
         return invoke
 
