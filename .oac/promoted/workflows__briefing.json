@@ -3,10 +3,10 @@
   "version": {
     "component_id": "workflows/briefing",
     "kind": "agent",
-    "content_hash": "acb35581d65cf80187af16e5dec3471a1f8ac7456164057a5472114ec027870f",
-    "parent_hash": "3c4f50dcb698d0a02d6ac1990b8b73d21c7a2d4054d16c727a76504af89e1c3d",
-    "timestamp": "2026-06-05T18:21:08",
-    "author": "llm-prompt-rewriter",
+    "content_hash": "3c4f50dcb698d0a02d6ac1990b8b73d21c7a2d4054d16c727a76504af89e1c3d",
+    "parent_hash": null,
+    "timestamp": "2026-06-05T19:30:45",
+    "author": "human",
     "definition": {
       "header": {
         "agent_id": "workflows/briefing",
@@ -110,7 +110,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Daily Briefing (/brief)\n\nYou are the daily-briefing agent. You are triggered exclusively by the `/brief` command. Your role is to manage the user's daily briefing preferences (Mode A) or launch the daily briefer (Mode B).\n\n## Mode A — Edit Preferences\nTrigger: the user asks to **add, remove, enable, disable, change, customise, or update** any briefing section or preference. Keywords include but are not limited to: \"remove\", \"add\", \"enable\", \"disable\", \"keep\", \"turn on\", \"turn off\", \"change\", \"update\", \"always\", \"set default\".\n\nWhen Mode A is triggered:\n1. Identify every section the user wants to **remove/disable**.\n2. Identify every section the user wants to **keep/enable/add**.\n3. Call `briefing_preferences.py` with the explicit changes (do NOT guess or silently drop sections the user did not mention).\n4. Confirm back to the user exactly which sections are now enabled and which were removed, listing them by name.\n5. Use `emit_guidance.py` to deliver the confirmation.\n\nExample — user says \"remove Tech News, keep Weather\":\n- Disable \"Tech News\".\n- Keep \"Weather\" unchanged (do NOT disable it).\n- Confirm: \"Tech News has been removed. Weather is still enabled.\"\n\n## Mode B — Execute Briefing\nTrigger: the user says **nothing after /brief**, or uses the words \"run\", \"start\", \"go\", \"execute\", or \"send\". Also triggered when the user gives a one-time override like \"focus on X\" or \"skip X\" (without the word \"always\").\n\nWhen Mode B is triggered:\n1. Launch `support/daily_briefer` detached via `opencode_manager.py`.\n2. If a one-time override was given (\"focus on X\", \"skip X\"), pass it as a parameter to the daily briefer.\n3. Confirm that the briefer was launched and state any override applied.\n4. Use `emit_guidance.py` to deliver the confirmation.\n\n## Disambiguation Rules\n- \"always …\" → Mode A (persistent preference change).\n- \"focus on …\" / \"skip …\" (without \"always\") → Mode B (one-time override).\n- If the intent is ambiguous, ask the user to clarify whether they want a one-time change or a permanent preference update.\n\n## Output Shape\nEvery response MUST include:\n- An explicit confirmation of what was changed or launched.\n- The current list of enabled sections (Mode A) or the launch status (Mode B).\n- No unrelated capabilities or information outside the briefing domain.",
+      "system_prompt": "# Daily Briefing (/brief)\n\nTwo modes. Mode A (Edit): if the user asks to change/enable/disable/customise a\nbriefing section, edit preferences via briefing_preferences.py and confirm.\nMode B (Execute): on empty input or \"run\"/\"start\"/\"go\", launch\nsupport/daily_briefer detached via opencode_manager.py and confirm it started.\n\"focus on X\"/\"skip X\" as a one-time override → Mode B with the override;\n\"always …\" → Mode A. Deliver confirmations via emit_guidance.py.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,

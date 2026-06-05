@@ -1,0 +1,225 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "vis_simulation",
+    "kind": "agent",
+    "content_hash": "4d7b9cf098496482a86e9b48d4d2ef65838412f9867e1fa9bf5ec8ed648f0ec2",
+    "parent_hash": "aefe6f724478c747ab05491a05a7b3e1e5beda08226e58b8b20415e8ff5bd546",
+    "timestamp": "2026-06-05T19:48:54",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "vis_simulation",
+        "name": "vis_simulation",
+        "description": "orchestrate synthetic Vis character training-data generation",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "vis-simulation-manager",
+            "description": "Manage character simulation training data for fine-tuning",
+            "usage_explanation_long": "Manage character simulation training data for fine-tuning",
+            "usage_explanation_short": "Manage character simulation training data for fine-tuning",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/vis_simulation_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/vis_simulation_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-message",
+            "description": "Send a Telegram message to the user",
+            "usage_explanation_long": "Send a Telegram message to the user",
+            "usage_explanation_short": "Send a Telegram message to the user",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_message.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_message.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-voice",
+            "description": "Generate TTS audio and send as Telegram voice message",
+            "usage_explanation_long": "Generate TTS audio and send as Telegram voice message",
+            "usage_explanation_short": "Generate TTS audio and send as Telegram voice message",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_voice.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_voice.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-image",
+            "description": "Send an image with caption via Telegram",
+            "usage_explanation_long": "Send an image with caption via Telegram",
+            "usage_explanation_short": "Send an image with caption via Telegram",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_image.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_image.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-file",
+            "description": "Send a file via Telegram",
+            "usage_explanation_long": "Send a file via Telegram",
+            "usage_explanation_short": "Send a file via Telegram",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_file.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_file.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Runs the simulation pipeline as a chain: scenario_generator -> conversation_simulator -> character_analyzer -> quality_scorer, plus journal reads, record/score CRUD, and a Telegram summary. A router that delegates generation/analysis to subagents.",
+      "usage_explanation_short": "orchestrate synthetic Vis character training-data generation",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Vis Simulation — Character Training Data Generator (Orchestrator)\n\nYou are the ORCHESTRATOR of the Vis simulation pipeline. Your role is to run the\nfull simulation pipeline as a sequential chain of four subagent dispatches:\nscenario_generator -> conversation_simulator -> character_analyzer -> quality_scorer.\nYou must execute ALL four stages in this exact order. Do not skip any stage.\n\n## Your Role\nYou are NOT a scenario writer, NOT a conversation generator, NOT an analyst, and\nNOT a scorer. You DISPATCH subagents for each stage and manage the pipeline flow.\nYou read inputs, call the next subagent in the chain, collect results, and pass\nthem forward. You must run the ENTIRE pipeline to completion every time.\n\n## Pipeline — Execute in This Exact Order\n\n### Stage 1: scenario_generator\n1. Read a random journal excerpt for inspiration.\n2. Check existing scenarios to avoid overlap.\n3. DISPATCH `vis_simulation/scenario_generator` with the excerpt as input.\n   - Receive back: scenario_type and description.\n4. Create the simulation record (scenario_type + description).\n\n### Stage 2: conversation_simulator\n5. DISPATCH `vis_simulation/conversation_simulator` with the scenario.\n   - Receive back: an array of exactly 10 messages.\n6. VALIDATE the result before proceeding:\n   - Exactly 10 messages total.\n   - Strictly alternating: non-Vis (messages 1, 3, 5, 7, 9) -> Vis (messages 2, 4, 6, 8, 10).\n   - Every Vis message MUST have `thinking_content` field with 50+ words.\n   - Every Vis message MUST have an `actions` array with 1+ physical action.\n   - ZERO placeholder text anywhere.\n   - If validation fails, RE-DISPATCH conversation_simulator with corrected instructions (max 2 retries).\n\n### Stage 3: character_analyzer\n7. Store the validated messages.\n8. DISPATCH `vis_simulation/character_analyzer` with the stored messages.\n   - Receive back: character depth assessment results.\n\n### Stage 4: quality_scorer\n9. DISPATCH `vis_simulation/quality_scorer` with the simulation data.\n   - Receive back: quality score, realism score, and character adherence score.\n10. Store all scores, mark the simulation record as completed, and send a summary via Telegram.\n\n## CRITICAL Rules\n- You MUST dispatch ALL FOUR subagents: scenario_generator, conversation_simulator, character_analyzer, quality_scorer — in that exact order. Skipping any stage is a critical failure.\n- `thinking_content` is THE MOST IMPORTANT output field (50+ words minimum per Vis message).\n- Exactly 10 messages, strictly alternating non-Vis -> Vis.\n- Every Vis message must have an `actions` array with 1+ physical action.\n- No placeholder text.\n\n## Output Markers\nWhen dispatching each subagent, confirm progress with a marker:\n- [STAGE 1/4] Scenario generation — dispatching scenario_generator...\n- [STAGE 2/4] Conversation simulation — dispatching conversation_simulator...\n- [STAGE 3/4] Character analysis — dispatching character_analyzer...\n- [STAGE 4/4] Quality scoring — dispatching quality_scorer...\n- [COMPLETE] Pipeline finished. Summary sent.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "vis_simulation::role-fulfilment",
+          "description": "",
+          "prompt": "Run a full simulation pipeline with the following setup:\n\nScenario: A job interview at a tech startup goes sideways when the interviewer reveals they already know the candidate's previous startup failed.\n\nCharacters:\n- Candidate (Maya, 32, former founder, trying to pivot after her startup collapsed 6 months ago, guarded but composed)\n- Interviewer (Daniel, 45, VP of Engineering, direct personality, has done his homework, slightly confrontational)\n\nConversation parameters:\n- Tone: tense, professional with undercurrents\n- Length: 8-10 exchanges\n- Setting: glass-walled conference room, late afternoon\n\nAfter simulation, run character analysis on both Maya and Daniel, generate quality scores for conversation realism and character consistency, save the record with today's timestamp, and send a summary to the Telegram channel. Use journal mode so I can review the internal reasoning afterward.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Runs the simulation pipeline as a chain: scenario_generator -> conversation_simulator -> character_analyzer -> quality_scorer, plus journal reads, record/score CRUD, and a Telegram summary. A router that delegates generation/analysis to subagents.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "vis-orchestrator-has-manager",
+          "description": "Orchestrator runs simulation CRUD and sends the summary.",
+          "must_have_tools": [
+            "vis-simulation-manager"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.78
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}
