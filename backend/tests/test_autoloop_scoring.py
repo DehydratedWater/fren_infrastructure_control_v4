@@ -287,3 +287,113 @@ def test_compile_candidate_installs_flat_name(monkeypatch, tmp_path):
     assert ws == tmp_path
     assert "/" not in flat and flat.startswith("cand_")  # FLAT
     assert (tmp_path / ".opencode" / "agents" / f"{flat}.md").exists()
+
+
+# --- 7. branch units don't cross-contaminate component identity -------------
+# Regression for the full+branched run where EVERY branch (orchestrator) unit
+# errored at snapshot/promote with the SAME component cited:
+#   ValidationError ... content_hash for 'workflows/cron_master' does not match
+#   stable_content_hash(definition)
+# Root cause: the per-entry branch loop built its baseline with a PLAIN entry-agent
+# component_id (`workflows/server`) instead of the `branch:<entry>` namespace. That
+# collided a branch winner with the entry agent's own per-agent loop on the shared
+# `.oac/snapshots/<component_id>/` dir + the `.oac/promoted/<component_id>` slot, so
+# winners snapshotted under another unit's identity and promote() blew up. The fix
+# namespaces every branch baseline `branch:<entry>` (+ its own fresh registry), via
+# the framework's tested `build_outcome_branch_loop`.
+
+
+def _two_distinct_branch_entries():
+    """Pick two BranchTests with DISTINCT entry agents from the real fleet."""
+    from app.agents.branches import branches
+
+    by_entry: dict[str, object] = {}
+    for b in branches():
+        by_entry.setdefault(b.entry_agent, b)
+        if len(by_entry) >= 2:
+            break
+    assert len(by_entry) >= 2, "fleet must have >= 2 distinct branch entry agents"
+    return set(by_entry)
+
+
+def test_branch_units_promote_with_own_namespaced_hashvalid_snapshot(tmp_path):
+    """Each branch unit must promote a snapshot under its OWN namespaced
+    component_id, whose content_hash matches stable_content_hash(definition) — no
+    cross-unit contamination (the cron_master-for-every-branch bug)."""
+    import app.agents.improve as im
+    from src import run_fleet
+    from src.improvement.branch import branch_component_id
+    from src.improvement.snapshot import read_snapshot
+    from src.improvement.version import stable_content_hash
+    from src.testing.branch import BranchTrajectory
+
+    entries = _two_distinct_branch_entries()
+
+    # Mocks: no live opencode/qwen/z.ai. The invoker echoes a complete answer; the
+    # judge always scores high so every unit produces a promotable winner (the
+    # snapshot/promote path is what must survive).
+    def invoker_factory_for(_entry):
+        def factory(_defn):
+            def invoke(_test):
+                return BranchTrajectory(
+                    output="A complete, on-task, useful result for the user.",
+                    tool_calls=[],
+                )
+            return invoke
+        return factory
+
+    class FakeJudge:
+        def judge(self, criteria, target, *, model=None):
+            return {"pass": True, "score": 1.0, "reasoning": "fulfils the request"}
+
+    class FakeLLM:
+        # vary the rewrite per call so candidates are distinct (drives real lineage)
+        _n = [0]
+
+        def rewrite(self, target, guidance, *, context=None, model=None):
+            self._n[0] += 1
+            return f"{target}\n\nImproved (v{self._n[0]})."
+
+    units = im.build_branch_units(
+        invoker_factory_for, llm=FakeLLM(), judge=FakeJudge(),
+        only=entries, max_rounds=2, criterion=im.GRADED, use_judge_test=True,
+    )
+    assert {u.unit_id for u in units} == {branch_component_id(e) for e in entries}
+
+    result = run_fleet(
+        units,
+        snapshots_dir=tmp_path / "snaps",
+        project_root=tmp_path,
+        promote_threshold=0.7,
+        run_label="branch-contamination-regression",
+    )
+
+    # No unit may error at snapshot/promote time.
+    assert result.failed() == [], (
+        "branch units errored: "
+        + "; ".join(f"{o.unit_id}: {o.error}" for o in result.failed())
+    )
+    assert len(result.promoted()) == len(entries)
+
+    promoted_dir = tmp_path / ".oac" / "promoted"
+    seen_component_ids: set[str] = set()
+    for entry in entries:
+        expected_id = branch_component_id(entry)  # e.g. "branch:food/orchestrator"
+        slot = promoted_dir / (expected_id.replace("/", "__") + ".json")
+        assert slot.exists(), f"missing promoted slot for {expected_id}: {slot}"
+        snap = read_snapshot(slot)
+        v = snap.version
+        # OWN identity — never another unit's component (the contamination bug).
+        assert v.component_id == expected_id, (
+            f"{expected_id} promoted under WRONG component_id {v.component_id!r}"
+        )
+        # namespaced, so it can never collide with the entry agent's own loop.
+        assert v.component_id.startswith("branch:")
+        # content_hash is self-consistent (what the Snapshot validator enforces).
+        assert v.content_hash == stable_content_hash(v.definition), (
+            f"{expected_id}: content_hash != stable_content_hash(definition)"
+        )
+        seen_component_ids.add(v.component_id)
+
+    # distinct identity per unit
+    assert len(seen_component_ids) == len(entries)
