@@ -174,6 +174,20 @@ def _compile_one(definition: dict[str, Any], target: Path) -> str:
     model line to the local-qwen opencode provider so opencode runs it on the
     vLLM. Returns the spawnable agent name (`<id>-primary`)."""
     agent = AgentDefinition.model_validate(definition)
+    # TOOL-DISCIPLINE guard: stop the model from debug-flailing on forbidden
+    # commands (ls/find/pip/which/python3/absolute paths) when a tool errors —
+    # those are denied by the allow-list and waste the whole turn (~1800 denied
+    # calls observed fleet-wide), tanking the score for no real reason.
+    _guard = (
+        "\n\nTOOL DISCIPLINE (strict): You may ONLY run the `python scripts/*.py`"
+        " tools listed for you, with that EXACT form (relative `scripts/...`,"
+        " interpreter `python`). NEVER run ls, find, cat, which, pip, python3,"
+        " absolute paths, env inspection, or any install/debug command — they are"
+        " blocked and waste the turn. If a tool returns an error, state the failure"
+        " in ONE short line and continue with what you have; do NOT retry"
+        " variations or try to inspect/fix the environment."
+    )
+    agent = agent.model_copy(update={"postamble": (agent.postamble or "") + _guard})
     agent_id = agent.header.agent_id
     reg = AgentRegistry()
     rid = reg.register_agent(agent_id, agent, DEFAULT_WORKER.preset.to_model_parameters())
