@@ -37,6 +37,10 @@ class AgentRunResult:
     raw_stdout: str = ""
     error: str | None = None
     run_id: str = ""
+    # The DENIED/blocked tool attempts in this run as (tool_name, reason) pairs —
+    # the tool-discipline signal forwarded to the judge + rewriter so the loop
+    # learns to stop flailing on forbidden tools. Empty on a clean run.
+    blocked: list[tuple[str, str]] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -89,8 +93,22 @@ def parse_opencode_events(stdout: str) -> tuple[str, list[ToolCallRecord]]:
             name = _tool_name(part)
             if name:
                 args = part.get("args") or part.get("input") or {}
+                # Populate .error for a DENIED/blocked or errored tool part so the
+                # tool-discipline signal is carried at the call level (the
+                # allow-list denial reason: "a rule prevents you from using ls").
+                state = part.get("state") if isinstance(part.get("state"), dict) else {}
+                reason = str(state.get("error") or "")
+                out = str(state.get("output") or "")
+                err = None
+                if "prevents you from using" in reason or "prevents you from using" in out:
+                    err = (reason or out)[:200]
+                elif reason:
+                    err = reason[:200]
                 calls.append(
-                    ToolCallRecord(name=name, args=args if isinstance(args, dict) else {})
+                    ToolCallRecord(
+                        name=name, args=args if isinstance(args, dict) else {},
+                        error=err,
+                    )
                 )
     if text_parts:
         text = "\n".join(text_parts)
@@ -139,17 +157,18 @@ def subagent_dispatch_chain(stdout: str) -> list[ToolCallRecord]:
     return chain
 
 
-def blocked_tool_attempts(stdout: str) -> int:
-    """Count tool calls the permission policy DENIED in this session.
+def blocked_tool_details(stdout: str) -> list[tuple[str, str]]:
+    """The DENIED tool attempts in this session as ``(tool_name, reason)`` pairs.
 
     Agents are compiled with an allow-list (`python scripts/<their tools>.py`).
     When a tool fails, Qwen tends to debug-flail on forbidden commands
     (`pip install`, `which python`, `ls`, `python3 -c …`) — all denied, retried
-    repeatedly, wasting the turn and tanking the score. A high count is a
-    behavioural smell (bad env or a prompt that invites flailing); unit tests
-    can't see it, but a live smoke can assert this stays low.
+    repeatedly, wasting the turn and tanking the score. Returns the tool NAME and
+    the deny reason for each so the judge / prompt-rewriter learns WHICH forbidden
+    tools the model flailed on (not just a count), and can rewrite the prompt to
+    avoid them. Name is best-effort across part shapes (falls back to "?").
     """
-    n = 0
+    out: list[tuple[str, str]] = []
     for line in stdout.splitlines():
         line = line.strip()
         if not line.startswith("{") or "prevents you from using" not in line:
@@ -159,11 +178,23 @@ def blocked_tool_attempts(stdout: str) -> int:
         except json.JSONDecodeError:
             continue
         part = ev.get("part") if isinstance(ev, dict) else None
-        state = (part or {}).get("state") if isinstance(part, dict) else None
-        out = str((state or {}).get("output") or (state or {}).get("error") or "")
-        if "prevents you from using" in out:
-            n += 1
-    return n
+        if not isinstance(part, dict):
+            continue
+        state = part.get("state") if isinstance(part.get("state"), dict) else {}
+        reason = str(state.get("output") or state.get("error") or "")
+        if "prevents you from using" not in reason:
+            continue
+        out.append((_tool_name(part) or "?", reason.strip()[:200]))
+    return out
+
+
+def blocked_tool_attempts(stdout: str) -> int:
+    """Count tool calls the permission policy DENIED in this session.
+
+    Thin count over :func:`blocked_tool_details` — kept for the existing live
+    smoke that asserts the count stays low.
+    """
+    return len(blocked_tool_details(stdout))
 
 
 def opencode_errors(stdout: str) -> list[str]:
@@ -229,7 +260,13 @@ async def run_agent_opencode(
         err = "opencode error: " + " | ".join(ev_errors[:2])
     elif proc.returncode != 0 and not text.strip():
         err = f"opencode exit {proc.returncode}: {err_b.decode('utf-8', 'replace')[:500]}"
-    return AgentRunResult(text=text, tool_calls=calls, raw_stdout=stdout, error=err)
+    # Surface the denied/blocked tool attempts so the evaluator can forward the
+    # tool-discipline signal to the judge + rewriter (close the self-correction
+    # loop on flailing). Computed once here; consumers read result.blocked.
+    return AgentRunResult(
+        text=text, tool_calls=calls, raw_stdout=stdout, error=err,
+        blocked=blocked_tool_details(stdout),
+    )
 
 
 # --- direct backend ---------------------------------------------------------

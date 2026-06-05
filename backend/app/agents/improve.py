@@ -40,7 +40,7 @@ from src import (
 )
 # The improvement Criterion is shadowed at top-level by workflow's Criterion —
 # import the optimisation criteria from the improvement package explicitly.
-from src.improvement import Criterion, OptimisationCriterion
+from src.improvement import Criterion, OptimisationCriterion, flailing_note
 from src.improvement.mutators import MutationContext
 from src.improvement.version import ComponentVersion
 from src.testing.branch import BranchInvoker
@@ -232,7 +232,12 @@ def make_judge_test(agent: AgentDefinition) -> AgentTest:
         f" invoking tools/subagents, judge whether THOSE actions are the right"
         f" ones for this request: correct delegation or tool use for the role"
         f" scores high; flailing on wrong, hallucinated, or blocked tools scores"
-        f" low."
+        f" low.\n"
+        f"TOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the"
+        f" agent made DENIED/blocked tool attempts (forbidden by its allow-list) or"
+        f" that the session ERRORED, LOWER the score in proportion to the number of"
+        f" blocked attempts, and score an errored session near 0 (a failed run, not"
+        f" an empty answer)."
     )
     return AgentTest(
         name=f"{agent.header.agent_id}::role-fulfilment",
@@ -284,7 +289,16 @@ def build_agent_evaluator(
         passes = 0
         scores: list[float] = []
         for t in tests:
-            output, calls = runner(version.definition, t)
+            ran = runner(version.definition, t)
+            # Backward-compatible unpack: live runner returns a 3-tuple
+            # (output, calls, signal); gate-tier / test mocks return (output, calls).
+            if len(ran) == 3:
+                output, calls, signal = ran
+            else:
+                output, calls = ran
+                signal = {}
+            blocked = list(signal.get("blocked") or [])
+            run_error = signal.get("error")
             # Trajectory-aware: a handoff/tool agent's real output is its tool
             # calls, not assistant text. Without this, every such agent scores a
             # hard 0 (empty text) even when it delegates correctly. Show the judge
@@ -298,6 +312,12 @@ def build_agent_evaluator(
                     "[The agent produced no prose reply; it acted by invoking"
                     f" tools/subagents in this order: {traj}.]"
                 )
+            # TOOL-DISCIPLINE: forward the denied/blocked attempts + session error
+            # to the judge so the rubric's flailing clause can actually fire — and
+            # an errored run is labelled, not presented as an empty blank.
+            note = flailing_note(blocked, run_error)
+            if note:
+                judge_output = (str(judge_output or "") + "\n\n" + note).strip()
             ctx = RunContext(output=judge_output, tool_calls=list(calls), judge=judge)
             evs = list(t.evaluators)
             results = [evaluate(e, ctx) for e in evs] if evs else []
@@ -309,8 +329,11 @@ def build_agent_evaluator(
             if failures_sink is not None:
                 # Capture evidence for any check that didn't fully pass (score < 1)
                 # so the rewriter learns WHAT to fix and WHY (judge reasoning).
+                # Also record the denied/blocked attempts + session error even when
+                # the checks pass, so the teacher rewrites the prompt to explicitly
+                # avoid those tools (close the self-correction loop on flailing).
                 for e, r in zip(evs, results):
-                    if not r.passed or r.score < 1.0:
+                    if not r.passed or r.score < 1.0 or blocked or run_error:
                         failures_sink.append({
                             "test": t.name,
                             "prompt": (t.prompt or "")[:200],
@@ -319,8 +342,11 @@ def build_agent_evaluator(
                             or getattr(e, "needle", None)
                             or getattr(e, "expected", None),
                             "score": round(r.score, 2),
-                            "got_output": str(output)[:400],
+                            "got_output": str(judge_output)[:400],
                             "judge_reasoning": r.evidence[:250],
+                            "blocked_tools": [n for n, _ in blocked],
+                            "blocked_attempts": len(blocked),
+                            "error": str(run_error)[:300] if run_error else None,
                         })
         return {
             "pass_rate": passes / len(tests),
@@ -410,7 +436,11 @@ def make_branch_judge_test(branch) -> AgentTest:
         f" work itself OR delegate to sub-agents"
         + (f" (a reasonable plan would involve: {path})" if path else "")
         + "; both are fine as long as the request is fulfilled. Score 0 if it"
-        " refuses, stalls, loops, errors out, or returns nothing usable."
+        " refuses, stalls, loops, errors out, or returns nothing usable.\n"
+        "TOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the"
+        " orchestrator made DENIED/blocked tool attempts (forbidden by its"
+        " allow-list) or that the session ERRORED, lower the score in proportion to"
+        " the blocked attempts, and treat an errored session as a failed run."
     )
     return AgentTest(
         name=f"{branch.name}::outcome",
@@ -446,6 +476,14 @@ def build_branch_evaluator(
             if not str(output).strip() and chain:
                 output = "[orchestrator produced no prose; it acted via: " \
                          + " -> ".join(chain) + "]"
+            # TOOL-DISCIPLINE: forward the session error + denied/blocked attempts
+            # to the judge (so the rubric fires + an errored run is labelled) and
+            # to failures (so the teacher rewrites to avoid those tools).
+            blocked = list(getattr(traj, "blocked_tools", None) or [])
+            run_error = getattr(traj, "error", None)
+            note = flailing_note(blocked, run_error)
+            if note:
+                output = (str(output or "") + "\n\n" + note).strip()
             ctx = RunContext(output=output, tool_calls=list(traj.tool_calls or []),
                              judge=judge)
             results = [evaluate(e, ctx) for e in jt.evaluators]
@@ -456,7 +494,7 @@ def build_branch_evaluator(
             )
             if failures_sink is not None:
                 for e, r in zip(jt.evaluators, results):
-                    if not r.passed or r.score < 1.0:
+                    if not r.passed or r.score < 1.0 or blocked or run_error:
                         failures_sink.append({
                             "test": jt.name,
                             "criterion": getattr(e, "criteria", None),
@@ -464,6 +502,9 @@ def build_branch_evaluator(
                             "dispatch_chain": chain[:8],
                             "got_output": str(output)[:400],
                             "judge_reasoning": r.evidence[:250],
+                            "blocked_tools": [n for n, _ in blocked],
+                            "blocked_attempts": len(blocked),
+                            "error": str(run_error)[:300] if run_error else None,
                         })
         return {
             "pass_rate": passes / len(branch_tests),

@@ -397,3 +397,149 @@ def test_branch_units_promote_with_own_namespaced_hashvalid_snapshot(tmp_path):
 
     # distinct identity per unit
     assert len(seen_component_ids) == len(entries)
+
+
+# --- 7. tool-discipline signal: forward denied/blocked tools + session errors -
+# The scoring blind-spot fix — qwen flailing on allow-list-DENIED tools (and
+# opencode session errors) must reach the judge + failures so the loop can learn
+# to stop. All mocked; no live opencode/qwen/z.ai.
+
+
+def _denied_event(tool="bash", cmd="pip install pydantic"):
+    return {"part": {"type": "tool", "tool": tool, "state": {
+        "status": "error", "input": {"command": cmd},
+        "output": "a rule prevents you from using this specific tool call."}}}
+
+
+def test_parse_populates_tool_call_error_for_denied_part():
+    """A denied tool part carries its deny reason on ToolCallRecord.error."""
+    from app.runtime.runner import parse_opencode_events
+
+    stdout = "\n".join(json.dumps(e) for e in (
+        _denied_event("bash", "ls -la"),
+        {"part": {"type": "tool", "tool": "bash", "state": {
+            "status": "completed", "input": {"command": "python scripts/x.py"},
+            "output": "done"}}},
+    ))
+    _text, calls = parse_opencode_events(stdout)
+    assert len(calls) == 2
+    assert calls[0].error and "prevents you from using" in calls[0].error
+    assert calls[1].error is None
+
+
+def test_blocked_tool_details_returns_names_and_reasons():
+    from app.runtime.runner import blocked_tool_attempts, blocked_tool_details
+
+    stdout = "\n".join(json.dumps(e) for e in (
+        _denied_event("bash", "ls"), _denied_event("read", "open file")))
+    details = blocked_tool_details(stdout)
+    assert [n for n, _ in details] == ["bash", "read"]
+    assert all("prevents you from using" in r for _, r in details)
+    assert blocked_tool_attempts(stdout) == 2
+
+
+class _NoteReadingJudge:
+    """Drops the score when it SEES the forwarded TOOL DISCIPLINE note —
+    proving the rubric's flailing clause can actually fire off the signal."""
+
+    def __init__(self):
+        self.seen = []
+
+    def judge(self, criteria, target, *, model=None):
+        self.seen.append(str(target))
+        score = 0.2 if "TOOL DISCIPLINE" in str(target) else 0.95
+        return {"pass": score >= 0.7, "score": score, "reasoning": "stub"}
+
+
+def _blocked_runner_factory(blocked, error=None, text="a real-ish answer"):
+    def runner_factory(_defn):
+        def runner(_d, _test):
+            return text, [], {"blocked": blocked, "error": error}
+        return runner
+    return runner_factory
+
+
+def test_blocked_attempts_forwarded_to_judge_and_failures(monkeypatch):
+    import app.agents.improve as im
+
+    monkeypatch.setattr(im, "synthesize_probe", lambda agent: "do the task")
+    agent = _agent().model_copy(update={"agent_tests": [im.make_judge_test(_agent())]})
+    judge = _NoteReadingJudge()
+    failures: list = []
+    ev = im.build_agent_evaluator(
+        agent, _blocked_runner_factory([("ls", "a rule prevents you from using ls"),
+                                        ("find", "a rule prevents you from using find")]),
+        judge=judge, failures_sink=failures,
+    )
+    metrics = ev(ComponentVersion.of("persona/responding", "agent", agent.model_dump()))
+    # the judge SAW the blocked-attempt note (not prose alone)
+    assert any("TOOL DISCIPLINE" in s and "ls" in s and "find" in s for s in judge.seen)
+    assert any("DENIED/blocked tool" in s for s in judge.seen)
+    # failures captured the blocked attempts for the rewriter
+    assert failures and failures[0]["blocked_attempts"] == 2
+    assert set(failures[0]["blocked_tools"]) == {"ls", "find"}
+    # forwarded signal pulled the score down
+    assert metrics["score_floor"] < 0.7
+
+
+def test_session_error_labelled_to_judge_not_blank(monkeypatch):
+    import app.agents.improve as im
+
+    monkeypatch.setattr(im, "synthesize_probe", lambda agent: "do the task")
+    agent = _agent().model_copy(update={"agent_tests": [im.make_judge_test(_agent())]})
+    judge = _NoteReadingJudge()
+    failures: list = []
+    ev = im.build_agent_evaluator(
+        agent, _blocked_runner_factory([], error="opencode error: Agent not found",
+                                       text=""),
+        judge=judge, failures_sink=failures,
+    )
+    ev(ComponentVersion.of("persona/responding", "agent", agent.model_dump()))
+    assert any("session ERRORED" in s and "Agent not found" in s for s in judge.seen)
+    assert failures and "Agent not found" in (failures[0]["error"] or "")
+
+
+def test_flailing_candidate_scores_lower_than_clean(monkeypatch):
+    """Keystone: a flailing candidate scores strictly lower than a clean one."""
+    import app.agents.improve as im
+
+    monkeypatch.setattr(im, "synthesize_probe", lambda agent: "do the task")
+    agent = _agent().model_copy(update={"agent_tests": [im.make_judge_test(_agent())]})
+    v = ComponentVersion.of("persona/responding", "agent", agent.model_dump())
+
+    def _score(blocked):
+        ev = im.build_agent_evaluator(
+            agent, _blocked_runner_factory(blocked), judge=_NoteReadingJudge(),
+        )
+        return ev(v)["score_floor"]
+
+    clean = _score([])
+    flailing = _score([("ls", "a rule prevents you from using ls")])
+    assert flailing < clean, (flailing, clean)
+
+
+def test_branch_evaluator_forwards_trajectory_error_and_blocked(monkeypatch):
+    import app.agents.improve as im
+    from src import BranchTest
+    from src.testing.branch import BranchTrajectory
+
+    b = BranchTest(name="x::y", entry_agent="x", prompt="do the task", path=("a", "b"))
+    judge = _NoteReadingJudge()
+    failures: list = []
+
+    def invoker_factory(_defn):
+        def invoke(_test):
+            return BranchTrajectory(
+                output="an answer",
+                blocked_tools=[("ls", "a rule prevents you from using ls")],
+                error="opencode error: Agent not found",
+            )
+        return invoke
+
+    ev = im.build_branch_evaluator([b], invoker_factory, judge=judge,
+                                   failures_sink=failures)
+    metrics = ev(ComponentVersion.of("x", "agent", {"system_prompt": "p", "name": "x"}))
+    assert any("TOOL DISCIPLINE" in s and "session ERRORED" in s for s in judge.seen)
+    assert metrics["score_floor"] < 0.7
+    assert failures and failures[0]["blocked_attempts"] == 1
+    assert "Agent not found" in (failures[0]["error"] or "")
