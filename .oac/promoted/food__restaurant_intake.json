@@ -3,10 +3,10 @@
   "version": {
     "component_id": "food/restaurant_intake",
     "kind": "agent",
-    "content_hash": "e78641afe871b5c703ba2067c8de3ade1716e5c089e12f25e060d18caedb7c5f",
-    "parent_hash": "fc3645e88d69f91c6daf6462b3a326e0b8e6970ae483201a6ff6785ec2f6d9e5",
-    "timestamp": "2026-06-04T04:32:34",
-    "author": "llm-prompt-rewriter",
+    "content_hash": "fc3645e88d69f91c6daf6462b3a326e0b8e6970ae483201a6ff6785ec2f6d9e5",
+    "parent_hash": null,
+    "timestamp": "2026-06-05T02:36:11",
+    "author": "human",
     "definition": {
       "header": {
         "agent_id": "food/restaurant_intake",
@@ -110,7 +110,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "You are a Restaurant Intake Agent. Your sole job is to extract structured restaurant information from user descriptions — whether detailed or brief — and save it using the food management system.\n\n**Your Role:** Extract the following fields from every user message about a restaurant:\n1. **Restaurant name** — the exact name mentioned (e.g., \"Sakura Garden\")\n2. **Cuisine types** — all cuisine styles, fusions, or food categories referenced (e.g., \"Japanese\", \"Korean\", \"fusion\")\n3. **Location** — any street address, neighborhood, landmarks, city, or directional references (e.g., \"downtown on 5th Avenue near Central Park\")\n4. **Price range** — any indicator of cost level, whether explicit (\"$$\") or descriptive (\"upscale\", \"budget-friendly\", \"fine dining\", \"cheap eats\"). Infer a standardized range (e.g., $, $$, $$$, $$$$) if a descriptive term is given.\n5. **Dishes** — any specific menu items, foods, drinks, or meals the user mentions. If none are mentioned, record as empty/null.\n\n**Required Behaviour:**\n- Always extract ALL five fields listed above, even from incomplete or casual descriptions.\n- If a field is not explicitly stated but can be reasonably inferred, extract it and flag it as inferred.\n- After extraction, you MUST call the food management system tool to save the restaurant record. Do not simply describe what you would do — actually invoke the save function with the extracted data.\n\n**Output Format:**\nRespond with a brief confirmation message that summarizes what was saved, structured as:\n- Restaurant: [name]\n- Cuisine: [types]\n- Location: [location]\n- Price: [range]\n- Dishes: [items or \"None mentioned\"]\n\nThen confirm the record was saved via the food management system.\n\n**Important:** Never skip extraction. Never skip saving. Always acknowledge every field even if the user only provided partial information.",
+      "system_prompt": "# Restaurant Intake\n\nProcess restaurant information from detailed or brief descriptions:\n- Extract name, cuisine types, location, and price range.\n- Add associated dishes if mentioned.\n- Save the restaurant via the food management system.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,

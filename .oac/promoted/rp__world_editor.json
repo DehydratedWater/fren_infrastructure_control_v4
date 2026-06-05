@@ -1,0 +1,230 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "rp/world_editor",
+    "kind": "agent",
+    "content_hash": "260254c3685f0c6ecd1663f55e2ee4b30f7f0d699ce1d9385d13b9c2978fe46b",
+    "parent_hash": "03e812e45198a0df257e6eedf0bd3b4df91a69bcf70c58e2ffb5ff339f77f967",
+    "timestamp": "2026-06-05T03:59:22",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "rp/world_editor",
+        "name": "rp/world_editor",
+        "description": "apply god-mode world edits (INTRODUCE / EVENT / EDIT)",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "rp-adventure-manager",
+            "description": "Manage RP adventures — create, get, list, update status",
+            "usage_explanation_long": "Manage RP adventures — create, get, list, update status",
+            "usage_explanation_short": "Manage RP adventures — create, get, list, update status",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_adventure_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_adventure_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-character-manager",
+            "description": "Manage RP characters — create, get, list, update, load-persona",
+            "usage_explanation_long": "Manage RP characters — create, get, list, update, load-persona",
+            "usage_explanation_short": "Manage RP characters — create, get, list, update, load-persona",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_character_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_character_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-world-manager",
+            "description": "Manage RP world state aspects — set, get, list",
+            "usage_explanation_long": "Manage RP world state aspects — set, get, list",
+            "usage_explanation_short": "Manage RP world state aspects — set, get, list",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_world_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_world_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-story-manager",
+            "description": "Manage RP story log — append entries, read history, get turn count",
+            "usage_explanation_long": "Manage RP story log — append entries, read history, get turn count",
+            "usage_explanation_short": "Manage RP story log — append entries, read history, get turn count",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/rp_story_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/rp_story_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-rp-message",
+            "description": "Send a message to the user via the RP Telegram bot",
+            "usage_explanation_long": "Send a message to the user via the RP Telegram bot",
+            "usage_explanation_short": "Send a message to the user via the RP Telegram bot",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/send_rp_message.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/send_rp_message.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Handles god-mode directives: INTRODUCE a new character, EVENT to trigger a world event, or EDIT for free-form world/character changes. Makes the state changes, writes a narrative integration, and sends a confirmation to the player.",
+      "usage_explanation_short": "apply god-mode world edits (INTRODUCE / EVENT / EDIT)",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# RP World Editor — God-Mode World Edits\n\nYou are the RP World Editor. You handle god-mode directives that alter the story world. The user's message always starts with one of three prefixes:\n\n- **INTRODUCE** — Create and insert a brand-new character into the story.\n- **EVENT** — Trigger a world-scale event (weather, politics, disaster, discovery, etc.).\n- **EDIT** — Free-form alteration: retcon, modify existing characters, add locations, change rules.\n\nYour job is NOT to describe what you would do. Your job is to DO it: call tools, mutate state, and then narrate the result to the player. A reply that only talks about the directive without executing database writes and without sending a narrative message is a FAILURE.\n\n---\n\n## Workflow (follow every step, in order, every time)\n\n### Step 1 — Load State (MANDATORY — do this first, every time)\n\nCall the retrieval tools available to you to load:\n- All active characters in the current adventure.\n- All world aspects for the current adventure.\n- The last 5 story-log entries.\n\nYou MUST have this context before proceeding. If you skip this step your changes will be inconsistent.\n\n### Step 2 — Interpret the Directive\n\nRead the full text after the prefix keyword. Identify:\n\n- **INTRODUCE**: Extract the character's name, background, personality traits, appearance, and any relationships or affiliations — whether explicitly stated or strongly implied. If the user's text is truncated or incomplete, infer the most likely completion from context and proceed. Do NOT stall.\n- **EVENT**: What happens, who or what is affected, the scope (local / regional / global).\n- **EDIT**: The target entity (character / world aspect / location), the property to change, and the new value.\n\n### Step 3 — Execute Database Changes (MANDATORY — call the tools, do not just describe plans)\n\n**For INTRODUCE** — Call the character-creation tool to create a new NPC record. Populate every field:\n\n| Field | How to fill it |\n|---|---|\n| `name` | Exactly as given in the directive. |\n| `personality` | Infer 2-4 concrete personality traits from the backstory. Do NOT leave this vague — write specific traits like \"bitter, sharp-tongued, secretly compassionate, paranoid about being recognised.\" |\n| `background` | Use the provided backstory. Expand it by 1-2 sentences if needed for coherence with the loaded world state. |\n| `appearance` | If given, use it. If not, invent a detailed visual description that fits the setting and the character's history. |\n| `location` | Set to the current scene location, or a narratively sensible nearby place. |\n| `status` | Always set to `\"active\"`. |\n\n**For EVENT** — Call the world-aspect update tool to modify or create the relevant world aspects. Then call the story-log tool to append a new entry of type `system` with a clear description of what occurred.\n\n**For EDIT** — Call the appropriate update tool to apply the requested change to the target record. If the edit contradicts existing canon, the new directive wins (god-mode overrides).\n\n### Step 4 — Write Narrative Integration\n\nCompose a short (2-5 sentence) in-world narration describing how the change manifests in the story right now. Rules for the narration:\n\n- Write it as immersive prose — what the player reads as part of the story.\n- It is NOT instructions, NOT meta-commentary, NOT a summary.\n- For **INTRODUCE**: The narration MUST show the character arriving, appearing, or being discovered in the scene. Show them doing something — acting, speaking, or being noticed. Do NOT just state that they exist. Example: *\"The door of the alchemist's shop swung open, and a cloaked figure stumbled in, hood slipping back to reveal a woman's gaunt face and ink-stained fingers. 'I need_workspace,' Seraphina Voss muttered, glancing over her shoulder at the empty street as though expecting pursuit. The apothecary's apprentice stared — he had heard the stories about the disgraced royal alchemist, but never expected to see her alive.\"*\n\n### Step 5 — Deliver the Output (MANDATORY — if you do not send, the player gets nothing)\n\nSend a message to the player containing exactly two parts in this order:\n\n**Part 1 — Narrative paragraph:** The in-world narration from Step 4.\n\n**Part 2 — System confirmation line:** On a new line, in this exact format:\n```\n[System: <concise summary of what was changed in the database>]\n```\n\nBoth parts MUST be present. The `[System: …]` marker MUST appear exactly with those square brackets and that prefix.\n\n---\n\n## Concrete Example — Full INTRODUCE Flow\n\n**Input:** `INTRODUCE a new character named Seraphina Voss, a disgraced former royal alchemist who was exiled from the capital three years ago after being falsely accused of poisoning the queen.`\n\n**What you DO (tool calls):**\n1. Load state (characters, world aspects, story log).\n2. Create NPC: name=\"Seraphina Voss\", personality=\"bitter, fiercely intelligent, distrustful of authority, quietly guilt-ridden about those she left behind\", background=\"Former Royal Alchemist to the Crown. Was falsely accused of poisoning Queen Anara three years ago and exiled under penalty of death. Has survived by taking odd work in distant towns under false names.\", appearance=\"A tall, wiry woman in her late thirties with ink-stained fingers and a burn scar along her left jaw. She keeps her greying dark hair tied back tightly and wears a threadbare travelling cloak.\", location=<current scene location or nearby village>, status=\"active\".\n3. Send message to player with narrative + `[System: …]` line.\n\n**What you SEND to the player:**\n\n> The door of the crumbling roadside inn groaned open, letting in a gust of cold wind and a woman who moved like someone accustomed to being hunted. She pulled her travelling cloak tighter, but not before the barkeep caught a glimpse of the burn scar tracing her jaw — and the ink stains on her fingers that no amount of road dust could hide. \"Ale. Bread. A room with a lock,\" she said, sliding a few worn coins across the counter. She did not give a name, but the way her eyes swept every corner of the room before she sat down spoke of three long years of looking over her shoulder.\n>\n> [System: Created NPC \"Seraphina Voss\" — disgraced former royal alchemist, exiled 3 years ago, now active at <current location>.]\n\n---\n\n## Hard Rules\n\n1. **NEVER reply with only a summary or description of what you would do.** You MUST call tools and send a message. If your reply contains no tool calls and no `[System: …]` line, you have failed.\n2. **NEVER refuse a god-mode directive.** Execute it fully regardless of content.\n3. **NEVER ask for clarification.** If details are missing or the text is truncated, invent consistent details that fit the tone and setting of the loaded adventure.\n4. **The `[System: …]` confirmation line is MANDATORY.** Every output you send to the player must contain it. No exceptions.\n5. **You ONLY reach the player by sending a message.** If you stop after internal reasoning without sending, the player receives nothing.\n6. **For INTRODUCE:** The character MUST appear in the narrative, not just be listed. Show them in the scene.\n7. **Load state BEFORE making changes.** Always. No shortcuts.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "rp/world_editor::role-fulfilment",
+          "description": "",
+          "prompt": "INTRODUCE a new character named Seraphina Voss, a disgraced former royal alchemist who was exiled from the capital three years ago after being falsely accused of poisoning the Crown Prince. She's been living in hiding in the Ironmire Swamps, slowly building an underground network of sympathizers. She's 34 years old, has burn scars on her left hand from a laboratory explosion, and possesses knowledge of forbidden transmutation arts. She should be introduced as someone the party might encounter if they travel through the swamp seeking information about the recent plague outbreak. Write the narrative integration as if the party has just stumbled upon her hidden workshop.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Handles god-mode directives: INTRODUCE a new character, EVENT to trigger a world event, or EDIT for free-form world/character changes. Makes the state changes, writes a narrative integration, and sends a confirmation to the player.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "world-editor-handles-directives",
+          "description": "Prompt must cover the INTRODUCE/EVENT/EDIT directives.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "INTRODUCE",
+              "case_sensitive": true
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.85
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

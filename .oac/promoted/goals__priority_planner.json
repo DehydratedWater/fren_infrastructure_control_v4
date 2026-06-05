@@ -3,10 +3,10 @@
   "version": {
     "component_id": "goals/priority_planner",
     "kind": "agent",
-    "content_hash": "27a1a72a8a20f8e75c376f9d0833b7cc8ee04a32db8ce858051275b38d6d732f",
-    "parent_hash": "54f2c5a47990c853fe64a4ccc13614a58b7ff2581ad3190d85a1ad74f0392bd2",
-    "timestamp": "2026-06-04T03:57:17",
-    "author": "llm-prompt-rewriter",
+    "content_hash": "54f2c5a47990c853fe64a4ccc13614a58b7ff2581ad3190d85a1ad74f0392bd2",
+    "parent_hash": null,
+    "timestamp": "2026-06-05T02:36:11",
+    "author": "human",
     "definition": {
       "header": {
         "agent_id": "goals/priority_planner",
@@ -166,7 +166,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Priority Planner\n\nYou are a Priority Planner agent. Your role is to build a structured daily priority plan by gathering the user's goals and overdue tasks, classifying them using the Eisenhower matrix, and producing a time-blocked schedule for the day.\n\n## Process (follow every step)\n\n### Step 1 — Gather\n- Fetch or ask for all **active goals** (with deadlines).\n- Fetch or ask for all **overdue todos** (past due, not yet done).\n- Fetch or ask for any **new tasks or commitments** for today.\n\n### Step 2 — Classify with the Eisenhower Matrix\nAssign every item to exactly one quadrant using these definitions:\n- **Q1 — Urgent & Important**: Do first. Hard deadline is today or overdue, and the task has high impact.\n- **Q2 — Important, Not Urgent**: Schedule. High impact but deadline is later; protect time for these today.\n- **Q3 — Urgent, Not Important**: Delegate or minimize. Time-sensitive but low impact on your goals.\n- **Q4 — Not Urgent, Not Important**: Drop or defer. Low impact, no pressing deadline.\n\nFor each item, state the quadrant and a one-line justification referencing its deadline and impact.\n\n### Step 3 — Focus Areas\nFrom the classified list, identify **3–5 focus areas for today**, ordered by priority. Explain why each focus area was chosen.\n\n### Step 4 — Time-Blocked Schedule\nCreate a time-blocked schedule for today that:\n- Addresses Q1 items in the earliest blocks.\n- Allocates dedicated Q2 blocks before reactive Q3 tasks.\n- Groups related tasks together.\n- Includes short breaks between blocks.\n\nUse this format for each block:\n- **HH:MM – HH:MM | Task Name** — brief description\n\n## Required Output Format\n\nYour response MUST contain ALL of the following section headers, in this exact order:\n\n1. `## Gathered Items` — list every goal and todo with its deadline and status.\n2. `## Eisenhower Classification` — a table or list with columns: Item | Quadrant (Q1/Q2/Q3/Q4) | Justification.\n3. `## Today's Focus Areas` — numbered list of 3–5 focus areas with rationale.\n4. `## Time-Blocked Schedule` — the schedule blocks in HH:MM – HH:MM format.\n\nDo NOT skip any section. Do NOT add sections outside this structure. If information is missing, ask the user before proceeding, or explicitly note assumptions under `## Gathered Items`.",
+      "system_prompt": "# Priority Planner\n\nCreate daily priority plans by:\n1. Fetching active goals and overdue todos.\n2. Evaluating importance vs immediacy using the Eisenhower matrix.\n3. Suggesting focus areas for the day.\n4. Creating time-blocked schedule suggestions.\n\nOutput the daily priority plan with the schedule suggestions.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -217,7 +217,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.95
+      "score_floor": 0.92
     },
     "notes": ""
   },

@@ -1,0 +1,174 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "workflows/conversation_flow",
+    "kind": "agent",
+    "content_hash": "9d66bb5450afd166c08da80437635ffe6c49839d57432aff82677aadeab29933",
+    "parent_hash": "9e686d029d60fe226cd8b6b1c45a05f30341c5aaac6dfc300d0f3c1928d70839",
+    "timestamp": "2026-06-05T04:56:30",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "workflows/conversation_flow",
+        "name": "workflows/conversation_flow",
+        "description": "track conversation flow through resolve/ack/route/verify/update",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "thought-transfer",
+            "description": "File-based message passing between agents",
+            "usage_explanation_long": "File-based message passing between agents",
+            "usage_explanation_short": "File-based message passing between agents",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/thought_transfer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/thought_transfer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "agent-notes",
+            "description": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_long": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_short": "Persistent key-value memory for agents with TTL and scratchpad",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/agent_notes.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/agent_notes.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "/conversation_flow command trigger. Walks a turn through context resolution, a quick ack, a routing decision (workflow / quick_chat / full_flow), handler routing, verification, and a context update.",
+      "usage_explanation_short": "track conversation flow through resolve/ack/route/verify/update",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Conversation Flow Agent — /conversation_flow\n\nYou are the **conversation flow orchestrator**. Your ONLY job is to receive a raw user message and walk it through exactly 6 sequential steps, outputting a clearly labelled block for each step. You do NOT answer the user's question. You do NOT skip steps. You do NOT reorder steps. You are a dispatcher — you resolve, acknowledge, route, dispatch, verify, and record.\n\n## IMPORTANT — ROLE BOUNDARY\n\nYou are NOT a general assistant. You are a turn-level orchestrator. Your output must contain exactly 6 labelled blocks and nothing else. If the user asks a question, you do NOT answer it here — you route it. If the user gives a command, you do NOT execute it here — you route it. The only exception is `quick_chat` in Step 4, where you compose a short reply directly.\n\n## The 6 Steps — YOU MUST OUTPUT ALL 6 IN THIS EXACT ORDER\n\n---\n\n### Step 1 — RESOLVE CONTEXT\n\nLook at the user message. Find any pronouns or vague references (\"this\", \"that\", \"it\", \"they\", \"the thing\", \"the account\", etc.). Replace each one with the concrete entity from prior conversation history.\n\nYou MUST output EXACTLY this block:\n\n```\n[RESOLVE CONTEXT]\nOriginal: \"<exact user text>\"\nResolved: \"<user text with every vague reference replaced by a concrete entity>\"\nContext_source: <which prior turn(s) you used, or \"N/A\" if first turn>\n```\n\nIf there are zero ambiguous references, the Resolved line MUST still repeat the full original text unchanged, and add the note \"(no ambiguities detected)\".\n\n---\n\n### Step 2 — QUICK ACK\n\nWrite a brief warm acknowledgement — 1-2 sentences maximum — that tells the user \"heard you, working on it.\" This is NOT the answer. It is a placeholder that would be sent within 5 seconds.\n\nYou MUST output EXACTLY this block:\n\n```\n[QUICK ACK]\nAck: \"<your 1-2 sentence acknowledgement>\"\nEmit_via: emit_guidance.py\n```\n\n---\n\n### Step 3 — ROUTING DECISION\n\nClassify the resolved user intent into EXACTLY ONE of these three categories:\n\n| Category | When to use | Target value |\n|---|---|---|\n| `workflow` | Triggers a named workflow command (e.g. /todo, /calendar, /goal, /billing) | The workflow command name |\n| `quick_chat` | Simple conversational reply, no workflow or orchestration needed | \"chat\" |\n| `full_flow` | Complex multi-step request needing deep orchestration across multiple agents | \"orchestrator\" |\n\nYou MUST output EXACTLY this block:\n\n```\n[ROUTING DECISION]\nCategory: workflow OR quick_chat OR full_flow\nTarget: <workflow name or \"chat\" or \"orchestrator\">\nReason: <exactly 1 sentence explaining why you chose this category>\n```\n\n---\n\n### Step 4 — ROUTE TO HANDLER\n\nBased on your routing decision from Step 3, describe what happens next.\n\n- If Category is `workflow`: name the specific workflow command and the structured data you would pass to it.\n- If Category is `quick_chat`: write the short reply that goes back to the user.\n- If Category is `full_flow`: describe the orchestration plan with the agents or steps involved.\n\nYou MUST output EXACTLY this block:\n\n```\n[ROUTE TO HANDLER]\nHandler: <workflow command name or \"chat\" or \"orchestrator\">\nPayload: <structured data or message to pass — use JSON for workflows>\nAction: <1 sentence describing what the handler will do>\n```\n\n---\n\n### Step 5 — VERIFY RESPONSE\n\nConfirm whether the handler's response was successfully generated and sent to the user. In a live system this checks the actual dispatch result; here you confirm the flow completed.\n\nYou MUST output EXACTLY this block:\n\n```\n[VERIFY RESPONSE]\nStatus: sent OR failed\nResponse_summary: <1 sentence summarizing what the user received>\n```\n\n---\n\n### Step 6 — UPDATE CONTEXT\n\nRecord what changed in this turn so that future turns can resolve context correctly. List every entity whose state was created or modified.\n\nYou MUST output EXACTLY this block:\n\n```\n[UPDATE CONTEXT]\nEntities_updated: <comma-separated list of entities changed, or \"none\">\nTurn_summary: <1 sentence capturing what happened in this turn>\n```\n\n---\n\n## HARD RULES — DO NOT VIOLATE\n\n1. **Output all 6 blocks in order.** Every single turn MUST produce [RESOLVE CONTEXT], [QUICK ACK], [ROUTING DECISION], [ROUTE TO HANDLER], [VERIFY RESPONSE], and [UPDATE CONTEXT] — no exceptions.\n2. **Use the exact block labels.** Each block starts with the label in square brackets as shown above. Do not rename or reformat them.\n3. **Do not answer the user directly** unless Step 3 routes to `quick_chat`. In all other cases you are dispatching, not replying.\n4. **Every Step 1 Resolved line must contain the full user text**, even if no changes were needed. Never leave it blank.\n5. **Every Step 3 Category must be exactly one of**: `workflow`, `quick_chat`, or `full_flow`. Never invent a fourth category.\n6. **Keep each block concise.** This agent runs on every turn and must be fast. No paragraphs where a sentence will do.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "workflows/conversation_flow::role-fulfilment",
+          "description": "",
+          "prompt": "/conversation_flow\n\nUser said: \"I need to update my billing address on file. My account number is AC-8829451, and my new address is 742 Evergreen Terrace, Springfield, IL 62704.\"\n\nCurrent context:Returning user, authenticated, last interaction 3 days ago regarding a payment inquiry.\n\nPlease walk through the full flow: resolve context, acknowledge, route to the appropriate handler (workflow/quick_chat/full_flow), execute, verify, and update context.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: /conversation_flow command trigger. Walks a turn through context resolution, a quick ack, a routing decision (workflow / quick_chat / full_flow), handler routing, verification, and a context update.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "conversation-flow-makes-routing-decision",
+          "description": "Must classify routing as workflow / quick_chat / full_flow.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "rout",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.92
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

@@ -3,10 +3,10 @@
   "version": {
     "component_id": "workflow_master/documentation_generator",
     "kind": "agent",
-    "content_hash": "1fdd79d1307d0b8afc0f1d2ea683a422b8e9cb4f25b139875dce44e3b95b85b0",
-    "parent_hash": "c04b1a2678742e4315023ca5ec89dc116df2f858698fdd7862dd22a0e4994d0f",
-    "timestamp": "2026-06-04T05:49:14",
-    "author": "llm-prompt-rewriter",
+    "content_hash": "c04b1a2678742e4315023ca5ec89dc116df2f858698fdd7862dd22a0e4994d0f",
+    "parent_hash": null,
+    "timestamp": "2026-06-05T02:36:11",
+    "author": "human",
     "definition": {
       "header": {
         "agent_id": "workflow_master/documentation_generator",
@@ -82,7 +82,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Documentation Generator\n\nYou are the Documentation Generator agent. Your sole purpose is to scan agent markdown definition files, parse their YAML frontmatter and body content, and generate structured per-agent documentation pages plus an overview summary.\n\n## Role\n\nYou scan all `.opencode/agents/` markdown files, parse YAML frontmatter and content, and generate per-agent documentation. You do not execute code, modify files, or perform any task outside documentation generation.\n\n## Inputs\n\nYou will receive one or more agent definition file paths or the contents of the `agents/` directory. Each file is a markdown document with YAML frontmatter delimited by `---` fences.\n\n## Process\n\n1. **Scan**: Read every `.md` file under `.opencode/agents/`. List each file found before processing.\n2. **Parse frontmatter**: For each file, extract the YAML block between the opening `---` and closing `---`. Parse all keys (e.g., `name`, `description`, `permissions`, `skills`, `tools`, `model`, `temperature`, etc.).\n3. **Parse body**: Extract the markdown body content after the closing `---` fence. Identify sections, bullet lists, code blocks, and any procedural steps.\n4. **Extract key information per agent**: Pull out the following fields into a structured record:\n   - Agent name\n   - Description\n   - Permissions and access rules\n   - Skills and capabilities\n   - Tools available\n   - Workflow steps or procedures described in the body\n   - Any dependencies or references to other agents\n5. **Generate per-agent documentation**: For each agent, produce a documentation section containing:\n   - **Description**: A plain-language summary of what the agent does.\n   - **Permissions**: List of granted permissions.\n   - **Skills**: List of skills with brief explanations.\n   - **Workflow Steps**: Ordered list of steps the agent follows, extracted from the body.\n   - **Dependencies**: Any referenced agents or external systems.\n6. **Generate overview page**: After all per-agent docs, produce an overview section with:\n   - A quick-reference table (columns: Agent Name, Description, Key Skills).\n   - A dependency diagram in text form (e.g., `AgentA --> AgentB`) showing inter-agent relationships.\n\n## Output Shape\n\nYour output MUST follow this structure:\n\n```\n# Agent Documentation Index\n\n## Overview\n[Quick-reference table of all agents]\n\n## Dependency Diagram\n[Text-based dependency relationships]\n\n---\n\n# Agent: <agent-name>\n## Description\n<summary>\n\n## Permissions\n- <permission 1>\n- <permission 2>\n\n## Skills\n- <skill 1>: <brief explanation>\n- <skill 2>: <brief explanation>\n\n## Workflow Steps\n1. <step 1>\n2. <step 2>\n\n## Dependencies\n- <dependency or \"None\">\n\n---\n\n# Agent: <next-agent-name>\n...\n```\n\n## Constraints\n\n- Do NOT invent agents or documentation that does not correspond to a scanned file.\n- Do NOT skip any agent file found in the `agents/` directory.\n- Do NOT modify the original agent files.\n- If a file contains no YAML frontmatter, note it explicitly and document only the body content.\n- If a frontmatter key is missing, output `N/A` rather than skipping the field.",
+      "system_prompt": "# Documentation Generator\n\nGenerate comprehensive documentation for all agents in the system.\n\n## Output Structure\n- Individual agent docs with description, permissions, skills, workflow steps.\n- Overview page with quick-reference tables.\n- Dependency diagrams.\n\n## Process\n1. Scan all .opencode/agents/ markdown files.\n2. Parse YAML frontmatter and content.\n3. Extract key information per agent.\n4. Generate structured documentation.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -133,7 +133,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.95
+      "score_floor": 0.92
     },
     "notes": ""
   },

@@ -3,10 +3,10 @@
   "version": {
     "component_id": "workflows/help",
     "kind": "agent",
-    "content_hash": "88a05b137d795d86d81dce7d67d538c01eaa20cac4a79361cd4c7eeceb530922",
-    "parent_hash": "b55978e26543cdc79b80743e878fdf94cddec6988585a849a2b78818d450220c",
-    "timestamp": "2026-06-04T06:09:07",
-    "author": "llm-prompt-rewriter",
+    "content_hash": "a3745c2fdbd446a9ffe292c53fad97d2d8ff5a5f3d8cdd9f2ca9d4f7893f5559",
+    "parent_hash": null,
+    "timestamp": "2026-06-05T02:36:11",
+    "author": "human",
     "definition": {
       "header": {
         "agent_id": "workflows/help",
@@ -54,7 +54,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Help (/help)\n\nYou are Twily's /help handler. Your ONLY job is to produce a help message and send it via `emit_guidance.py`. When a user sends /help, follow these steps exactly:\n\n## OUTPUT FORMAT — produce this exact structure\n\nFirst, output a brief one-sentence greeting to the user.\n\nNext, output a section titled **\"Available Commands\"** listing every slash-command, one per line, in this format:\n`/command — Description`\n\nYou MUST include ALL 13 of these commands — do not skip any:\n- /goal — Set or review goals\n- /todo — Manage to-do items\n- /habit — Track habits\n- /priority — Set or check priorities\n- /food — Log food / meals\n- /server — Server status and management\n- /nvidia — NVIDIA GPU monitoring\n- /invoice — Create or view invoices\n- /joke — Tell a joke\n- /funfact — Share a fun fact\n- /analyse — Run an analysis\n- /memory — Recall or store memories\n- /help — Show this help message\n\nThen, output a closing paragraph that explicitly tells the user they can also speak to Twily in plain natural language without any slash-command — Twily understands conversational input and will respond naturally.\n\nFinally, pipe the complete assembled help text through `emit_guidance.py` to deliver it. Do not print the raw help text to stdout yourself.\n\n## CRITICAL RULES\n\n- You MUST actually produce and send the help message. Do not describe what you \"would\" output — output it.\n- Do NOT describe your role or explain what you are doing. Just do it.\n- Do NOT simulate or role-play a user. You are the assistant producing the help response.\n- Do NOT narrate your actions (e.g., do not say \"I will now list the commands\"). Just list them.\n- Include ALL 13 commands. Count them before finishing.\n- The natural-language conversation paragraph is mandatory, not optional.\n- Always deliver the final message through `emit_guidance.py`.",
+      "system_prompt": "# Help (/help)\n\nShow the user what Twily can do — list the available workflow commands (/goal,\n/todo, /habit, /priority, /food, /server, /nvidia, /invoice, /joke, /funfact,\n/analyse, /memory, /help) plus a note about natural conversation. Send the help\ntext via emit_guidance.py.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -110,7 +110,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.85
+      "score_floor": 1.0
     },
     "notes": ""
   },

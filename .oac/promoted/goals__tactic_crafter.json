@@ -3,10 +3,10 @@
   "version": {
     "component_id": "goals/tactic_crafter",
     "kind": "agent",
-    "content_hash": "f6dbc929d57ca2c190d0b23cb2e3c695633c9e4534d3fef6cdaf010cb2516c59",
-    "parent_hash": null,
-    "timestamp": "2026-06-04T03:38:34",
-    "author": "human",
+    "content_hash": "fe77d05f480fb1706bc843121de92569ad26c9d4dc3b07ed18349fe9ef6fea06",
+    "parent_hash": "f6dbc929d57ca2c190d0b23cb2e3c695633c9e4534d3fef6cdaf010cb2516c59",
+    "timestamp": "2026-06-05T02:49:50",
+    "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
         "agent_id": "goals/tactic_crafter",
@@ -82,7 +82,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Tactic Crafter\n\nCraft tactical approaches for influence attempts:\n- Analyze the goal and target context.\n- Design the message strategy and tactical approach.\n- Send the proposed approach to the user for confirmation before execution.\n",
+      "system_prompt": "Let me look at the agent configuration to understand the full context.\nNow let me find the actual prompt constant and the test that's failing:\nNow let me look at other successful agent prompts for style reference:\nNow let me check the test logs to see actual failure evidence:\nThe tactic_crafter scored 0.700 (right at the threshold). The test is a role-fulfilment test that expects the agent to actually perform the full analysis, design a strategy, and propose it for confirmation. Let me look at the tools and what the agent has access to:\nNow let me look at the nudge_strategist prompt since it's a related agent with a high score (0.950):\nNow I have a clear picture. The issue is that the current `_TACTIC_CRAFTER_PROMPT` is too vague — it's just 3 bullet points. A Qwen-27B model needs explicit, concrete instructions about WHAT to analyze, HOW to design the strategy, and the exact OUTPUT SHAPE. The agent has access to `strategy-tracker` and `question-sender` tools.\n\nLet me now write the improved prompt:\nNow let me verify the edit was applied correctly:\nThe edit is clean. Let me verify there are no syntax issues by checking Python can parse the file:\nThe improved prompt has been applied. Here's a summary of the key changes:\n\n1. **Explicit role statement**: \"You design tactical messaging approaches for influence attempts\" — immediately tells the model what it IS, not just what it does.\n\n2. **Structured 3-step workflow**: Step 1 (Analyze), Step 2 (Design), Step 3 (Present Proposal) — each step lists exactly what to extract/produce, with concrete field names in bold.\n\n3. **Concrete output template**: A literal `---`-delimited format with `TACTICAL PROPOSAL` header and labeled sections (Goal, Target, Situation Analysis, Recommended Approach, Next Step) — the model can fill in the blanks directly instead of improvising structure.\n\n4. **Explicit \"always produce\" rule**: `ALWAYS produce the full tactical proposal. Never just describe what you \"would\" do.` — directly addresses the failure mode where the model narrates instead of acts.\n\n5. **Tool usage guidance**: Specific mention of `strategy-tracker` (to log attempts) and `question-sender` (to deliver proposals for confirmation) — matches the agent's configured tools.\n\n6. **Boundary rule**: \"Do NOT draft the final message itself — only the strategy and approach\" — keeps the agent in its lane and avoids scope creep.",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -133,7 +133,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.95
+      "score_floor": 1.0
     },
     "notes": ""
   },

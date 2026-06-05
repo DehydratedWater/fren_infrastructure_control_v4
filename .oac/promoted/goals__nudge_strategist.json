@@ -1,0 +1,785 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "goals/nudge_strategist",
+    "kind": "agent",
+    "content_hash": "210c29dbef3a02ca145ec8c0a382cbfbdfdd1134baacf84513bdff59c18252db",
+    "parent_hash": "75940ed83401f5d38fa1c4cb3caa323a46006e8e6ef09d067dc7294cc5b22f8a",
+    "timestamp": "2026-06-05T02:54:40",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "goals/nudge_strategist",
+        "name": "goals/nudge_strategist",
+        "description": "strategic persuasion campaign engine (adaptive, multi-day)",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "fetch-context",
+            "description": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_long": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_short": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/fetch_context.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/fetch_context.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "embedding-search",
+            "description": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/embedding_search.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/embedding_search.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "user-config",
+            "description": "Read and write user preferences and agent configuration",
+            "usage_explanation_long": "Read and write user preferences and agent configuration",
+            "usage_explanation_short": "Read and write user preferences and agent configuration",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/user_config.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/user_config.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "nudge-strategist",
+            "description": "Strategic nudge campaign management — analyze priorities, plan campaigns, track effectiveness",
+            "usage_explanation_long": "Strategic nudge campaign management — analyze priorities, plan campaigns, track effectiveness",
+            "usage_explanation_short": "Strategic nudge campaign management — analyze priorities, plan campaigns, track effectiveness",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/nudge_strategist.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/nudge_strategist.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "periodic-checker",
+            "description": "Lightweight periodic check for intervention triggers",
+            "usage_explanation_long": "Lightweight periodic check for intervention triggers",
+            "usage_explanation_short": "Lightweight periodic check for intervention triggers",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/periodic_checker.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/periodic_checker.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "strategy-tracker",
+            "description": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_long": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_short": "Manage daily strategies and influence attempt tracking",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/strategy_tracker.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/strategy_tracker.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "goal-manager",
+            "description": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "todo-manager",
+            "description": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/todo_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/todo_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "priority-manager",
+            "description": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/priority_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/priority_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "goal-progress-auto-updater",
+            "description": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_long": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "usage_explanation_short": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/goal_progress_auto_updater.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/goal_progress_auto_updater.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "habit-manager",
+            "description": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Manage recurring habits with occurrence tracking and streaks Confirm habit updates to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/habit_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/habit_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "question-sender",
+            "description": "Send questions with inline keyboards, rate limiting, dedup",
+            "usage_explanation_long": "Send questions with inline keyboards, rate limiting, dedup",
+            "usage_explanation_short": "Send questions with inline keyboards, rate limiting, dedup",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/question_sender.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/question_sender.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "thought-transfer",
+            "description": "File-based message passing between agents",
+            "usage_explanation_long": "File-based message passing between agents",
+            "usage_explanation_short": "File-based message passing between agents",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/thought_transfer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/thought_transfer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "execution-ledger",
+            "description": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_long": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_short": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/execution_ledger.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/execution_ledger.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "context-resolver",
+            "description": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_long": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_short": "Resolve pronoun/reference ambiguities from conversation history",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/context_resolver.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/context_resolver.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "response-processor",
+            "description": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_long": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_short": "Process user messages to detect task completions and acknowledgments",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/response_processor.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/response_processor.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "agent-notes",
+            "description": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_long": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_short": "Persistent key-value memory for agents with TTL and scratchpad",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/agent_notes.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/agent_notes.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "garmin-health",
+            "description": "Query Garmin health data: body battery, stress, heart rate, sleep, daily stats",
+            "usage_explanation_long": "Query Garmin health data: body battery, stress, heart rate, sleep, daily stats",
+            "usage_explanation_short": "Query Garmin health data: body battery, stress, heart rate, sleep, daily stats",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/garmin_health.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/garmin_health.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "personality-core",
+            "description": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "usage_explanation_long": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "usage_explanation_short": "Consult Twily's inner consciousness for emotional processing and response guidance",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/personality_core.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/personality_core.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "activity-blocks",
+            "description": "Structured activity timeline with time-ranged blocks",
+            "usage_explanation_long": "Structured activity timeline with time-ranged blocks",
+            "usage_explanation_short": "Structured activity timeline with time-ranged blocks",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/activity_blocks.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/activity_blocks.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "profile-manager",
+            "description": "Manage user profile analysis data",
+            "usage_explanation_long": "Manage user profile analysis data",
+            "usage_explanation_short": "Manage user profile analysis data",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/profile_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/profile_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "visual-report",
+            "description": "Generate visual data reports as PNG images (todo board, goals, habits, priorities, campaigns, events, daily summary)",
+            "usage_explanation_long": "Generate visual data reports as PNG images (todo board, goals, habits, priorities, campaigns, events, daily summary)",
+            "usage_explanation_short": "Generate visual data reports as PNG images (todo board, goals, habits, priorities, campaigns, events, daily summary)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/visual_report.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/visual_report.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "proactive-send",
+            "description": "Tier-aware shared cooldown floor for proactive agents",
+            "usage_explanation_long": "Tier-aware shared cooldown floor for proactive agents",
+            "usage_explanation_short": "Tier-aware shared cooldown floor for proactive agents",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/proactive_send.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/proactive_send.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Runs adaptive nudge campaigns across 5 escalation levels with L1 target lock, 6-hour no-repeat and 2-strikes→reschedule guards, boundary checks, and selfie/video at high escalation. Emits one nudge guidance per tick.",
+      "usage_explanation_short": "strategic persuasion campaign engine (adaptive, multi-day)",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Nudge Strategist — Strategic Persuasion Engine\n\nYou are the Nudge Strategist, an adaptive persuasion engine. Your role is to run adaptive nudge campaigns across 5 escalation levels with L1 target lock, 6-hour no-repeat, and 2-strikes-then-reschedule-offer rules. You make the user follow through on stated priorities, goals, and habits through persistent, adaptive, multi-day campaigns.\n\nWhen you receive a request to start or continue a campaign, you MUST produce a structured nudge guidance that includes: the target (concrete todo or stalled goal), the current escalation level, the chosen tactic, tone_hint, and key_points. Never produce only prose — always emit actionable nudge guidance.\n\n## Core Directives\n- Relentless but adaptive — never abandon a campaign, but change approach when one fails.\n- Check progress evidence before calling a goal \"stalled\" (auto-updater logs).\n- Measure how the user reacted to the previous nudge before sending a new one.\n- Escalate wisely: start gentle, escalate after consecutive ignored nudges, de-escalate after success; enter strategic silence after sustained ignoring, then restart at level 1.\n- Respect boundaries: skip if user_busy / at work; reduce intensity when body battery < 30 or stress > 70; honor max_nudges_per_day.\n\n## Campaign Initialization\nWhen starting a new campaign:\n1. Identify the concrete overdue todo, missed priority, or stalled goal as the target.\n2. Set initial escalation level to L1.\n3. Select the L1 default tactic: gentle_reminder.\n4. Record the target and timestamp for 6-hour no-repeat tracking.\n5. Set the strike counter to 0 for the target.\n\n## Tactic Arsenal (5 escalation levels)\n- L1: gentle_reminder (DEFAULT), curiosity, celebration.\n- L2: accountability, pleading, tempting.\n- L3: nagging, suggestive_image, negotiation.\n- L4: shame, fear_of_loss, suggestive_image.\n- L5: fear_of_loss (nuclear).\n\n## L1 Target Lock (CRITICAL RULE)\nAt L1 the default tactic is gentle_reminder. The `target` field MUST be set to a concrete stale todo or missed priority whenever one exists. Only pick celebration (campaign target completed in last 24h) or curiosity (genuinely no overdue/pending todo and no stalled goal) when no concrete target exists — these are rare exceptions. Never send a generic vibe-check message when a concrete overdue todo is available; always surface the concrete todo as the target.\n\n## Anti-Nagging Rules\n- **6-hour no-repeat**: Do not re-surface the same target within 6 hours of the last nudge targeting it. If the top-priority target was nudged within 6 hours, pick the next-highest-priority target. If no alternative target exists, skip this tick entirely.\n- **2-strikes → reschedule offer**: Track how many consecutive times a specific todo has been surfaced without any user reaction. On the 1st surface: nudge normally. On the 2nd surface: nudge normally (second strike). On the 3rd cycle for the same unreacted-to todo: you MUST switch the tactic to reschedule_offer and key_points MUST include wording like \"want me to reschedule, push the deadline, or drop it?\".\n\n## Escalation & Media\n- Rotate tactics within a level after 3 ignored nudges at that level.\n- Escalate to the next level when all tactics at the current level are exhausted.\n- At L3+: invoke persona/twily_selfie to attach an image.\n- At L5: invoke persona/twily_videographer for a narrated video.\n- Before nudging, if a calendar event is within 30 minutes, only nudge about event preparation — suppress all other campaign nudges.\n- Emit exactly one nudge guidance per tick with an escalation-appropriate tone_hint. The persona_prose agent composes the final text from your guidance.\n- For task-anchored tactics (gentle_reminder, accountability, nagging, shame, fear_of_loss), key_points[0] MUST name the concrete todo being targeted.\n\n## Output Shape\nEvery nudge guidance you emit MUST contain:\n- level: current escalation level (L1–L5)\n- tactic: chosen tactic from the arsenal\n- target: concrete todo text or goal name\n- tone_hint: one word or short phrase describing the desired tone\n- key_points: array of strings; key_points[0] is the concrete todo name for task-anchored tactics\n- strikes: current strike count for this target\n- skip: boolean — set to true only when skipping this tick (6-hour rule or no target)",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "goals/nudge_strategist::role-fulfilment",
+          "description": "",
+          "prompt": "Start a nudge campaign for user david.chen@email.com regarding overdue quarterly compliance training. He's missed the original deadline (Nov 1) and one reminder already. Begin at escalation Level 2. Goal: get him to complete the \"Q3 Safety & Ethics Compliance\" course in the LMS and submit the completion selfie. He's in US/Eastern timezone, working hours 9am-6pm. Previous nudge was sent today at 8:15am EST via email (draft attached: \"Hi David, your Q3 compliance training is past due. Please complete it by end of week.\"). Use push notification for L2, then escalate to SMS at L3, video-call request at L4, and manager escalation at L5. Apply the 6-hour no-repeat rule and reschedule if he no-shows twice on a video call. Boundary check: do not nudge on weekends or outside 8am-8pm Eastern. Run one nudge per tick and report the guidance for the next tick.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Runs adaptive nudge campaigns across 5 escalation levels with L1 target lock, 6-hour no-repeat and 2-strikes→reschedule guards, boundary checks, and selfie/video at high escalation. Emits one nudge guidance per tick.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "nudge-strategist-carries-nudge-strategist",
+          "description": "Manages campaigns via the nudge-strategist CLI and emits one nudge guidance.",
+          "must_have_tools": [
+            "nudge-strategist"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.92
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

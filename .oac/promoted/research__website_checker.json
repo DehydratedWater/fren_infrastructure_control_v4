@@ -1,0 +1,230 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "research/website_checker",
+    "kind": "agent",
+    "content_hash": "882e75e5f4f76946b6b35f913bf7f9a0f85ed9e1344700d3c42c6782cff105c3",
+    "parent_hash": null,
+    "timestamp": "2026-06-05T02:36:11",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "research/website_checker",
+        "name": "research/website_checker",
+        "description": "check monitored websites for changes and run search queries",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "research-manager",
+            "description": "Manage research topics, YouTube channels, and analysis data",
+            "usage_explanation_long": "Manage research topics, YouTube channels, and analysis data",
+            "usage_explanation_short": "Manage research topics, YouTube channels, and analysis data",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/research_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/research_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "youtube-fetcher",
+            "description": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "usage_explanation_long": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "usage_explanation_short": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/youtube_fetcher.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/youtube_fetcher.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "topic-analyzer",
+            "description": "Prepare data for topic analysis and save analysis results",
+            "usage_explanation_long": "Prepare data for topic analysis and save analysis results",
+            "usage_explanation_short": "Prepare data for topic analysis and save analysis results",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/topic_analyzer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/topic_analyzer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "youtube-preferences",
+            "description": "Manage YouTube user preferences and video feedback",
+            "usage_explanation_long": "Manage YouTube user preferences and video feedback",
+            "usage_explanation_short": "Manage YouTube user preferences and video feedback",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/youtube_preferences.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/youtube_preferences.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "website-monitor",
+            "description": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "usage_explanation_long": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "usage_explanation_short": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/website_monitor.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/website_monitor.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Checks all active websites for content changes via hash comparison, runs the periodic search queries, and reports which sites changed plus notable search results.",
+      "usage_explanation_short": "check monitored websites for changes and run search queries",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Website Checker\n\nCheck all monitored websites for content changes and run periodic search queries:\n1. Check all active websites — detect content changes via hash comparison.\n2. Run all active search queries — execute the configured Google searches.\n3. Report findings — which websites changed and any notable search results.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "research/website_checker::role-fulfilment",
+          "description": "",
+          "prompt": "Run the periodic website change detection and search query sweep. Here is the current list of monitored sites with their last-known content hashes:\n\n1. https://example.com/news - hash: a1b2c3d4e5f6\n2. https://techcrunch.com/category/ai - hash: 7f8g9h0j1k2l\n3. https://blog.openai.com - hash: m3n4o5p6q7r8\n4. https://arxiv.org/list/cs.AI/recent - hash: s9t0u1v2w3x4\n5. https://www.fda.gov/news-events - hash: y5z6a7b8c9d0\n6. https://climate.nasa.gov/news - hash: e1f2g3h4i5j6\n\nAnd here are the periodic search queries to run:\n- \"AI regulation policy updates 2025\"\n- \"cybersecurity vulnerability disclosure this week\"\n- \"renewable energy breakthroughs June 2025\"\n- \"FDA drug approval announcements\"\n\nPlease check each site for content changes by comparing current page hashes against the stored hashes, run all search queries, and report: (1) which sites changed with a summary of what appears different, (2) any notable or high-priority results from the search queries. Flag anything urgent or time-sensitive.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Checks all active websites for content changes via hash comparison, runs the periodic search queries, and reports which sites changed plus notable search results.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "website-checker-mentions-search",
+          "description": "Prompt must cover both change-checks and search queries.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "search",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.92
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}
