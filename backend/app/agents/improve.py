@@ -51,7 +51,12 @@ AgentRunner = Callable[[dict[str, Any], AgentTest], tuple[Any, list[ToolCallReco
 # Build an AgentRunner for a candidate (lets the live tier compile per candidate).
 AgentRunnerFactory = Callable[[dict[str, Any]], AgentRunner]
 # Build a BranchInvoker for a candidate orchestrator definition.
-from src.improvement.branch import BranchInvokerFactory  # noqa: E402
+from src.improvement.branch import (  # noqa: E402
+    BranchInvokerFactory,
+    branch_component_id,
+    build_outcome_branch_loop,
+)
+from src.improvement.version import ComponentRegistry  # noqa: E402
 
 PASS = OptimisationCriterion(
     name="pass-tests",
@@ -495,23 +500,32 @@ def build_branch_units(
     units: list[ImprovementUnit] = []
     for entry_agent, tests in by_entry.items():
         entry_def = agent_by_id[entry_agent].model_dump()
+        # CRITICAL: every unit gets its OWN fresh mutators, ComponentRegistry, and
+        # MutationContext/failures list. Sharing any of these across the per-entry
+        # loop lets one entry's winner inherit another's component identity — the
+        # cross-unit contamination that snapshotted every branch winner as the SAME
+        # component (and broke promote with a content_hash/definition mismatch).
         if use_judge_test:
             # NON-single-shot grading: run the orchestrator as a full multi-step
             # session per branch and judge the OUTCOME (the only signal that works
-            # for orchestrators — a continuous 0..1 the teacher can climb).
-            baseline = ComponentVersion.of(entry_agent, "agent", entry_def)
+            # for orchestrators — a continuous 0..1 the teacher can climb). This is
+            # the framework's documented orchestrator default; it namespaces the
+            # baseline as `branch:<entry>` (so a branch winner can NEVER collide
+            # with the entry agent's own per-agent loop on the shared snapshot dir
+            # / promote slot) and gives the loop its own fresh registry.
             failures: list[Any] = []
             ctx = (MutationContext(llm=llm, criterion=criterion, failures=failures)
                    if llm is not None else None)
-            loop = IterativeLoop(
-                baseline=baseline,
+            loop = build_outcome_branch_loop(
+                entry_agent=entry_agent,
+                entry_definition=entry_def,
+                tests=tests,
+                invoker_factory=invoker_factory_for(entry_agent),
                 mutators=mutators or _default_mutators(),
                 criterion=criterion,
-                evaluator=build_branch_evaluator(
-                    tests, invoker_factory_for(entry_agent),
-                    judge=judge,
-                    failures_sink=failures if llm is not None else None,
-                ),
+                judge=judge,
+                failures_sink=failures if llm is not None else None,
+                registry=ComponentRegistry(),
                 max_rounds=max_rounds,
                 mutation_context=ctx,
             )
@@ -523,6 +537,7 @@ def build_branch_units(
                 invoker_factory=invoker_factory_for(entry_agent),
                 mutators=mutators or _default_mutators(),
                 criterion=criterion,
+                registry=ComponentRegistry(),
                 max_rounds=max_rounds,
                 mutation_context=MutationContext(llm=llm) if llm is not None else None,
             )
