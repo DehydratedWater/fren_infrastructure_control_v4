@@ -186,6 +186,10 @@ def _compile_one(definition: dict[str, Any], target: Path) -> str:
         " blocked and waste the turn. If a tool returns an error, state the failure"
         " in ONE short line and continue with what you have; do NOT retry"
         " variations or try to inspect/fix the environment."
+        " Do NOT read source files, glob/list the codebase, or explore the"
+        " filesystem to 'understand' your tools — their usage is documented above;"
+        " just call them. Pointless reads/globs of files that may not exist waste"
+        " the turn."
     )
     agent = agent.model_copy(update={"postamble": (agent.postamble or "") + _guard})
     agent_id = agent.header.agent_id
