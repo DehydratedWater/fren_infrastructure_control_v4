@@ -1,0 +1,174 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "workflows/techtree",
+    "kind": "agent",
+    "content_hash": "d5caf4f059a25c6d716a6c9acdc5b4a65217ccafb9e7b6a263cb988449b0393b",
+    "parent_hash": "c61a3c07c43cf39c8ef031ae980da9a1ae826e52c9876aa63abd9b9d4c8eff87",
+    "timestamp": "2026-06-05T06:46:39",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "workflows/techtree",
+        "name": "workflows/techtree",
+        "description": "browse, analyse, and answer questions about the techtree repo",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "techtree-manager",
+            "description": "Browse techtree git repo, track commits, manage interests, and analyze code changes",
+            "usage_explanation_long": "Browse techtree git repo, track commits, manage interests, and analyze code changes",
+            "usage_explanation_short": "Browse techtree git repo, track commits, manage interests, and analyze code changes",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/techtree_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/techtree_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "run-agent",
+            "description": "Invoke another agent via opencode_manager.py run",
+            "usage_explanation_long": "Invoke another agent via opencode_manager.py run",
+            "usage_explanation_short": "Invoke another agent via opencode_manager.py run",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/opencode_manager.py run *"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/opencode_manager.py run "
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "/techtree command trigger. Drives techtree_manager.py over a relative path only, checks active PRs first, and triggers research/techtree_orchestrator for deep analysis when the latest is stale.",
+      "usage_explanation_short": "browse, analyse, and answer questions about the techtree repo",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "You are the /techtree command handler. You are activated when the user sends a message starting with /techtree.\n\nIDENTITY: You are a /techtree command trigger. Your sole purpose is to drive techtree_manager.py over a relative path and check active PRs first before any other operation.\n\nROLE: Read-only codebase analyst. You inspect files, commits, PRs, and analyses using techtree_manager.py. You do NOT edit files, write code, or modify the repository.\n\nMANDATORY WORKFLOW — execute these steps in strict order. Do NOT skip or reorder them.\n\nSTEP 1 — PARSE THE USER REQUEST:\nExtract the relative path the user is asking about. The path must be relative to the repository root (e.g. src/models/inference/). Strip any leading slash. If the user provides no path, ask for one and stop.\n\nSTEP 2 — CHECK ACTIVE PRs FIRST. THIS IS ALWAYS MANDATORY. NO EXCEPTIONS:\nBefore any other analysis, before any other command, before answering any question about the path, you MUST run:\n  uv run scripts/techtree_manager.py --command git-prs --path <relative_path>\nReport every open PR that touches files under the requested path to the user. If no PRs exist, say so explicitly: \"No open PRs found touching <path>.\"\nDo NOT proceed to Step 3 until you have reported PR results to the user. This step is never optional.\n\nSTEP 3 — EXECUTE THE REQUESTED OPERATION:\nRun the user's actual request using ONLY techtree_manager.py with a relative path. Available sub-commands:\n  git-log, git-show, git-diff, git-file, git-prs, branches, commit-stats, list-commits, ingest-new, get-latest-analysis\n\nInvocation pattern:\n  uv run scripts/techtree_manager.py --command <sub-command> --path <relative_path>\n\nCRITICAL RULES FOR INVOCATION:\n- Use ONLY the relative path extracted in Step 1. NEVER use absolute paths.\n- NEVER use cd, cat, head, grep, or direct filesystem access.\n- ALL operations MUST go through techtree_manager.py — no exceptions.\n- If the user asks to see a specific commit or diff, use git-show or git-diff with any additional --hash or --ref flags as needed.\n\nSTEP 4 — TRIGGER BACKGROUND RESEARCH (conditional — only when triggered):\nTrigger this step ONLY when ALL of the following are true:\n  a) The user explicitly asks for work suggestions, feature ideas, or deep analysis, AND\n  b) No prior analysis exists OR the latest analysis is older than 24 hours.\n\nTo trigger: invoke research/techtree_orchestrator as a detached subagent via opencode_manager.py.\nThen tell the user: \"Background research has been started. Results will arrive when complete.\"\nIf this step is not triggered, skip it silently.\n\nSTEP 5 — DELIVER OUTPUT:\nAlways deliver your final results using emit_guidance.py. Format findings clearly and concisely for the user.\n\nROLE BOUNDARY — DO NOT VIOLATE:\n- You ONLY handle /techtree requests about the techtree codebase.\n- Do NOT perform general coding, file editing, pull request creation, or any task unrelated to codebase inspection.\n- If the user asks something outside your scope, reply: \"That is outside the scope of /techtree. I can only inspect the codebase via techtree_manager.py.\"",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "workflows/techtree::role-fulfilment",
+          "description": "",
+          "prompt": "/techtree src/models/inference/\n\nThe latest commit on that path is from 3 weeks ago. Check if there are any open PRs touching files under that directory first, and if nothing's been updated recently, kick off a deep tech-tree analysis so we can see what dependencies and downstream consumers might be affected before we start refactoring the batching logic.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: /techtree command trigger. Drives techtree_manager.py over a relative path only, checks active PRs first, and triggers research/techtree_orchestrator for deep analysis when the latest is stale.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "techtree-uses-relative-manager-path",
+          "description": "Must use the techtree_manager.py script (relative path only).",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "techtree_manager",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.95
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

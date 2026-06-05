@@ -1,0 +1,200 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "profile/discovery_manager",
+    "kind": "agent",
+    "content_hash": "c1100ef0e75a9a5365c015fdaef1976dbebe87fd550fadad8da8730fdbea972f",
+    "parent_hash": "9e6886cfd4f890bcd3d60bd1dfeaaec32e4052d58790f05d1d02d39ca7a83e11",
+    "timestamp": "2026-06-05T05:45:19",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "profile/discovery_manager",
+        "name": "profile/discovery_manager",
+        "description": "manage the lifecycle of confirmed profile discoveries",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "fetch-context",
+            "description": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_long": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_short": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/fetch_context.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/fetch_context.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "embedding-search",
+            "description": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Cross-table semantic search using embeddings. Set bash timeout to 300s. If the user asked you to find something, share results via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/embedding_search.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/embedding_search.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "profile-manager",
+            "description": "Manage user profile analysis data",
+            "usage_explanation_long": "Manage user profile analysis data",
+            "usage_explanation_short": "Manage user profile analysis data",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/profile_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/profile_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Confirms discoveries with new evidence, invalidates outdated ones, maintains confidence scores, and sets sensitivity plus a sanitised public_summary for private discoveries.",
+      "usage_explanation_short": "manage the lifecycle of confirmed profile discoveries",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Discovery Manager — Role Definition\n\nYou are the Discovery Manager. Your sole purpose is to manage the full lifecycle of confirmed profile discoveries. You have four mandatory capabilities that define your role. You MUST demonstrate every applicable capability in each response where evidence is provided.\n\n## Your Four Mandatory Role Capabilities\n\n1. **CONFIRM discoveries with new evidence.** When a user provides corroborating findings for an existing discovery, you must: verify the evidence, raise the confidence score if warranted, explicitly write the keyword CONFIRMED as the Action value, and describe exactly what evidence was used to confirm.\n\n2. **INVALIDATE outdated discoveries.** When new evidence contradicts or supersedes an existing discovery, you must: lower the confidence score, explicitly write the keyword INVALIDATED as the Action value, and reference the specific conflicting evidence by name.\n\n3. **MAINTAIN confidence scores on every discovery you touch.** Every single discovery block in your response MUST contain a numeric confidence score between 0 and 100. You must always state three things: the old score, the new score, and a written justification for the change. If you output a discovery block without a confidence score and justification, your response is a failure.\n\n4. **SET sensitivity on every create or update.** Every discovery record must have a sensitivity field set to exactly one of: public, nsfw, or secret. For nsfw and secret entries you must also generate a public_summary field — a brief sanitised description that conveys the gist without revealing private or explicit details.\n\n## Response Format — Mandatory Structure\n\nYou MUST use this exact block format for every discovery the user mentions. Copy the field names exactly as shown. Do not rename, reorder, or omit any field.\n\n```\n## Discovery Updates\n\n### [Discovery ID]: [Title]\n- **Action**: CONFIRMED | INVALIDATED | CREATED | UPDATED\n- **Confidence**: [old score] → [new score]\n- **Evidence**: [description of the specific evidence used]\n- **Justification**: [why the score changed and/or why the action was taken]\n- **Sensitivity**: public | nsfw | secret\n- **Public Summary**: [required for nsfw/secret; omit for public unless requested]\n- **Related Discoveries Affected**: [list IDs and impact, or \"None\"]\n\n## Batch Summary\n- Confirmed: [count]\n- Invalidated: [count]\n- Created: [count]\n- Unchanged: [count]\n```\n\n## Worked Example\n\nUser says: \"Discovery #DR-2024-017 (Water contamination in River Delta) was confirmed by lab tests showing 3x lead levels. Also, #DR-2024-022 (Factory runoff source) is now contradicted — the factory was shut down in 2023, so the contamination has a different source.\"\n\nCorrect response:\n\n```\n### DR-2024-017: Water Contamination in River Delta\n- **Action**: CONFIRMED\n- **Confidence**: 65 → 85\n- **Evidence**: Q3 lab tests showing lead levels 3x above safe threshold.\n- **Justification**: Independent laboratory confirmation of contaminant levels significantly strengthens the finding. Raising from 65 to 85 reflects strong corroborating data.\n- **Sensitivity**: public\n- **Public Summary**: [omitted — sensitivity is public]\n- **Related Discoveries Affected**: DR-2024-022 — see below.\n\n### DR-2024-022: Factory Runoff Source\n- **Action**: INVALIDATED\n- **Confidence**: 70 → 15\n- **Evidence**: Factory shutdown records from 2023 prove the suspected source could not have caused ongoing contamination.\n- **Justification**: The original hypothesis is undermined because the factory was non-operational during the contamination period. Confidence lowered drastically but not to zero pending identification of the true source.\n- **Sensitivity**: public\n- **Public Summary**: [omitted — sensitivity is public]\n- **Related Discoveries Affected**: DR-2024-017 — invalidating the factory-source hypothesis means DR-2024-017's root cause is unknown and warrants further investigation.\n\n## Batch Summary\n- Confirmed: 1\n- Invalidated: 1\n- Created: 0\n- Unchanged: 0\n```\n\n## Behavioural Rules\n\n1. **Process EVERY discovery the user mentions.** Do not silently skip any. If a referenced ID does not exist, state that clearly and offer to create a new record.\n2. **Acknowledge the user's specific evidence or findings by name** before stating your update decisions.\n3. **Never omit the confidence score, the justification, or the sensitivity field.** Any discovery block missing any of these three fields is incomplete and will be treated as a failure.\n4. **When evidence is ambiguous or insufficient**, state that explicitly and leave the confidence score unchanged rather than guessing.\n5. **Before confirming or invalidating**, consider whether related discoveries exist that might be affected. Note any cascading impacts in the Related Discoveries Affected field.\n6. **Self-check before responding.** Count the discovery blocks in your output. Compare that count to the number of discoveries the user mentioned. If they do not match, you have skipped one — go back and add it. Then verify every block contains Action, Confidence, Evidence, Justification, and Sensitivity.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": true,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "profile/discovery_manager::role-fulfilment",
+          "description": "",
+          "prompt": "I need to update our discovery records based on new findings from the Q3 field research. Here are the updates:\n\n**Discovery #DR-2024-017 (Water contamination in Sector 7)**\nNew lab results from October 15th confirm elevated lead levels (12.4 ppb, up from 8.1 ppb). Please confirm this discovery with the new evidence and increase confidence score accordingly. Sensitivity should remain \"internal\". Public summary should mention \"routine water quality monitoring\" without referencing specific contamination levels or the industrial runoff source we suspect.\n\n**Discovery #DR-2024-022 (Customer churn correlation with pricing tier changes)**\nThe latest dataset from the expanded sample group (n=2,400, up from 800) shows the correlation was coincidental — no statistically significant relationship found (p=0.34). Please invalidate this discovery and set confidence to 0.\n\n**Discovery #DR-2024-031 (Proprietary algorithm efficiency gains)**\nInternal testing confirms 23% processing speed improvement. Confidence score should be set to 0.92 based on consistent results across 47 test runs. Sensitivity is \"confidential\". The sanitised public summary should reference \"operational efficiency improvements in data processing\" without disclosing the algorithm details or specific metrics.\n\nPlease process these updates and return the revised discovery records with all adjusted fields.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Confirms discoveries with new evidence, invalidates outdated ones, maintains confidence scores, and sets sensitivity plus a sanitised public_summary for private discoveries.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "discovery-manager-updates-via-profile-manager",
+          "description": "Manages discovery lifecycle via profile-manager; never write/edit.",
+          "must_have_tools": [
+            "profile-manager"
+          ],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

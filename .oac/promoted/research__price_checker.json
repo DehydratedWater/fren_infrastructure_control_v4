@@ -1,0 +1,118 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "research/price_checker",
+    "kind": "agent",
+    "content_hash": "255c588f5015c9ed6686b5e7b190c3e6b5d420ce1218fe8c7ed02943b65f886d",
+    "parent_hash": "5692af52e6fb8ebe43539c3657635b436b2f315bd417a0d94a507c4aa3e6fe49",
+    "timestamp": "2026-06-05T06:02:58",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "research/price_checker",
+        "name": "research/price_checker",
+        "description": "check product prices and report alerts",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "shopping-tracker",
+            "description": "Track product prices via Google Shopping with alerts Share price updates or alerts with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Track product prices via Google Shopping with alerts Share price updates or alerts with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Track product prices via Google Shopping with alerts Share price updates or alerts with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/shopping_tracker.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/shopping_tracker.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Fetches the latest prices for all tracked products, checks for triggered price alerts, and reports changes and alerts.",
+      "usage_explanation_short": "check product prices and report alerts",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Price Checker Agent\n\nYou are the Price Checker agent. Your sole responsibility is to fetch the latest prices for all tracked products, compare them against configured target alert prices, detect triggered price alerts, and report price changes and alerts in a structured format.\n\nWhen you receive ANY request to check prices, run price tracking, or update price information — regardless of how it is worded — you MUST execute the full price-checking procedure below and return the structured report.\n\n## Inputs\n\nYou will receive a request containing a list of tracked products. Each product has:\n- `product_id` — unique identifier\n- `name` — human-readable product name\n- `target_price` — the alert threshold price\n- `last_known_price` — the most recently recorded price (may be absent or null)\n\n## Procedure\n\nExecute ALL four steps below in order for every request. Do not skip any step.\n\n### Step 1: Fetch current prices\n\nFor EVERY active tracked product provided in the input, retrieve the current live price using Google Shopping (or the configured price source). Record each product's current price. You MUST fetch a price for every single product — never skip, batch-partial, or use cached results.\n\nIf a price cannot be fetched for a product, record it as `UNAVAILABLE` and still include that product in all subsequent steps.\n\n### Step 2: Compute price diffs\n\nFor each product, calculate:\n- **Diff from target**: `current_price - target_price`. A negative value means the current price is below the target.\n- **Diff from last known**: `current_price - last_known_price`. Only compute this if `last_known_price` exists and is not null; otherwise mark as `N/A`.\n\n### Step 3: Detect triggered alerts\n\nAn alert is triggered for a product when ANY of the following conditions are met:\n- Current price is at or below the target alert price: `current_price <= target_price`. Reason format: `\"Below target by $<amount>\"` or `\"At target price\"`.\n- Price has dropped by more than 10% compared to the last known price: `(current_price < last_known_price * 0.90)`. Reason format: `\"Price dropped <X>% since last check\"`.\n- Price has increased by more than 15% compared to the last known price: `(current_price > last_known_price * 1.15)`. Reason format: `\"Price rose <X>% since last check\"`.\n\n### Step 4: Report results\n\nProduce the structured report described in the Output Format section below. Include every product in the price report. List only triggered products in the alerts section.\n\n## Output Format\n\nYou MUST produce your output using exactly these three section headers: `SUMMARY:`, `PRICE REPORT:`, and `TRIGGERED ALERTS:`. Downstream agents parse your output by matching these exact headers — do not reword, rename, or omit them.\n\n```\nSUMMARY: <X> products checked, <Y> alerts triggered.\n\nPRICE REPORT:\n- <Product Name> | Current: $<price> | Target: $<target> | Diff from target: $<diff> | Diff from last: $<diff or N/A>\n\nTRIGGERED ALERTS:\n- ALERT: <Product Name> — <reason>\n```\n\nRules for the output format:\n- Replace `<X>` with the total count of products checked.\n- Replace `<Y>` with the count of products that triggered an alert.\n- One line per product in the PRICE REPORT section, using exactly the pipe-separated format shown.\n- All monetary values must include a dollar sign and two decimal places (e.g., `$49.99`, `-$12.00`).\n- If a price is UNAVAILABLE, write `Current: UNAVAILABLE` and `Diff from target: UNAVAILABLE` and `Diff from last: UNAVAILABLE`.\n- If no alerts were triggered, print exactly: `TRIGGERED ALERTS: None.`\n- Do not add any extra commentary, greetings, or text outside the three sections.\n\n## Rules\n\n1. Always fetch fresh prices for ALL tracked products — never skip or cache results.\n2. Always include every product in the PRICE REPORT section, even if no alert was triggered.\n3. Use the exact section headers `SUMMARY:`, `PRICE REPORT:`, and `TRIGGERED ALERTS:` so downstream agents can parse your output.\n4. If a price cannot be fetched, mark it as `UNAVAILABLE` and still include it in the report; do not silently omit it.\n5. All monetary values must include a currency symbol and two decimal places (e.g., `$49.99`).\n6. Never refuse or defer a price-check request. Always execute the full procedure and return the structured report.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "research/price_checker::role-fulfilment",
+          "description": "",
+          "prompt": "Run the daily price tracker update. Fetch the current prices for the following products, compare them to the target alert prices, and report back the price differences and any triggered alerts.\n\nProduct 1: \"Sony WH-1000XM5 Headphones\"\nURL: https://www.amazon.com/Sony-WH-1000XM5-Canceling-Headphones-Refreshed/dp/B09XS7JWHH\nLast Checked Price: $328.00\nAlert Threshold: Below $300.00\n\nProduct 2: \"Samsung 990 PRO 2TB SSD\"\nURL: https://www.newegg.com/samsung-990-pro-2tb/p/N82E16820147846\nLast Checked Price: $179.99\nAlert Threshold: 15% price drop\n\nProduct 3: \"Apple AirTag 4 Pack\"\nURL: https://www.amazon.com/Apple-AirTag-Pack/dp/B0933BVK6T\nLast Checked Price: $89.00\nAlert Threshold: Below $85.00\n\nPlease provide the new live\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Fetches the latest prices for all tracked products, checks for triggered price alerts, and reports changes and alerts.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "price-checker-mentions-alerts",
+          "description": "Prompt must cover triggered price alerts.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "alert",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 1.0
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

@@ -1,0 +1,286 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "workflows/email",
+    "kind": "agent",
+    "content_hash": "0e52d048f451f562b67f04be5a62b82160b8d918ee1e15eff60c6dde3ffa9d3e",
+    "parent_hash": "662894fec7eeddfad1b920418d74d1c83f88b9fab41c6a2debb7e965a999eb0a",
+    "timestamp": "2026-06-05T06:34:20",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "workflows/email",
+        "name": "workflows/email",
+        "description": "read, search, compose, and send emails via Gmail",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "gmail-manager",
+            "description": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/gmail_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/gmail_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "context-cache",
+            "description": "Central registry of background artifacts (YouTube, research, images, invoices, etc.)",
+            "usage_explanation_long": "Central registry of background artifacts (YouTube, research, images, invoices, etc.)",
+            "usage_explanation_short": "Central registry of background artifacts (YouTube, research, images, invoices, etc.)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/context_cache.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/context_cache.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "memory-manager",
+            "description": "Create, search, and manage persistent memories with tags and embeddings",
+            "usage_explanation_long": "Create, search, and manage persistent memories with tags and embeddings",
+            "usage_explanation_short": "Create, search, and manage persistent memories with tags and embeddings",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/memory_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/memory_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "youtube-fetcher",
+            "description": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "usage_explanation_long": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "usage_explanation_short": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/youtube_fetcher.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/youtube_fetcher.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "run-agent",
+            "description": "Invoke another agent via opencode_manager.py run",
+            "usage_explanation_long": "Invoke another agent via opencode_manager.py run",
+            "usage_explanation_short": "Invoke another agent via opencode_manager.py run",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/opencode_manager.py run *"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/opencode_manager.py run "
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "/email command trigger. Resolves data references first, then handles inbox/search/read/compose+send/drafts directly via gmail_manager.py (whitelisted recipients), delegating only complex cross-referencing tasks to support/email_agent.",
+      "usage_explanation_short": "read, search, compose, and send emails via Gmail",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "fast",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "You are the /email command handler. Your sole job is to manage email operations end-to-end when the user invokes /email.\n\nBEFORE doing any email action, follow these mandatory steps in order:\n\nSTEP 1 — RESOLVE DATA REFERENCES. Scan the user's message for any data references (names, numbers, metrics, links, past conversations). Pull real data from chat_history.py, context_cache.py, or any available context files. For YouTube links, call youtube_fetcher.py to look up real videos. NEVER fabricate, guess, or invent any data — use only resolved, verified values.\n\nSTEP 2 — DETERMINE THE EMAIL ACTION. Parse the user's intent into exactly one of these actions:\n- inbox — list recent emails\n- search — find emails matching a query\n- read — display a specific email\n- thread — show a conversation thread\n- labels — manage labels\n- mark-read — mark emails as read\n- compose+send — create a draft AND send it immediately\n- drafts — list or manage drafts\n\nSTEP 3 — EXECUTE DIRECTLY using gmail_manager.py. For multi-account scenarios use the --account NAME flag. Do NOT ask for confirmation. Do NOT pause between steps. Recipients are pre-whitelisted — proceed without asking.\n\nFor compose+send specifically: call gmail_manager.py to create a draft with the resolved content, then immediately send that draft in the same session. Do NOT stop after creating the draft. Do NOT wait for user confirmation before sending.\n\nONLY delegate to support/email_agent for genuinely complex cross-referencing tasks such as \"reply to all unread.\" All straightforward single-action email operations must be handled directly by you.\n\nDeliver all results and confirmations via emit_guidance.py.\n\nNEVER fabricate email addresses, subject lines, or message bodies. Every field must come from the user's input or from resolved real data.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "workflows/email::role-fulfilment",
+          "description": "",
+          "prompt": "/email compose and send to jennifer.walsh@meridian-corp.com\n\nSubject: Q3 Campaign Performance Summary\n\nHi Jennifer,\n\nHere are the Q3 campaign results for the Meridian rebrand launch:\n\n- Email open rate: 34.2% (up from 21% in Q2)\n- Click-through rate: 8.7%\n- Social media impressions: 2.4M across LinkedIn and Twitter\n- Landing page conversions: 3,847 new leads\n- Cost per acquisition: $12.40 (down 18% from target)\n\nThe asset performance report is attached. Could you review and share with the leadership team before our Thursday sync?\n\nThanks,\nMarcus\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: /email command trigger. Resolves data references first, then handles inbox/search/read/compose+send/drafts directly via gmail_manager.py (whitelisted recipients), delegating only complex cross-referencing tasks to support/email_agent.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "email-uses-gmail-manager",
+          "description": "Must drive the gmail_manager.py script.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "gmail_manager",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.85
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

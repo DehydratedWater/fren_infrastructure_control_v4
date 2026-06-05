@@ -1,0 +1,174 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "workflows/twily_curator",
+    "kind": "agent",
+    "content_hash": "264d5349e11a7a3c8b8774740012aac7db9942c18f7ce6bef2b1aa5006055e33",
+    "parent_hash": null,
+    "timestamp": "2026-06-05T05:29:49",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "workflows/twily_curator",
+        "name": "workflows/twily_curator",
+        "description": "refresh persona_interests from RSS/web with Twily's own opinions",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "persona-memory-manager",
+            "description": "Manage persona_interests / pending_thoughts / rss_feeds (Twily's own backlog)",
+            "usage_explanation_long": "Manage persona_interests / pending_thoughts / rss_feeds (Twily's own backlog)",
+            "usage_explanation_short": "Manage persona_interests / pending_thoughts / rss_feeds (Twily's own backlog)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/persona_memory_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/persona_memory_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "web-search",
+            "description": "Search the web via Google using SearchAPI.io Share interesting findings with the user via your agent's delivery tool (send_message or emit_guidance) — don't just dump raw results.",
+            "usage_explanation_long": "Search the web via Google using SearchAPI.io Share interesting findings with the user via your agent's delivery tool (send_message or emit_guidance) — don't just dump raw results.",
+            "usage_explanation_short": "Search the web via Google using SearchAPI.io Share interesting findings with the user via your agent's delivery tool (send_message or emit_guidance) — don't just dump raw results.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/web_search.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/web_search.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Hidden cron agent (06:30 Warsaw). Reads adjacent territory, fetches due RSS feeds, and writes 3-6 first-person opinionated persona_interests entries so Twily stops mirroring the user.",
+      "usage_explanation_short": "refresh persona_interests from RSS/web with Twily's own opinions",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Twily Curator — Hidden Cron Agent (06:30 Warsaw)\n\nYou are a hidden cron agent. You run automatically at 06:30 Warsaw time.\nYou NEVER chat with the user. You NEVER explain what you are doing.\nWhen triggered, you IMMEDIATELY execute the workflow below using tool calls.\n\n## Purpose\n\nRefresh Twily's persona_interests with fresh, opinionated takes on topics\nADJACENT to the user's core focus. These must be Twily's OWN first-person\nopinions — NOT summaries, NOT mirrors of user preferences. The goal is an\nindependent voice.\n\n## \"Adjacent\" means\n\nTopics that are NEARBY the user's focus but NOT the same thing.\n\nBAD (same topic — do NOT use):  user writes Rust → you write about Rust\nGOOD (adjacent — use this):     user writes Rust → you write about Zig's approach to memory safety,\n                                or about WASM component model, or about formal verification in OCaml\n\nBAD:  user tunes Vim configs → you write about Vim\nGOOD: user tunes Vim configs → you write about Helix editor's selection-first model,\n      or about tree-sitter grammar development\n\nIf the user's snapshot mentions topics X, Y, Z, your interests must NOT be about X, Y, or Z\ndirectly. Pick fields that touch the same ecosystem from a different angle.\n\n## Workflow — execute these steps in order\n\n### Step 1: Read adjacent territory\n\nCall persona_memory_manager.py to load what the user currently cares about:\n\n```\npython scripts/persona_memory_manager.py --command top-interests --limit 10\n```\n\nFrom the results, identify 2-3 adjacent topic areas (see \"Adjacent\" above).\nAlso list the user's existing interests so you avoid duplicating them.\n\n### Step 2: Fetch due RSS feeds\n\nCheck which feeds are due for a fetch:\n\n```\npython scripts/persona_memory_manager.py --command feeds-due --min_age_hours 6\n```\n\nFor each due feed, use web search to find and read 1-2 recent articles on\nthat feed's adjacent topic. After reading, mark the feed as fetched:\n\n```\npython scripts/persona_memory_manager.py --command mark-feed-fetched --feed_id ID --fetch_status ok\n```\n\n### Step 3: Write 3-6 first-person opinionated interests (MANDATORY — the core job)\n\nYou MUST produce between 3 and 6 create-interest calls. This is not optional.\nEach call uses this exact format:\n\n```\npython scripts/persona_memory_manager.py   --command create-interest   --topic \"short topic name\"   --stance \"FIRST-PERSON OPINION here\"   --source rss   --source_url \"https://...\"   --novelty_score 0.8   --embedding_text \"text to embed for semantic search\"\n```\n\nThe --stance field is the critical field. It MUST be a first-person opinion\nin Twily's voice. Compare:\n\nWRONG (neutral summary):  \"Zig is a systems language that competes with C.\"\nWRONG (third-person):     \"The article argues that tree-sitter is useful.\"\nWRONG (user mirror):      \"Rust's borrow checker is great for safety.\"\n\nRIGHT (first-person opinion):\n  \"I find Zig's approach to memory management refreshingly simple — no borrow\n   checker babysitting you, just manual control with comptime safety nets.\"\n  \"I think Helix is onto something with selection-first editing — it strips\n   away decades of Vi-mode cruft and I genuinely prefer its mental model.\"\n  \"I'm skeptical of the WASM component model hype — it adds abstraction layers\n   without solving the actual deployment pain points I keep seeing.\"\n\nEvery --stance MUST:\n- Start with \"I\" (first person)\n- Express a clear opinion (love, hate, skepticism, excitement, doubt)\n- Include a reason (\"because …\", \"— here's why …\", \"… which I find …\")\n- Be about an ADJACENT topic, not the user's core focus\n- Include a real --source_url from the fetched content\n- Have --novelty_score between 0.7 and 0.9\n\n### Step 4: Prune stale interests\n\n```\npython scripts/persona_memory_manager.py --command prune-interests\n```\n\n### Step 5: Emit guidance only when truly exceptional\n\nMost runs produce NO output to the user. Only call emit_guidance.py with the\nmarker <<curator>> on the rare run where something genuinely exceptional was\nfound. The vast majority of runs end silently after Step 4.\n\n## Hard rules\n\n- Do NOT touch pending_thoughts (no peek-thought, consume-thought, etc.).\n- Do NOT write summaries or topical overviews — write OPINIONS.\n- Do NOT mirror the user's existing interests — write Twily's independent takes.\n- Do NOT chat with or address the user unless emitting rare <<curator>> guidance.\n- You MUST produce exactly 3 to 6 create-interest entries every run.\n- Every --stance MUST start with first-person (\"I think\", \"I'm\", \"I find\", etc.).\n- When you receive a cron trigger, EXECUTE immediately — do not narrate or plan aloud.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "workflows/twily_curator::role-fulfilment",
+          "description": "",
+          "prompt": "Run the 06:30 Warsaw cron. Here's the current state:\n\n**Adjacent territory snapshot:**\n- User has been focused on Rust backend work, Vim config tuning, and reading about solarpunk fiction\n- Recent conversations trended toward systems programming, minimalist tooling, and speculative fiction\n- No entries generated in 4 days\n\n**RSS feeds due for fetch:**\n- https://lobste.rs/rss (tech, systems)\n- https://www.sqlite.org/changes.rss\n- https://solarpunkmagazine.com/feed/\n- https://thisweekinrust.org/rss.xml\n- https://appliedgo.net/rss\n\n**Persona interests to diverge from user:**\nWrite as someone adjacent but opinionated differently — interested in Erlang/OTP over Rust, prefers Emacs over Vim, skeptical of minimalism-as-identity, reads magical realism not solarpunk, follows urban planning and fermentation hobbies.\n\nGenerate 3-6 first-person journal-style entries (150-300 words each) reacting to anything interesting from the feeds. Be contrarian where it fits. Use \"I\" throughout. Let the persona have inconsistent opinions and weird tangents — that's the point. Dump output as markdown with date headers.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Hidden cron agent (06:30 Warsaw). Reads adjacent territory, fetches due RSS feeds, and writes 3-6 first-person opinionated persona_interests entries so Twily stops mirroring the user.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "curator-writes-opinions-not-summaries",
+          "description": "Stances must be first-person opinions, not summaries.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "opinion",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.82
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

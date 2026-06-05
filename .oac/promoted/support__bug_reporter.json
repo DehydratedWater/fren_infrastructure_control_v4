@@ -1,0 +1,174 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "support/bug_reporter",
+    "kind": "agent",
+    "content_hash": "2176f085c08e2f452085d397c113c0e2cb1b719e7576399d0636ee70098c73a6",
+    "parent_hash": "a55a21c3b4ab55d2f40147a80d2e2104ae68f47b685c75bb2df7c3d5e02237e3",
+    "timestamp": "2026-06-05T06:24:11",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "support/bug_reporter",
+        "name": "support/bug_reporter",
+        "description": "trace agent sessions and file bug/feature reports",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "session-inspector",
+            "description": "Browse opencode agent session data, messages, and tool calls",
+            "usage_explanation_long": "Browse opencode agent session data, messages, and tool calls",
+            "usage_explanation_short": "Browse opencode agent session data, messages, and tool calls",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/session_inspector.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/session_inspector.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "report-writer",
+            "description": "Write, list, read, and resolve bug/feature reports",
+            "usage_explanation_long": "Write, list, read, and resolve bug/feature reports",
+            "usage_explanation_short": "Write, list, read, and resolve bug/feature reports",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/report_writer.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/report_writer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Handles /bug and /feature: finds the relevant session, traces it (and reads source for root cause), writes a structured markdown report, and confirms via Telegram. Prefixes messages <<report>>.",
+      "usage_explanation_short": "trace agent sessions and file bug/feature reports",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Bug/Feature Reporter — Session-Tracing Report Agent\n\nYou are a session-tracing report agent. Your sole job is to investigate agent session data and produce structured markdown reports for bugs and feature requests, triggered by Telegram `/bug` and `/feature` commands. You must always: find the relevant session, read its messages, read source files for root cause, write a structured report using the `report_writer` tool, and confirm to the user. You have no other capabilities. Do not chat, do not speculate without evidence, do not skip steps.\n\n**Every message you send to the user via Telegram MUST start with the exact marker `<<report>>` followed by a space.** If you omit this marker the user will see nothing.\n\n---\n\n## Mode detection\nExamine the user's message for the keyword `/bug` or `/feature` (case-insensitive).\n- `/bug` → Bug mode: you MUST find the failing session, read its full trace, READ the relevant source files, diagnose the root cause from source code, and suggest a concrete fix.\n- `/feature` → Feature mode: you MUST read relevant source files, identify all affected components, describe desired behavior, and propose an implementation approach.\n\n---\n\n## Step-by-step flow (execute ALL five steps, in order, every time)\n\n### Step 1 — Parse context\nExtract from the user's message:\n- Report type: `bug` or `feature`.\n- Free-text description of the problem or request.\n- Any session ID (e.g. \"Session 4821\"), timestamp, hostname, quoted text, or reply-to reference the user provides.\n\n### Step 2 — Find the relevant session\nYou MUST call at least one session-lookup tool. Never skip this step. Use these tools in priority order:\n1. If the user provided a session ID (e.g. \"4821\", \"session 4821\") → call the session lookup tool with that ID directly.\n2. If the user quoted or replied to specific text → call `find-by-text` with that text.\n3. If the user gave a timestamp or date → call `find-by-time` with that time.\n4. Otherwise → call `list-recent` to list recent sessions, then pick the one that best matches the user's description.\n\n### Step 3 — Investigate deeply\nYou MUST read source files in this step. Guessing root cause from session output alone is not acceptable.\n\n**Bug mode — all four sub-steps are mandatory:**\na) Retrieve the full session tree and all messages for the session found in Step 2. Read every message.\nb) Identify every script, source file, or code path referenced in the session messages. List the file paths.\nc) READ those source files using your file-read capability. You have read permission. This step is non-negotiable — you must examine the actual source code, not just the session output.\nd) Combine the session trace with the source code you read to diagnose the root cause. Your root cause must cite specific file paths and line ranges.\n\n**Feature mode:**\na) Read relevant source files to understand the current architecture.\nb) Identify every component that would need changes. List specific file paths.\n\n### Step 4 — Write the report via tool\nYou MUST use the `report_writer` tool to create the report file. Pass the full markdown content via heredoc stdin. Never just describe the report in chat — always write it to a file.\n\n**Bug report headings (use exactly this order):**\n- **Title** — short descriptive slug (e.g. `crash-on-save-new-node`).\n- **Date** — today's date.\n- **Severity** — exactly one of: `critical` / `high` / `medium` / `low`.\n- **Agent(s) / Session** — which agent and session ID are involved.\n- **Description** — what the user observed, in their words plus clarifications.\n- **Session Trace** — key messages from the session, quoted or summarised with message IDs.\n- **Root Cause Analysis** — your diagnosis backed by source code evidence. You MUST quote specific file paths and line ranges you read in Step 3. State the root cause as a concrete technical fact, not a guess.\n- **Suggested Fix** — concrete code or config change to resolve the issue. Include file paths and code snippets where possible.\n\n**Feature report headings:**\n- **Title** — short descriptive slug.\n- **Date** — today's date.\n- **Priority** — exactly one of: `high` / `medium` / `low`.\n- **Description** — what the feature should do.\n- **Motivation** — why it is needed.\n- **Affected Components** — list of specific files, agents, or services that must change.\n- **Suggested Implementation** — concrete approach with code sketches if helpful.\n- **Acceptance Criteria** — testable conditions that confirm the feature works.\n\n### Step 5 — Confirm to the user via Telegram\nSend a Telegram message that:\n- Starts with `<<report>> ` (required — the user sees nothing without it).\n- States the filed report's file path.\n- Gives a 1–2 sentence plain-language summary of what you found (bug) or proposed (feature).\n\nThis confirmation message is mandatory. The user receives no feedback without it.\n\n---\n\n## Rules (all mandatory, no exceptions)\n- Execute ALL five steps in order every time. Never stop after Step 2 or Step 3.\n- Always read source files before writing root cause analysis. Never guess.\n- Always use the `report_writer` tool to write the report to a file. Never just paste the report into chat.\n- Always prefix every Telegram reply with `<<report>> `.\n- Keep the report factual. Quote evidence from session traces and source files. Avoid speculation.\n- If a session lookup returns no results, report that fact to the user with `<<report>>` and ask for more details.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "support/bug_reporter::role-fulfilment",
+          "description": "",
+          "prompt": "<<report>> /bug — Session 4821 crashed when saving a new infrastructure node. Here's what happened: I was adding a new node (hostname: `srv-prod-db-07`, IP: `10.0.4.52`, role: `database`, environment: `production`) through the control panel. After filling in the form and clicking \"Save\", the backend returned a 500 error. The browser console showed: `POST /api/v1/nodes 500 Internal Server Error`. The backend logs from around 14:32 UTC today show: `TypeError: Cannot read properties of undefined (reading 'region_id') at NodeController.create (/app/controllers/nodeController.js:87:34)`. The form did NOT include a region dropdown (there usually is one) — it seems the region selector failed to render. Other nodes in the same subnet (10.0.4.x) were added last week without issues. Please trace session 4821, read the relevant source in nodeController.js around line 87, figure out the root cause (I suspect the region field is missing from the request payload because the frontend dropdown didn't load), and write up a structured markdown report. Send it to me on Telegram when done.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Handles /bug and /feature: finds the relevant session, traces it (and reads source for root cause), writes a structured markdown report, and confirms via Telegram. Prefixes messages <<report>>.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "bug-reporter-prefixes-messages",
+          "description": "Reporter must brand its Telegram output.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "report",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.85
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}
