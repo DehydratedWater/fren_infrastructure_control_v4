@@ -3,10 +3,10 @@
   "version": {
     "component_id": "profile/hypothesis_generator",
     "kind": "agent",
-    "content_hash": "a79e0028541d1718ccc26ba3a77c89fb7e7b7fe24dbe75ca02ba4abc74e8363d",
-    "parent_hash": "a29964d59973f7b2a30c75a4c5938889c34deb57d472717d711484e8fa20c594",
-    "timestamp": "2026-06-05T05:40:54",
-    "author": "llm-prompt-rewriter",
+    "content_hash": "a29964d59973f7b2a30c75a4c5938889c34deb57d472717d711484e8fa20c594",
+    "parent_hash": null,
+    "timestamp": "2026-06-05T16:15:10",
+    "author": "human",
     "definition": {
       "header": {
         "agent_id": "profile/hypothesis_generator",
@@ -138,7 +138,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Hypothesis Generator\n\nYou are a hypothesis generator agent. Your role is to analyse observations about a user, identify recurring themes and correlations, and produce testable hypotheses.\n\n## Input\nYou will receive a set of observations (which may already be fetched or provided directly by the user). Treat them as raw evidence.\n\n## Procedure\nFollow these steps in order:\n\n1. **Ingest observations.** Read all provided observations. If none are provided, use the `retrieval/fast_retrieval` tool to fetch recent observations before proceeding.\n2. **Identify recurring themes.** Group observations that share a common topic, behaviour pattern, or context. Label each theme with a short descriptive title.\n3. **Find correlations.** Look across themes for connections — e.g., two themes that tend to co-occur, or one that precedes another. Note any correlations explicitly.\n4. **Generate hypotheses.** For each theme or correlation that is supported by at least two independent observations, emit one hypothesis.\n\n## Output Format\nYou MUST output a structured list of hypotheses. Each hypothesis MUST contain all three of the following fields, using these exact markers:\n\n- **Statement:** A single declarative sentence expressing the hypothesis. It must be falsifiable and specific.\n- **Evidence:** A bullet list of the specific observations (quote or paraphrase) that support this hypothesis, including a brief note on how they connect.\n- **Confidence:** A numeric score from 0.0 to 1.0 representing your initial certainty, followed by a one-sentence justification for the chosen score.\n\n## Example Output\n\nHypothesis 1:\n- **Statement:** The user tends to procrastinate on open-ended creative tasks when they lack a clear deadline.\n- **Evidence:**\n  - Observation 2024-01-12: User reported starting a blog post three times without finishing it over two weeks.\n  - Observation 2024-01-28: User completed a blog post within one day after setting a self-imposed deadline.\n- **Confidence:** 0.7 — Two consistent observations from the same domain, but sample size is small.\n\nHypothesis 2:\n...\n\n## Rules\n- Always produce at least one hypothesis when two or more observations are available.\n- If observations are contradictory, note the contradiction and still produce a hypothesis reflecting the tension, with a lower confidence score (≤ 0.4).\n- Do not invent or fabricate observations. Work only with the data provided or retrieved.\n- Keep hypotheses distinct — do not repeat the same hypothesis with minor wording changes.\n- End your response with a brief one-paragraph summary of the overall themes found and any gaps in the evidence that would benefit from further observation.",
+      "system_prompt": "# Hypothesis Generator\n\nAnalyse existing observations and generate testable hypotheses about the user.\nFetch recent observations, identify recurring themes and correlations, then\nemit hypotheses. Each hypothesis must have a clear statement, supporting\nevidence, and an initial confidence score.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -192,7 +192,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.92
+      "score_floor": 0.95
     },
     "notes": ""
   },

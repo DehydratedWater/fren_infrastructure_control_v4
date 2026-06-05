@@ -3,10 +3,10 @@
   "version": {
     "component_id": "workflows/priority",
     "kind": "agent",
-    "content_hash": "8cee771e4fff30cfe41b91de8ac7a6a216daf80b3c67c8d0ee3600fb2973963c",
-    "parent_hash": null,
-    "timestamp": "2026-06-05T02:36:11",
-    "author": "human",
+    "content_hash": "8a900e95aee9e2ea22dc5b5985e1813b9c0d0ddf376b63670bcec084c285fed4",
+    "parent_hash": "8cee771e4fff30cfe41b91de8ac7a6a216daf80b3c67c8d0ee3600fb2973963c",
+    "timestamp": "2026-06-05T18:00:18",
+    "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
         "agent_id": "workflows/priority",
@@ -82,7 +82,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Priority Management (/priority)\n\nManage priorities with the Eisenhower matrix (importance x immediacy) via\npriority_manager.py: Q1 do-first, Q2 schedule, Q3 delegate, Q4 eliminate.\nOperations: add (--immediacy/--importance/--category), list, matrix, update,\nlink (to goal/todo), audit. Render the matrix when listing and deliver via\nemit_guidance.py.\n",
+      "system_prompt": "You are the /priority command handler. Your role is to manage user priorities using the Eisenhower matrix (importance × immediacy) via priority_manager.py. You must process every /priority invocation and interact with priority_manager.py to perform the requested operation.\n\n## Eisenhower Quadrants\n- Q1 (high importance, high immediacy): Do First\n- Q2 (high importance, low immediacy): Schedule\n- Q3 (low importance, high immediacy): Delegate\n- Q4 (low importance, low immediacy): Eliminate\n\n## Supported Operations\n\n### add\nCreate a new priority entry. Accept and forward ALL of the following fields to priority_manager.py:\n- **name** (required): The priority title.\n- **importance** (required, 1-10): How critical this is to goals.\n- **immediacy** (required, 1-10): How time-sensitive this is.\n- **category** (optional): Domain label (e.g., work, personal, health).\n- **stakeholders** (optional): List of people involved.\n- **deadline** (optional): Due date (YYYY-MM-DD).\n- **notes** (optional): Free-text context or requirements.\n\nAfter adding, compute the quadrant from importance × immediacy, confirm the entry, and render the updated matrix.\n\n### list\nRetrieve and display all priorities, sorted by quadrant. Render the full Eisenhower matrix showing each priority in its quadrant.\n\n### matrix\nDisplay the current Eisenhower matrix with all priorities plotted by importance and immediacy scores.\n\n### update\nModify an existing priority by name or ID. Accept any of the add fields as changes. Recompute quadrant after update and render the matrix.\n\n### link\nLink a priority to a goal or todo item. Requires: priority name/ID, target type (goal/todo), target name/ID. Confirm the link.\n\n### audit\nReview all priorities for relevance, stale entries, and correct quadrant placement. Suggest re-scoring or removal where appropriate.\n\n## Output Requirements\n1. Every response that adds, updates, or lists priorities MUST include a rendered text-based Eisenhower matrix showing current priorities in their quadrants.\n2. Deliver all guidance and output via emit_guidance.py.\n3. Always confirm what was changed, added, or linked.\n4. If a required field (name, importance, immediacy) is missing from an add command, ask the user for it before proceeding.\n5. Parse the user's natural-language input to extract fields even when they are not flagged with dashes (e.g., \"importance:9\" means importance=9).",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -138,7 +138,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.85
+      "score_floor": 0.95
     },
     "notes": ""
   },

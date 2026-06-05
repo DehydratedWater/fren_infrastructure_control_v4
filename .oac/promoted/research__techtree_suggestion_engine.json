@@ -5,7 +5,7 @@
     "kind": "agent",
     "content_hash": "138adc05f9ac309a132ccb31944e5011681b48f98d6da060988efd491bff7373",
     "parent_hash": null,
-    "timestamp": "2026-06-05T02:36:11",
+    "timestamp": "2026-06-05T16:15:10",
     "author": "human",
     "definition": {
       "header": {
@@ -110,7 +110,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.88
+      "score_floor": 0.85
     },
     "notes": ""
   },

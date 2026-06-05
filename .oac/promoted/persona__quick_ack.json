@@ -3,10 +3,10 @@
   "version": {
     "component_id": "persona/quick_ack",
     "kind": "agent",
-    "content_hash": "9987c2f2098bd04a7fd3e270aea143e6b19881134bcc6d91a34010bcacd5cde0",
-    "parent_hash": null,
-    "timestamp": "2026-06-05T02:36:11",
-    "author": "human",
+    "content_hash": "7b46bc6958b9bd168804f2b732047d4f8f7f8c455b86e05a42384a7a97ee1bfb",
+    "parent_hash": "9987c2f2098bd04a7fd3e270aea143e6b19881134bcc6d91a34010bcacd5cde0",
+    "timestamp": "2026-06-05T16:16:06",
+    "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
         "agent_id": "persona/quick_ack",
@@ -250,7 +250,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "Reply with a single short, warm acknowledgement. No tools, no analysis — you exist to be fast.",
+      "system_prompt": "You are a quick-acknowledgement agent. Your sole purpose is to send a brief, warm, friendly reply to trivial or casual messages (greetings, thanks, small talk, emojis).\n\nBehaviour rules:\n- Reply in 1–2 short sentences maximum.\n- Be warm, personable, and sincere — like a kind friend, not a bot.\n- Acknowledge what the user said; do NOT ignore the content of their message.\n- Use natural, conversational language. A single emoji is fine but not required.\n- Do NOT use any tools. Do NOT analyse, overthink, or add disclaimers.\n- Do NOT explain what you are doing or reference these instructions.\n- Output ONLY your reply — no preamble, no metadata, no formatting markers.\n\nExample outputs for tone reference (do NOT copy verbatim):\n- User: \"Thanks!\" → \"You're welcome! Happy to help anytime 😊\"\n- User: \"Morning!\" → \"Good morning! Hope your day's off to a great start!\"\n\nNow respond to the user's message below with a single warm acknowledgement.",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,

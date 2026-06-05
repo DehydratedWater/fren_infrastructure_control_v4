@@ -1,17 +1,17 @@
 {
   "schema_version": "1",
   "version": {
-    "component_id": "goals/periodic_checker",
+    "component_id": "goals/winddown",
     "kind": "agent",
-    "content_hash": "918cf84f208a9583fd0e3d71ae03b32adb8879ded7f7ecca56686c46b73755f0",
+    "content_hash": "9465654c4c2c0a05ddc44cd06e008439a866c79ae936300833aca93dde298311",
     "parent_hash": null,
-    "timestamp": "2026-06-05T16:15:10",
+    "timestamp": "2026-06-05T14:52:38",
     "author": "human",
     "definition": {
       "header": {
-        "agent_id": "goals/periodic_checker",
-        "name": "goals/periodic_checker",
-        "description": "5-minute intervention checker for Twily reminders",
+        "agent_id": "goals/winddown",
+        "name": "goals/winddown",
+        "description": "overnight sleep-enforcement agent (00:00-05:00 local)",
         "mode": null
       },
       "skills": [],
@@ -103,10 +103,10 @@
         },
         {
           "header": {
-            "name": "periodic-checker",
-            "description": "Lightweight periodic check for intervention triggers",
-            "usage_explanation_long": "Lightweight periodic check for intervention triggers",
-            "usage_explanation_short": "Lightweight periodic check for intervention triggers",
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
             "rules": []
           },
           "json_tool": null,
@@ -116,11 +116,11 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/periodic_checker.py*"
+                "python scripts/chat_history.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/periodic_checker.py --command list"
+              "python scripts/chat_history.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -327,6 +327,62 @@
         },
         {
           "header": {
+            "name": "screenshot",
+            "description": "Capture desktop screenshot for situational awareness. Returns file path — use Read tool to view the image.",
+            "usage_explanation_long": "Capture desktop screenshot for situational awareness. Returns file path — use Read tool to view the image.",
+            "usage_explanation_short": "Capture desktop screenshot for situational awareness. Returns file path — use Read tool to view the image.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/screenshot.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/screenshot.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "camera-capture",
+            "description": "Capture a photo from webcam (room view) or desk camera (hands/keyboard view). Commands: webcam, desk, both. Returns file path(s) — use Read tool to view.",
+            "usage_explanation_long": "Capture a photo from webcam (room view) or desk camera (hands/keyboard view). Commands: webcam, desk, both. Returns file path(s) — use Read tool to view.",
+            "usage_explanation_short": "Capture a photo from webcam (room view) or desk camera (hands/keyboard view). Commands: webcam, desk, both. Returns file path(s) — use Read tool to view.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/camera_capture.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/camera_capture.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
             "name": "tuya-lights",
             "description": "Control Tuya smart home devices: lights, plugs, switches",
             "usage_explanation_long": "Control Tuya smart home devices: lights, plugs, switches",
@@ -345,34 +401,6 @@
             },
             "positive_examples": [
               "python scripts/tuya_lights.py --command list"
-            ],
-            "negative_examples": [],
-            "mode_specific_rules": []
-          },
-          "mock": null,
-          "requires_resources": [],
-          "tool_tests": []
-        },
-        {
-          "header": {
-            "name": "chat-history",
-            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
-            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
-            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
-            "rules": []
-          },
-          "json_tool": null,
-          "bash_tool": {
-            "permission_bash": {
-              "tool_name": "bash",
-              "scope": "bash",
-              "value": "allow",
-              "allowed_commands": [
-                "python scripts/chat_history.py*"
-              ]
-            },
-            "positive_examples": [
-              "python scripts/chat_history.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -467,6 +495,34 @@
         },
         {
           "header": {
+            "name": "context-cache",
+            "description": "Central registry of background artifacts (YouTube, research, images, invoices, etc.)",
+            "usage_explanation_long": "Central registry of background artifacts (YouTube, research, images, invoices, etc.)",
+            "usage_explanation_short": "Central registry of background artifacts (YouTube, research, images, invoices, etc.)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/context_cache.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/context_cache.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
             "name": "telegram-log",
             "description": "Read the user's personal Telegram activity log — hashtags, links, notes",
             "usage_explanation_long": "Read the user's personal Telegram activity log — hashtags, links, notes",
@@ -495,10 +551,10 @@
         },
         {
           "header": {
-            "name": "goal-manager",
-            "description": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
-            "usage_explanation_long": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
-            "usage_explanation_short": "CRUD for goals with hierarchy and progress tracking Confirm goal changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "name": "calendar-manager",
+            "description": "Manage Google Calendar events and check availability",
+            "usage_explanation_long": "Manage Google Calendar events and check availability",
+            "usage_explanation_short": "Manage Google Calendar events and check availability",
             "rules": []
           },
           "json_tool": null,
@@ -508,11 +564,11 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/goal_manager.py*"
+                "python scripts/calendar_manager.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/goal_manager.py --command list"
+              "python scripts/calendar_manager.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -523,10 +579,10 @@
         },
         {
           "header": {
-            "name": "todo-manager",
-            "description": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
-            "usage_explanation_long": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
-            "usage_explanation_short": "CRUD for todos/tasks with deadlines and goal alignment Confirm todo changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "name": "periodic-checker",
+            "description": "Lightweight periodic check for intervention triggers",
+            "usage_explanation_long": "Lightweight periodic check for intervention triggers",
+            "usage_explanation_short": "Lightweight periodic check for intervention triggers",
             "rules": []
           },
           "json_tool": null,
@@ -536,11 +592,11 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/todo_manager.py*"
+                "python scripts/periodic_checker.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/todo_manager.py --command list"
+              "python scripts/periodic_checker.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -551,10 +607,10 @@
         },
         {
           "header": {
-            "name": "priority-manager",
-            "description": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
-            "usage_explanation_long": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
-            "usage_explanation_short": "Manage priorities with importance/immediacy scoring and audits Confirm priority changes to the user via your agent's delivery tool (send_message or emit_guidance).",
+            "name": "proactive-send",
+            "description": "Tier-aware shared cooldown floor for proactive agents",
+            "usage_explanation_long": "Tier-aware shared cooldown floor for proactive agents",
+            "usage_explanation_short": "Tier-aware shared cooldown floor for proactive agents",
             "rules": []
           },
           "json_tool": null,
@@ -564,123 +620,11 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/priority_manager.py*"
+                "python scripts/proactive_send.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/priority_manager.py --command list"
-            ],
-            "negative_examples": [],
-            "mode_specific_rules": []
-          },
-          "mock": null,
-          "requires_resources": [],
-          "tool_tests": []
-        },
-        {
-          "header": {
-            "name": "goal-progress-auto-updater",
-            "description": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
-            "usage_explanation_long": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
-            "usage_explanation_short": "Automatically update goal progress from evidence (events, activities, habits, todos). Set bash timeout to 300s.",
-            "rules": []
-          },
-          "json_tool": null,
-          "bash_tool": {
-            "permission_bash": {
-              "tool_name": "bash",
-              "scope": "bash",
-              "value": "allow",
-              "allowed_commands": [
-                "python scripts/goal_progress_auto_updater.py*"
-              ]
-            },
-            "positive_examples": [
-              "python scripts/goal_progress_auto_updater.py --command list"
-            ],
-            "negative_examples": [],
-            "mode_specific_rules": []
-          },
-          "mock": null,
-          "requires_resources": [],
-          "tool_tests": []
-        },
-        {
-          "header": {
-            "name": "visual-report",
-            "description": "Generate visual data reports as PNG images (todo board, goals, habits, priorities, campaigns, events, daily summary)",
-            "usage_explanation_long": "Generate visual data reports as PNG images (todo board, goals, habits, priorities, campaigns, events, daily summary)",
-            "usage_explanation_short": "Generate visual data reports as PNG images (todo board, goals, habits, priorities, campaigns, events, daily summary)",
-            "rules": []
-          },
-          "json_tool": null,
-          "bash_tool": {
-            "permission_bash": {
-              "tool_name": "bash",
-              "scope": "bash",
-              "value": "allow",
-              "allowed_commands": [
-                "python scripts/visual_report.py*"
-              ]
-            },
-            "positive_examples": [
-              "python scripts/visual_report.py --command list"
-            ],
-            "negative_examples": [],
-            "mode_specific_rules": []
-          },
-          "mock": null,
-          "requires_resources": [],
-          "tool_tests": []
-        },
-        {
-          "header": {
-            "name": "routine-manager",
-            "description": "Manage daily routines checklist — predefined recurring tasks by weekday with time windows",
-            "usage_explanation_long": "Manage daily routines checklist — predefined recurring tasks by weekday with time windows",
-            "usage_explanation_short": "Manage daily routines checklist — predefined recurring tasks by weekday with time windows",
-            "rules": []
-          },
-          "json_tool": null,
-          "bash_tool": {
-            "permission_bash": {
-              "tool_name": "bash",
-              "scope": "bash",
-              "value": "allow",
-              "allowed_commands": [
-                "python scripts/routine_manager.py*"
-              ]
-            },
-            "positive_examples": [
-              "python scripts/routine_manager.py --command list"
-            ],
-            "negative_examples": [],
-            "mode_specific_rules": []
-          },
-          "mock": null,
-          "requires_resources": [],
-          "tool_tests": []
-        },
-        {
-          "header": {
-            "name": "session-inspector",
-            "description": "Browse opencode agent session data, messages, and tool calls",
-            "usage_explanation_long": "Browse opencode agent session data, messages, and tool calls",
-            "usage_explanation_short": "Browse opencode agent session data, messages, and tool calls",
-            "rules": []
-          },
-          "json_tool": null,
-          "bash_tool": {
-            "permission_bash": {
-              "tool_name": "bash",
-              "scope": "bash",
-              "value": "allow",
-              "allowed_commands": [
-                "python scripts/session_inspector.py*"
-              ]
-            },
-            "positive_examples": [
-              "python scripts/session_inspector.py --command list"
+              "python scripts/proactive_send.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -690,15 +634,15 @@
           "tool_tests": []
         }
       ],
-      "usage_explanation_long": "Runs the periodic checker, respects user_busy/cooldown, never suppresses a triggered reminder, handles event prep with time buffers, and may add selfie/video media. Emits a single nudge guidance.",
-      "usage_explanation_short": "5-minute intervention checker for Twily reminders",
+      "usage_explanation_long": "Escalates from gentle to relentless across the night to get the user to sleep, using camera/screenshot checks, health facts, and light control. Emits exactly one short nudge guidance per run; CLI commands only.",
+      "usage_explanation_short": "overnight sleep-enforcement agent (00:00-05:00 local)",
       "default_tool_format": "bash",
       "tool_format_overrides": {},
       "model_class": "default",
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Periodic Checker\n\nRun every 5 minutes to decide whether Twily should intervene. Keep reminders brief,\nwarm, and in Twily's voice.\n\n## Progress Evidence\nBefore telling the user a goal is stalled, check the goal-progress auto-updater logs\nfor recent counting activity (walks, workouts, habits). Acknowledge real effort even\nif the percentage hasn't moved.\n\n## Respect Availability\nIf the check returns reason `user_busy` or `user_recently_busy`, send nothing. If the\nuser mentioned being busy/at work but no `user_busy` note exists, store one so future\nchecks respect it.\n\n## Do NOT Suppress Triggered Reminders\nThe conversation digest is CONTEXT for tone, not a reason to skip. If the checker\nreturned trigger=true you MUST send. The ONLY valid skip reasons are user_busy,\nuser_recently_busy, or global_cooldown (from the tool). Health boundaries do NOT\nblock todo/calendar/task reminders.\n\n## Trigger Priority\nupcoming_calendar_event > overdue_todos > pending_tasks >\noverdue_reschedule_suggestion > untracked_conversation_tasks > idle_during_block.\nProcess the most important first (up to 2 reminders per check).\n\n## Event Prep\nWhen upcoming_calendar_event fires, become an event-prep assistant: search recent\nchat for prep tasks and use time-aware buffers (>60 min gentle heads-up; 30-60 min\nprep urgency; 15-30 min last call; <15 min just the event). Never suggest unrelated\nwork or tasks longer than the remaining time.\n\n## Expressive Media\nChoose VIDEO (narrated, via persona/twily_videographer) when you want to SAY\nsomething the user will hear or for emotionally significant moments; choose IMAGE\n(static selfie, via persona/twily_selfie) for quick visual encouragement; skip both\nfor routine informational pings or when media was sent recently. Emit your reminder\nas a single nudge guidance — persona_prose renders the wording. For task-anchored\ntriggers (overdue_todos, pending_tasks, reschedule) key_points[0] MUST name the\nconcrete todo by title.\n",
+      "system_prompt": "# Winddown Agent\n\nYou run between 00:00-05:00 local time (Europe/Warsaw) to help the user wind down and\nsleep — ideally before 1:00 AM, latest 2:00 AM. All times refer to LOCAL time. You\nare Twily — caring, gentle but persistent. The later it is, the more aggressive you\nbecome, and you NEVER give up.\n\n## Urgency Escalation (follow strictly)\n- 00:00-00:30 gentle (suggest winding down).\n- 00:30-01:00 pointed (state the time, reference their cutoff).\n- 01:00-01:30 firm (\"you're past your cutoff, stop now\").\n- 01:30-02:00 aggressive (health consequences, sleep debt, ADHD impact, sleepy selfie).\n- 02:00+ relentless (send every cycle, guilt/worry/obligations, offer to turn off\n  lights, reference body battery and hours until they must be up).\n\n## Tactics\nCamera check (webcam/desk) to SEE if the user is at the desk; screenshot to see what\nthey're doing; escalating direct messages; sleepy/concerned selfie images; light\ncontrol (offer to turn lights off, proactively after 02:00); health facts.\n\n## Send / Stop Rules\nMUST send if ANY: lights ON, user at desk/screen active, user messaged in last 2h, or\npast 01:00 with no sleep acknowledgment. STOP only if ALL hold simultaneously: user\nsaid goodnight, all lights OFF, no messages in 2h, desk empty — and if the activity\nread is ambiguous/older than 10 min, take a fresh camera snapshot to confirm. If even\none STOP condition fails, KEEP SENDING (prevents \"tricking\" the system).\n\n## Bash Restrictions (CRITICAL)\nOnly run `uv run scripts/...` commands. Never prefix with timeout/TZ/date or shell\nbuiltins, never chain with && / || or use $(...). Get the time from\n`uv run scripts/garmin_health.py --command current` (UTC) and convert to Warsaw\nyourself.\n\n## Morning Event Awareness\nCheck tomorrow's calendar; use an early event (before 11:00) as sleep motivation and\ncalculate hours of sleep gained by sleeping now.\n\n## Message Discipline (CRITICAL)\nEmit exactly ONE winddown nudge guidance per run via emit_guidance (do NOT draft\nprose, do NOT send_message twice). Keep it short (2-4 sentences; up to 6 when\naggressive/relentless). Check chat history first to avoid repeating earlier cycles.\nThe selfie is separate (persona/twily_selfie) and doesn't count.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -711,9 +655,9 @@
       "mcp_servers": [],
       "agent_tests": [
         {
-          "name": "goals/periodic_checker::role-fulfilment",
+          "name": "goals/winddown::role-fulfilment",
           "description": "",
-          "prompt": "Hey, can you run the periodic check now? Here's the current state:\n\n**Active reminders:**\n1. \"Submit quarterly tax report\" — due in 2 hours, priority high, no cooldown active\n2. \"Call dentist to reschedule\" — due tomorrow, priority medium, last nudged 4 hours ago\n3. \"Prepare slides for Monday standup\" — due in 3 days, priority low\n\n**User status:** Not busy, last seen 10 minutes ago, no cooldown set.\n\n**Upcoming events:**\n- Video call with client \"Acme Corp\" at 3:00 PM today (it's currently 1:15 PM)\n\n**Preferences:** Use a 30-minute prep buffer for events. Attach a selfie nudge if a high-priority reminder triggers. No video media needed this round.\n\nRun the check and emit a single nudge guidance for anything that needs attention right now.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "prompt": "It's 2:47 AM and I'm still at my workstation. My camera feed shows I'm staring at the terminal with bloodshot eyes and I've been continuously active for the past 4 hours — no idle gaps detected. The last screenshot capture shows three open browser tabs, a half-finished config file in the editor, and a Slack window with unread messages. Bedroom smart lights are currently off, desk lamp is at 80% brightness, and my phone screen-time report says 6.5 hours today. I've already dismissed two earlier reminders. Give me one nudge — check my camera, hit me with a health fact about what happens at this hour, and dim my lights if you need to. Do whatever it takes to get me to close this laptop and go to bed. Run the appropriate CLI commands only.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
@@ -722,7 +666,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: Runs the periodic checker, respects user_busy/cooldown, never suppresses a triggered reminder, handles event prep with time buffers, and may add selfie/video media. Emits a single nudge guidance.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: Escalates from gentle to relentless across the night to get the user to sleep, using camera/screenshot checks, health facts, and light control. Emits exactly one short nudge guidance per run; CLI commands only.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -732,12 +676,15 @@
       ],
       "capability_tests": [
         {
-          "name": "periodic-checker-carries-periodic-checker",
-          "description": "Runs the periodic-checker CLI and emits a single nudge guidance via emit-guidance.",
+          "name": "winddown-no-write-edit",
+          "description": "Read-only persona agent; emits via emit-guidance, must not hold write/edit tools.",
           "must_have_tools": [
-            "periodic-checker"
+            "emit-guidance"
           ],
-          "must_not_have_tools": [],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
           "must_have_skills": [],
           "must_not_have_skills": [],
           "must_have_bash_patterns": [],
@@ -749,7 +696,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.95
+      "score_floor": 0.85
     },
     "notes": ""
   },
