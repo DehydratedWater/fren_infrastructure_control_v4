@@ -28,6 +28,10 @@ COPY backend /app/backend
 # Script entrypoints compiled agents shell out to (`python scripts/<x>.py`);
 # entrypoint symlinks these into AGENTS_DIR so they resolve from opencode's cwd.
 COPY scripts /app/scripts
+# The autoloop's promotions: compile applies these (register_with_improvements)
+# so the deployed fleet runs the OPTIMIZED prompts, not the baselines. Without
+# this the image carries no .oac/promoted and every agent compiles to baseline.
+COPY .oac /app/.oac
 COPY backend/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

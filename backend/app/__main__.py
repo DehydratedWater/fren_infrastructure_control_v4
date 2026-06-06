@@ -95,8 +95,20 @@ def _run_compile() -> None:
 
     target = Path(get_settings().agents_dir)
     target.mkdir(parents=True, exist_ok=True)
-    files = compile_fleet(target=target, project_root=target, clean=True)
-    print(f"[compile] wrote {len(files)} files to {target}")
+    # Promotions live at the REPO root (.oac/promoted), not in the agents output
+    # dir. Walk up from this module to find the dir that actually holds them so
+    # register_with_improvements applies the optimized prompts (else: baselines).
+    here = Path(__file__).resolve()
+    project_root = target
+    for parent in here.parents:
+        if (parent / ".oac" / "promoted").is_dir():
+            project_root = parent
+            break
+    files = compile_fleet(target=target, project_root=project_root, clean=True)
+    print(
+        f"[compile] wrote {len(files)} files to {target}"
+        f" (promotions from {project_root}/.oac/promoted)"
+    )
 
 
 def _run_improve(argv: list[str]) -> None:
