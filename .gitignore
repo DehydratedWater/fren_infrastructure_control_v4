@@ -53,3 +53,15 @@ backend/.oac/autoloop_ws/
 # autoloop transient agents (installed into .opencode/agents at runtime)
 .opencode/agents/cand_*.md
 .opencode/agents/teacher_*.md
+
+# autoloop run logs + result dumps (transient — regenerated each run)
+.autoloop_*
+
+# promotion safety backups / archives (snapshots of .oac/promoted; not the live set)
+.oac/_promoted_backup_*/
+.oac/_promoted_pre_*/
+.oac/promoted_glm45_archive/
+
+# runtime agent output (not framework source): scratch + bug reports the fleet writes
+.agent_workspace/
+bugs/
