@@ -32,6 +32,10 @@ COPY scripts /app/scripts
 # so the deployed fleet runs the OPTIMIZED prompts, not the baselines. Without
 # this the image carries no .oac/promoted and every agent compiles to baseline.
 COPY .oac /app/.oac
+# Cron schedule (config/schedule.yml) drives the scheduler's periodic agent jobs
+# (daily briefing, periodic checks, nudges, meals, ...). Without it the scheduler
+# runs idle ("Schedule file not found") and the bot never messages proactively.
+COPY config /app/config
 COPY backend/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

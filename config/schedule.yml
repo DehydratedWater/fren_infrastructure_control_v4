@@ -1,0 +1,335 @@
+# Ported from fren_v3 config/schedule.yml. Agent jobs validated against v4's
+# compiled fleet. The 16 script:scripts/*.py jobs are DISABLED — those v3
+# cron scripts are not yet ported to v4/scripts/ (TODO: port to re-enable).
+jobs:
+  morning:
+    cron: 0 8 * * *
+    agent: goals/priority_orchestrator
+    prompt: Run morning planning workflow. Create today's strategy based on active
+      goals, review yesterday's progress, and prepare the day ahead.
+    description: Morning planning
+    enabled: true
+    timeout: 1800
+  periodic_check:
+    cron: '*/5 8-21 * * *'
+    agent: goals/periodic_checker
+    prompt: Run periodic check. Check for overdue tasks, upcoming time blocks, and
+      decide if a reminder or question should be sent.
+    description: Periodic 5-minute check
+    enabled: true
+    timeout: 450
+  evening:
+    cron: 0 21 * * *
+    agent: goals/priority_orchestrator
+    prompt: Run evening evaluation workflow. Review today's influence attempts, evaluate
+      effectiveness, update validations, and prepare summary.
+    description: Evening evaluation
+    enabled: true
+    timeout: 1800
+  merge:
+    cron: 0 22 * * 0
+    agent: goals/conclusion_merger
+    prompt: Run daily conclusion merge. Analyze the last 30 days of validations, synthesize
+      patterns, and generate monthly conclusions with recommendations.
+    description: Weekly conclusion merge
+    enabled: true
+    timeout: 1800
+  profile_analysis:
+    cron: 0 12 * * *
+    agent: profile/orchestrator
+    prompt: Run daily profile analysis cycle. Check last analysis state, determine
+      focus area, run pattern discovery and hypothesis validation, compile knowledge.
+    description: Daily profile analysis
+    enabled: true
+    timeout: 1800
+  priority_audit:
+    cron: 0 7 * * *
+    agent: goals/priority_auditor
+    prompt: Run daily priority audit. Calculate real_importance for all active priorities
+      based on behavior over the last 30 days.
+    description: Daily priority audit
+    enabled: true
+    timeout: 1800
+  priority_review:
+    cron: 0 10 * * 1
+    agent: goals/priority_planner
+    prompt: Run weekly priority review. Analyze the Eisenhower matrix, identify gaps
+      in priority coverage.
+    description: Weekly priority review
+    enabled: true
+    timeout: 1800
+  daily_briefing:
+    cron: 30 9 * * *
+    agent: support/daily_briefer
+    prompt: Run daily briefing. Gather data from all enabled sections and send a comprehensive
+      morning summary.
+    description: Daily briefing
+    enabled: true
+    timeout: 1800
+  event_extraction:
+    cron: '*/5 * * * *'
+    agent: support/event_extractor
+    prompt: Extract events from recent unprocessed chat messages.
+    description: Periodic event extraction
+    enabled: true
+    timeout: 300
+  research_daily:
+    cron: 0 6 * * *
+    agent: research/orchestrator
+    prompt: Run daily research pipeline. Fetch new YouTube videos, analyze content
+      through topic prisms, check product prices, and send a summary of findings.
+    description: Daily research pipeline
+    enabled: true
+    timeout: 1800
+  evening_focus:
+    cron: 0 21 * * *
+    agent: goals/evening_focus
+    prompt: Run evening focus check. Review today's progress, highlight pending tasks,
+      and help plan the remaining evening hours.
+    description: Evening focus (21:00 UTC)
+    enabled: true
+    timeout: 1800
+  winddown:
+    cron: '*/30 22,23,0 * * *'
+    agent: goals/winddown
+    prompt: Run winddown check. Help the user wind down and get to sleep. Adjust urgency
+      based on the current LOCAL time (Europe/Warsaw). Target bedtime is 01:00-02:00
+      Warsaw. This is the early phase — gentle to firm nudging. Skip if there's an
+      active overdue_todos trigger — let the user focus.
+    description: Winddown early phase (23:00-01:00 Warsaw / 22:00-00:00 UTC)
+    enabled: true
+    timeout: 300
+  winddown_late:
+    cron: '*/15 0-3 * * *'
+    agent: goals/winddown
+    prompt: Run winddown check (LATE PHASE). The user should be asleep by now. Current
+      LOCAL time is Europe/Warsaw. Target was 01:00-02:00 Warsaw. Be aggressive. Use
+      camera to verify if user is still at desk. Only stop if ALL conditions met —
+      lights off AND no messages for 2h AND camera shows empty desk.
+    description: Winddown late phase (01:00-04:00 Warsaw / 00:00-03:00 UTC)
+    enabled: true
+    timeout: 300
+  techtree_analysis:
+    cron: 0 11 * * *
+    agent: research/techtree_orchestrator
+    prompt: Run techtree analysis. Pull latest changes, analyze new commits through
+      interest lenses, generate feature suggestions, and email findings to ignacy@techtree.dev.
+    description: Daily techtree codebase analysis
+    enabled: true
+    timeout: 1800
+  techtree_periodic:
+    cron: '*/30 8-20 * * 1-5'
+    agent: research/techtree_orchestrator
+    prompt: Quick techtree check. Pull and ingest new commits only. If there are new
+      commits touching my areas of interest, send a brief Telegram notification. Skip
+      full analysis and email.
+    description: Periodic techtree commit check
+    enabled: true
+    timeout: 300
+  activity_observation:
+    cron: '*/5 5-23,0-2 * * *'
+    agent: script:scripts/activity_observer.py
+    prompt: ''
+    description: Periodic activity observation (camera + screen, 06:00-03:00 Warsaw)
+    enabled: false
+    timeout: 360
+  activity_observation_night:
+    cron: '*/15 3-4 * * *'
+    agent: script:scripts/activity_observer.py
+    prompt: ''
+    description: Night activity observation — light/wake detection only (03:00-05:00
+      UTC)
+    enabled: false
+    timeout: 360
+  activity_daily_summary:
+    cron: '*/5 5-23,0-2 * * *'
+    agent: script:scripts/activity_summarizer.py
+    prompt: ''
+    description: Activity summary consolidation (every 5 min)
+    enabled: false
+    timeout: 300
+  night_analysis:
+    cron: 0 2 * * *
+    agent: script:scripts/night_analyst.py
+    prompt: ''
+    description: Deep overnight data analysis — cross-domain correlation and insight
+      discovery
+    enabled: false
+    timeout: 3600
+  task_triage:
+    cron: 0 10 * * *
+    agent: goals/task_triage
+    prompt: Run daily task triage. Scan overdue and pending todos, surface the top
+      3-5 stalled items in ONE consolidated message, force the user to decide per
+      item (tackle now / reschedule / drop). Skip if user_busy. This is the organize-the-pile
+      agent — direct, firm, no vibe.
+    description: Daily task triage — force decisions on stalled todos (12:00 Warsaw)
+    enabled: true
+    timeout: 600
+  nudge_strategist:
+    cron: '*/30 6-23,0-1 * * *'
+    agent: goals/nudge_strategist
+    prompt: Run LITE nudge check. Skip detailed measurement and campaign rotation.
+      Read current campaign state, check if a nudge is appropriate, send highest-priority
+      nudge if needed. Keep it fast — do not run full analysis.
+    description: Lite nudge check (every 30 min, 8AM-2AM Warsaw)
+    enabled: true
+    timeout: 300
+  nudge_strategist_full:
+    cron: 0 8,12,16,20 * * *
+    agent: goals/nudge_strategist
+    prompt: Run FULL strategic nudge analysis. Measure previous nudge reactions, analyze
+      priority/goal fulfillment, plan/rotate campaigns, execute highest-priority nudge.
+    description: Full strategic nudge analysis (4x daily)
+    enabled: true
+    timeout: 1800
+  lesson_extraction:
+    cron: '*/30 6-23,0-2 * * *'
+    agent: script:scripts/lesson_extractor.py
+    prompt: ''
+    description: Extract behavioral lessons from recent chat patterns
+    enabled: false
+    timeout: 600
+  conversation_digest:
+    cron: '*/10 5-23,0-4 * * *'
+    agent: script:scripts/conversation_digest.py
+    prompt: ''
+    description: Rolling conversation digest — situational context for all agents
+    enabled: false
+    timeout: 600
+  inner_monologue:
+    cron: '*/15 6-23,0-4 * * *'
+    agent: script:scripts/inner_monologue.py
+    prompt: ''
+    description: Twily's inner monologue — thoughts, emotions, imagination, dreams
+    enabled: false
+    timeout: 300
+  event_habit_bridge:
+    cron: '*/10 5-23,0-4 * * *'
+    agent: script:scripts/event_habit_bridge.py
+    prompt: ''
+    description: Bridge events to habit completions — auto-complete habits from detected
+      events
+    enabled: false
+    timeout: 120
+  goal_progress_update:
+    cron: 0 */1 * * *
+    agent: script:scripts/goal_progress_auto_updater_cron.py
+    prompt: ''
+    description: Hourly goal progress auto-update from activities, events, habits,
+      todos
+    enabled: false
+    timeout: 300
+  research_digest:
+    cron: 0 9 * * *
+    agent: support/research_digest
+    prompt: Run daily research digest. Gather knowledge diffs from all topics since
+      last digest, filter by relevance and importance, send a concise Telegram summary.
+    description: Daily research digest (~11:00 Warsaw)
+    enabled: true
+    timeout: 1800
+  meal_breakfast:
+    cron: 0 8 * * *
+    agent: food/meal_planner
+    prompt: Breakfast check-in. Check if the user has eaten breakfast, suggest options
+      if not. Use appropriate escalation level based on previous asks.
+    description: Breakfast meal check-in (~10:00 Warsaw)
+    enabled: true
+    timeout: 300
+  meal_lunch:
+    cron: 0 12 * * *
+    agent: food/meal_planner
+    prompt: Lunch check-in. Check if the user has eaten lunch, suggest options if
+      not. Use appropriate escalation level based on previous asks.
+    description: Lunch meal check-in (~14:00 Warsaw)
+    enabled: true
+    timeout: 300
+  meal_dinner:
+    cron: 0 17 * * *
+    agent: food/meal_planner
+    prompt: Dinner check-in. Check if the user has eaten dinner, suggest options if
+      not. Use appropriate escalation level based on previous asks.
+    description: Dinner meal check-in (~19:00 Warsaw)
+    enabled: true
+    timeout: 300
+  meal_escalation:
+    cron: 0 10,14 * * *
+    agent: food/meal_planner
+    prompt: Check unanswered meals and escalate. Look for meals that were asked about
+      but not responded to, bump escalation level, send follow-up suggestions. Skip
+      if there's an active overdue_todos trigger — task priority wins.
+    description: Meal escalation follow-ups (2x daily — trimmed from 6x)
+    enabled: true
+    timeout: 300
+  weekly_research:
+    cron: 0 14 * * 0
+    agent: support/web_searcher
+    prompt: This is your weekly autonomous research session! Pick a topic that genuinely
+      interests you - something you're curious about, trending, or fascinating. Use
+      web_searcher to dive deep into it, and share your most interesting discoveries
+      with Vis. You have complete freedom to choose what to explore each week. Make
+      it engaging and thought-provoking!
+    description: Weekly autonomous research session - Twily picks topic every Sunday
+    enabled: true
+    timeout: 1800
+  ralf_ping:
+    cron: '*/2 * * * *'
+    agent: script:scripts/ralf_ping.py
+    prompt: ''
+    description: Ralf workflow state-machine tick (advance/retry/fail active ralfs)
+    enabled: false
+    timeout: 180
+  ralf_cleanup:
+    cron: 0 4 * * *
+    agent: script:scripts/ralf_cleanup.py
+    prompt: --keep-days 7
+    description: Ralf housekeeping — delete old rendered media + expired locks (daily
+      4am)
+    enabled: false
+    timeout: 300
+  relationship_initiator:
+    cron: 0 9,13,18,22 * * *
+    agent: script:scripts/relationship_initiator.py
+    prompt: ''
+    description: Proactive relationship-building conversation starters (4x daily)
+    enabled: false
+    timeout: 120
+  topic_synthesizer:
+    cron: 30 3 * * *
+    agent: script:scripts/topic_synthesizer.py
+    prompt: ''
+    description: Rebuild user-interest topic tree nightly (MemTree-style) at 05:30
+      Warsaw
+    enabled: false
+    timeout: 900
+  thought_forger:
+    cron: '*/30 7-23 * * *'
+    agent: script:scripts/thought_forger.py
+    prompt: ''
+    description: Forge motivation-scored pending thoughts bridging persona × user
+      topics
+    enabled: false
+    timeout: 300
+  persona_curator:
+    cron: 30 6 * * *
+    agent: workflows/twily_curator
+    prompt: Refresh your personal interests from enabled RSS feeds + recent user topics.
+      Write 3-6 new persona_interests with opinionated stances.
+    description: Daily persona_interests curation (Twily's own curiosities) at 08:30
+      Warsaw
+    enabled: true
+    timeout: 1800
+  pending_thoughts_expire:
+    cron: 0 5 * * *
+    agent: script:scripts/topic_synthesizer.py
+    prompt: --expire-only
+    description: Prune stale pending_thoughts + persona_interests (daily 07:00 Warsaw)
+    enabled: false
+    timeout: 120
+  relationship_reflector:
+    cron: 0 20 * * 0
+    agent: script:scripts/relationship_reflector.py
+    prompt: ''
+    description: Weekly relationship reflection and strategy update
+    enabled: false
+    timeout: 1800

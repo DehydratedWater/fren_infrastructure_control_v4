@@ -965,8 +965,16 @@ async def trigger_bug_report(prompt: str, model: str | None = None) -> None:
 
 async def _post_init(_app: Application) -> None:
     global _scheduler
-    _scheduler = Scheduler()
-    await _scheduler.start()
+    # The dedicated `scheduler` service owns cron in the v4 split deployment.
+    # Running the in-bot scheduler too would double-fire every job (per-container
+    # state, same schedule.yml). Off by default; set RUN_INTERNAL_SCHEDULER=1 for
+    # a single-process (v3-style) deployment with no scheduler service.
+    if os.getenv("RUN_INTERNAL_SCHEDULER", "0") == "1":
+        _scheduler = Scheduler()
+        await _scheduler.start()
+        logger.info("In-bot scheduler started (RUN_INTERNAL_SCHEDULER=1)")
+    else:
+        logger.info("In-bot scheduler disabled; dedicated scheduler service owns cron")
 
 
 async def _post_shutdown(_app: Application) -> None:
