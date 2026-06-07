@@ -848,9 +848,15 @@ def test_with_delivery_postamble_injects_for_broken_delivery_agent():
     out = im.with_delivery_postamble(agent)
     assert im.DELIVERY_POSTAMBLE.strip() in (out.postamble or "")
     assert (out.postamble or "").startswith("base.")
-    # idempotent: a second pass does not double-add
+    # PRIMACY: the blunt directive is ALSO prepended to the system_prompt (it
+    # survives the SECURITY POLICY block the compiler appends after the postamble).
+    assert (out.system_prompt or "").startswith(im.DELIVERY_PREAMBLE)
+    assert "Summarise the user's day." in (out.system_prompt or "")
+    # idempotent: a second pass does not double-add (postamble) and the primacy
+    # directive is not prepended twice.
     again = im.with_delivery_postamble(out)
     assert (again.postamble or "").count("python scripts/emit_guidance.py --data") == 1
+    assert (again.system_prompt or "").count(im.DELIVERY_PREAMBLE) == 1
 
 
 def test_with_delivery_postamble_skips_agent_that_already_instructs():
