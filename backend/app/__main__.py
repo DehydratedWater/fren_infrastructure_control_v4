@@ -73,7 +73,9 @@ async def _checker_main() -> None:
     tool = PeriodicCheckerTool()
     while not stop.is_set():
         try:
-            await tool.execute(Input(command="check"))
+            # await the async path directly: execute() wraps asyncio.run(), which
+            # raises "cannot be called from a running event loop" inside this loop.
+            await tool._dispatch(Input(command="check"))
         except Exception:
             log.exception("checker tick failed")
         try:
