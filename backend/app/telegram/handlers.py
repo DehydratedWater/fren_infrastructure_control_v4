@@ -51,9 +51,14 @@ def _fire_and_forget(coro) -> None:
 
 def _active_agent_context() -> str:
     """Build a context note about currently running agents."""
-    from scripts.stop_agents import get_running_agents  # TODO(v4-port): scripts.stop_agents not yet ported
-
-    agents = get_running_agents()
+    try:
+        from scripts.stop_agents import get_running_agents  # TODO(v4-port): scripts.stop_agents not yet ported
+        agents = get_running_agents()
+    except Exception:
+        # Running-agent awareness not ported to v4 yet — degrade to no context
+        # rather than sinking the whole dispatch (the message must still reach
+        # the agent).
+        return ""
     if not agents:
         return ""
     names = [a.agent_name or "unknown" for a in agents]
@@ -242,8 +247,12 @@ async def _debounce_dispatch() -> None:
 
 async def _reply_process_count(update: Update) -> None:
     """Send a quick reply showing how many agents are currently running."""
-    from app.telegram.bot import _active_processes
-
+    try:
+        from app.telegram.bot import _active_processes
+    except Exception:
+        # Process-count tracking not ported to v4 yet — skip the count reply
+        # rather than raising in the message handler.
+        return
     count = len(_active_processes)
     if count > 0:
         await update.effective_message.reply_text(f"({count} running)")  # type: ignore[union-attr]

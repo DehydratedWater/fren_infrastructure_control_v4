@@ -1563,13 +1563,17 @@ async def _deliver_via_send_message(text: str, attachments: list[str]) -> None:
     from app.settings import get_settings
 
     settings = get_settings()
-    project_root = settings.project_root
+    # Scripts resolve from AGENTS_DIR (the entrypoint symlinks scripts/ there),
+    # exactly like the compiled agents invoke `python scripts/<x>.py`. project_root
+    # is the backend dir and has no scripts/ — using it broke delivery with
+    # "can't open file 'scripts/send_message.py'".
+    scripts_cwd = settings.agents_dir
 
     def _fire(argv: list[str]) -> None:
         try:
             result = subprocess.run(
                 argv,
-                cwd=project_root,
+                cwd=scripts_cwd,
                 capture_output=True,
                 text=True,
                 timeout=60,
