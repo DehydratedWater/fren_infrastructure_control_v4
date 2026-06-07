@@ -81,19 +81,14 @@ async def _send_error_notification(context: str) -> None:
 
 
 def _get_trigger_commands() -> dict[str, str]:
-    """Discover all trigger commands from agent definitions."""
-    commands: dict[str, str] = {}
-    try:
-        from app.compile import collect_all_agents  # TODO(v4-port): app.compile.collect_all_agents not yet ported
+    """Discover all trigger commands from agent definitions.
 
-        for defn in collect_all_agents():
-            if defn.trigger_command:
-                cmd = defn.trigger_command.lstrip("/")
-                agent_path = f"{defn.agent_dir}/{defn.name}" if defn.agent_dir else defn.name
-                commands[cmd] = agent_path
-    except Exception as e:
-        logger.warning("Failed to discover trigger commands: %s", e)
-    return commands
+    v4 agents don't define a `trigger_command` (the field doesn't exist in the v4
+    AgentDefinition and no agent sets one), so there are no slash-trigger commands
+    to register. Return empty cleanly instead of importing the unported v3
+    `app.compile.collect_all_agents` (which only logged a warning every startup).
+    """
+    return {}
 
 
 def _infer_intents(message: str) -> str:
