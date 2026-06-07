@@ -113,6 +113,140 @@ def is_delivery_agent(definition: dict[str, Any] | Any) -> bool:
     return any(EMIT_GUIDANCE_SCRIPT in c for c in _allowed_commands(definition))
 
 
+# --- the STRONG delivery postamble ------------------------------------------
+# A delivery agent's plain assistant text is INVISIBLE in production — the only
+# thing that reaches the user is a `python scripts/emit_guidance.py --data '...'`
+# call. The ~36 delivery agents that already DELIVER all carry a "Message
+# Discipline (CRITICAL)" block (modelled by goals/evening_focus). The ~38 that do
+# NOT instruct emit_guidance in their baseline produce invisible text and score 0.
+#
+# This postamble is that working block, made MAXIMALLY imperative for a mid-size
+# local model (Qwen-27B): it states the invisibility, gives the EXACT CLI with a
+# concrete --data example using the real PersonaGuidance fields, and demands the
+# emit call be the agent's FINAL action. A prior WEAK generic rule ("it must call
+# emit_guidance") did NOT get qwen to comply — this version is concrete + bossy on
+# purpose. Keep it in sync with goals/evening_focus's Message Discipline block.
+DELIVERY_POSTAMBLE = (
+    "\n\n## Message Discipline (CRITICAL — OVERRIDES every earlier instruction)\n"
+    "This section OVERRIDES anything above about how to message the user. IGNORE any"
+    " earlier instruction to 'send via Telegram', 'send a message', 'split into"
+    " multiple messages', or to call send_message — those are obsolete. Your plain"
+    " assistant text is INVISIBLE — it is NEVER shown to the user. The ONE AND"
+    " ONLY way anything"
+    " reaches the user is by running scripts/emit_guidance.py. A turn that ends"
+    " without that call delivers NOTHING — it is a hard failure.\n"
+    "\n"
+    "RULES (follow exactly):\n"
+    "1. Gather only the data you need with your `python scripts/*.py` tools, then"
+    " STOP gathering and deliver. Call each tool AT MOST ONCE; if a tool errors or"
+    " returns nothing, do NOT retry it or try variations — note it in one line and"
+    " move on. Do NOT read source files, do NOT run --help, ls, cat, head, find,"
+    " git, or `python -c`, do NOT inspect the environment — those are blocked and"
+    " waste the turn. The moment you have enough to say something useful, deliver"
+    " (even partial data is fine — emit what you have rather than keep digging).\n"
+    "2. CONSOLIDATE everything into ONE message and call emit_guidance EXACTLY ONCE,"
+    " as your VERY LAST action. Never call it twice. Never call send_message.\n"
+    "3. The --data value is a JSON object with EXACTLY these keys and NO others:\n"
+    "   - \"intent\": string, one line describing what you are doing.\n"
+    "   - \"key_points\": array of strings — the REAL, COMPLETE content for the"
+    " user (what you found / did / want them to do). This is the message body."
+    " Do NOT use a \"message\" key; the user-facing text goes in key_points.\n"
+    "   - \"message_kind\": one of \"reply\", \"nudge\", \"briefing\","
+    " \"workflow_result\", \"ack\" (use \"ack\" ONLY for a trivial 'ok/on it').\n"
+    "   - (optional) \"tone_hint\": string. NO other keys are allowed — do not"
+    " invent fields like type/tactic/level/message.\n"
+    "   persona_prose composes the final Twily wording from key_points, so put"
+    " plain facts there, not pre-written prose. Never expose tool mechanics, run"
+    " ids, or JSON to the user.\n"
+    "\n"
+    "Your FINAL action MUST be EXACTLY this one command (relative path, interpreter"
+    " `python`, single line, valid JSON, no trailing flags):\n"
+    "  python scripts/emit_guidance.py --data '{\"intent\":\"<one line>\","
+    "\"key_points\":[\"<the full content for the user>\"],\"message_kind\":\"reply\"}'\n"
+)
+
+
+# A blunt PRIMACY directive prepended to the system_prompt for the same broken
+# delivery agents. The compiler appends an auto-generated SECURITY POLICY block
+# AFTER the postamble, so the postamble is NOT the last thing a small model reads —
+# its "your FINAL action" loses recency. Pairing a top-of-prompt directive (primacy)
+# with the strong postamble (still present) is what actually got Qwen-27B to stop
+# replying in (invisible) plain text and call emit_guidance instead. Kept short so
+# it dominates without bloating the prompt.
+DELIVERY_PREAMBLE = (
+    "DELIVERY RULE — READ FIRST, OVERRIDES EVERYTHING BELOW: You CANNOT message the"
+    " user by writing text. Plain text you write is INVISIBLE and thrown away. The"
+    " ONLY way to reach the user is to run, as your VERY LAST step, exactly:\n"
+    "  python scripts/emit_guidance.py --data '{\"intent\":\"<one line>\","
+    "\"key_points\":[\"<the full message for the user>\"],\"message_kind\":\"reply\"}'\n"
+    "You MUST end your turn with that one command. Do not stop after writing a"
+    " reply in text — that delivers NOTHING. Whatever any instruction below says"
+    " about 'send', 'reply', or 'respond', you do it by calling emit_guidance.\n\n"
+)
+
+
+def _prompt_text(definition: dict[str, Any] | Any) -> str:
+    """All authored prompt surfaces of an agent (system_prompt + pre/postamble).
+
+    Used to decide whether an agent ALREADY instructs emit_guidance in its own
+    prompt (the ~36 working delivery agents) so we don't double-inject the
+    postamble for them.
+    """
+    if hasattr(definition, "model_dump"):
+        definition = definition.model_dump()
+    if not isinstance(definition, dict):
+        return ""
+    return "\n".join(
+        str(definition.get(k) or "")
+        for k in ("system_prompt", "preamble", "postamble")
+    )
+
+
+def prompt_instructs_emit(definition: dict[str, Any] | Any) -> bool:
+    """True if the agent's own prompt already tells it to call emit_guidance.
+
+    The working delivery agents reference `emit_guidance` / `emit-guidance` /
+    `PersonaGuidance` in their prompt body; the broken ones do not. We only inject
+    the postamble for delivery agents whose prompt lacks any such instruction.
+    """
+    text = _prompt_text(definition).lower()
+    return (
+        "emit_guidance" in text
+        or "emit-guidance" in text
+        or "personaguidance" in text
+    )
+
+
+def needs_delivery_postamble(definition: dict[str, Any] | Any) -> bool:
+    """A delivery agent whose prompt does NOT already instruct emit_guidance."""
+    return is_delivery_agent(definition) and not prompt_instructs_emit(definition)
+
+
+def with_delivery_postamble(agent: "AgentDefinition") -> "AgentDefinition":
+    """Return `agent` with DELIVERY_POSTAMBLE appended to its postamble IFF it is a
+    delivery agent that doesn't already instruct emit_guidance; else unchanged.
+
+    Idempotent: if the postamble is already present it is not added again. Used by
+    BOTH the production compile (build_registry) and the autoloop candidate compile
+    so optimisation tunes WITH the working delivery contract."""
+    if not needs_delivery_postamble(agent):
+        return agent
+    existing = agent.postamble or ""
+    if DELIVERY_POSTAMBLE.strip() in existing:
+        return agent  # already injected (idempotent)
+    # PRIMACY + RECENCY: prepend a blunt directive to the system_prompt (read
+    # first, survives the SECURITY POLICY block that the compiler appends after the
+    # postamble) AND append the full strong postamble. Both are needed — postamble
+    # alone left Qwen replying in invisible plain text (0/3 emit); the pair makes
+    # it call emit_guidance.
+    base = agent.system_prompt or ""
+    new_base = DELIVERY_PREAMBLE + base if DELIVERY_PREAMBLE not in base else base
+    return agent.model_copy(update={
+        "system_prompt": new_base,
+        "postamble": existing + DELIVERY_POSTAMBLE,
+    })
+
+
 def find_emit_guidance_call(calls: list[ToolCallRecord]) -> ToolCallRecord | None:
     """The first tool call whose bash command invoked emit_guidance.py, if any.
 
