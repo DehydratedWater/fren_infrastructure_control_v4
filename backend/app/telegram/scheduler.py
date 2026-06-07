@@ -156,8 +156,26 @@ class Scheduler:
 
     async def start(self) -> None:
         logger.info("Scheduler starting (schedule=%s)", _SCHEDULE_PATH)
+        self._prime_cold_start()
         await self._reconcile_stale_runs()
         self._task = asyncio.create_task(self._loop())
+
+    @staticmethod
+    def _prime_cold_start() -> None:
+        """Cold start with no state: set each job's last_run to 'now' so the
+        scheduler does not catch-up-fire every past-due job at once on boot."""
+        if _STATE_PATH.exists():
+            return
+        jobs = _load_schedule()
+        names = [n for n, cfg in jobs.items() if isinstance(cfg, dict)]
+        if not names:
+            return
+        now = datetime.now(UTC).isoformat()
+        _save_state({n: now for n in names})
+        logger.info(
+            "Primed scheduler state for %d job(s) on cold start (no catch-up burst)",
+            len(names),
+        )
 
     async def stop(self) -> None:
         logger.info("Scheduler stopping (%d jobs running)", len(self._running_jobs))
