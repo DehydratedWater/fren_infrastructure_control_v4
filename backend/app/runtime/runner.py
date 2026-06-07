@@ -97,6 +97,18 @@ def parse_opencode_events(stdout: str) -> tuple[str, list[ToolCallRecord]]:
                 # tool-discipline signal is carried at the call level (the
                 # allow-list denial reason: "a rule prevents you from using ls").
                 state = part.get("state") if isinstance(part.get("state"), dict) else {}
+                # The bash command an agent ran lives in `state.input.command`
+                # (not `part.args`). Capture it so the DELIVERY CONTRACT check can
+                # see whether the agent called `python scripts/emit_guidance.py`
+                # — the only mechanism that delivers a message to the user — and
+                # parse the emitted PAYLOAD out of that command. Without this the
+                # emit_guidance call (and its payload) is invisible in the
+                # trajectory, so the evaluator can't enforce the contract.
+                state_input = state.get("input") if isinstance(state.get("input"), dict) else {}
+                if not isinstance(args, dict) or not args:
+                    args = dict(state_input) if state_input else (args if isinstance(args, dict) else {})
+                elif state_input and "command" not in args:
+                    args = {**args, **state_input}
                 reason = str(state.get("error") or "")
                 out = str(state.get("output") or "")
                 err = None

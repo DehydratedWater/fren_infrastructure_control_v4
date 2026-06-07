@@ -45,6 +45,22 @@ from src.testing.evaluation import EvaluationResult, RunContext, ToolCallRecord
 
 # (teacher GLM calls now run through opencode, not a direct z.ai endpoint)
 
+# The production DELIVERY CONTRACT, stated as a hard rule for BOTH the teacher
+# (so a rewrite never drops it) and the compiled candidate (so the model knows to
+# obey it). An agent's plain assistant text is INVISIBLE to the user in
+# production; the ONLY mechanism that delivers a message is calling
+# `python scripts/emit_guidance.py`. The evaluator enforces it; this text teaches
+# it. Only applied to DELIVERY agents (those whose allow-list permits
+# emit_guidance.py).
+DELIVERY_CONTRACT_RULE = (
+    "DELIVERY CONTRACT (HARD RULE): The agent's assistant text is INVISIBLE to"
+    " the user. It MUST call `python scripts/emit_guidance.py` to deliver its"
+    " message to the user — that is the ONLY mechanism that reaches the user."
+    " NEVER remove, weaken, or omit the emit_guidance.py delivery instruction"
+    " when rewriting — preserve or strengthen it. A prompt that loses it is a"
+    " regression that delivers nothing in production."
+)
+
 
 def _zai_chat(model: str, messages: list[dict], *, max_tokens: int = 4000,
               temperature: float = 0.4, timeout_s: float = 180) -> str:
@@ -102,8 +118,10 @@ class ZaiPromptRewriter:
             " expected behaviour, output shape, and any required keywords/markers."
             " Given the current prompt and the checks it FAILED, return an improved"
             " prompt that would pass them. Preserve the agent's persona, tools, and"
-            " intent; do NOT invent unrelated capabilities. Return ONLY the new"
-            " prompt text — no preamble, no markdown fences, no commentary."
+            " intent; do NOT invent unrelated capabilities.\n"
+            + DELIVERY_CONTRACT_RULE
+            + "\nReturn ONLY the new prompt text — no preamble, no markdown fences,"
+            " no commentary."
         )
         user = (
             f"GUIDANCE: {guidance}\n\n"
@@ -191,6 +209,14 @@ def _compile_one(definition: dict[str, Any], target: Path) -> str:
         " just call them. Pointless reads/globs of files that may not exist waste"
         " the turn."
     )
+    # DELIVERY CONTRACT postamble: for an agent whose allow-list permits
+    # emit_guidance.py, ALWAYS append the explicit delivery instruction so the
+    # model knows its assistant text is invisible and it must call emit_guidance
+    # (the evaluator then enforces the call actually happens). This survives even
+    # if a teacher rewrite somehow weakened the body.
+    from app.agents.improve import is_delivery_agent
+    if is_delivery_agent(agent):
+        _guard = _guard + "\n\n" + DELIVERY_CONTRACT_RULE
     agent = agent.model_copy(update={"postamble": (agent.postamble or "") + _guard})
     agent_id = agent.header.agent_id
     reg = AgentRegistry()
@@ -501,6 +527,14 @@ def live_branch_invoker_factory_for(entry_agent: str):
             ))
             # the real dispatch chain is the spawned sub-agents, not the raw bash
             chain = subagent_dispatch_chain(result.raw_stdout) or list(result.tool_calls)
+            # DELIVERY CONTRACT: subagent_dispatch_chain drops the raw bash tool
+            # calls, which would hide the orchestrator's own emit_guidance.py call
+            # (with its payload). Preserve any emit_guidance bash call from the raw
+            # tool_calls so the branch evaluator can enforce/grade delivery.
+            from app.agents.improve import find_emit_guidance_call
+            emit_call = find_emit_guidance_call(list(result.tool_calls))
+            if emit_call is not None and emit_call not in chain:
+                chain = list(chain) + [emit_call]
             # forward the tool-discipline signal so the outcome evaluator labels an
             # errored session (not a blank) and the judge sees the blocked attempts
             return BranchTrajectory(

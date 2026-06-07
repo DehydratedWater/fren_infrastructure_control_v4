@@ -543,3 +543,253 @@ def test_branch_evaluator_forwards_trajectory_error_and_blocked(monkeypatch):
     assert metrics["score_floor"] < 0.7
     assert failures and failures[0]["blocked_attempts"] == 1
     assert "Agent not found" in (failures[0]["error"] or "")
+
+
+# --- 8. production DELIVERY CONTRACT: optimize-IN emit_guidance --------------
+# A "delivery agent" (emit_guidance.py in its allow-list) MUST call
+# emit_guidance.py to deliver — its assistant text is invisible in production.
+# The evaluator: no emit → 0; emit → grade the PAYLOAD. The teacher must preserve
+# the contract; the compile postamble must carry it. All mocked.
+
+
+def _delivery_agent(aid="support/daily_briefer"):
+    """An agent whose allow-list permits emit_guidance.py (a DELIVERY agent)."""
+    from app.agents._tools import emit_guidance_tool
+
+    return _agent(aid).model_copy(update={"extra_tools": [emit_guidance_tool()]})
+
+
+def _emit_call(payload_text="Your briefing: 3 goals on track today."):
+    cmd = (
+        "python scripts/emit_guidance.py --data "
+        '\'{"intent":"reply","key_points":["%s"]}\'' % payload_text
+    )
+    return ToolCallRecord(name="bash", args={"command": cmd})
+
+
+def test_is_delivery_agent_predicate():
+    import app.agents.improve as im
+
+    assert im.is_delivery_agent(_delivery_agent().model_dump()) is True
+    # event_extractor-shaped agent: no emit_guidance tool → NOT a delivery agent
+    assert im.is_delivery_agent(_agent("support/event_extractor").model_dump()) is False
+
+
+def test_find_and_extract_emit_payload():
+    import app.agents.improve as im
+
+    calls = [
+        ToolCallRecord(name="bash", args={"command": "python scripts/goal_manager.py --command list"}),
+        _emit_call("Hi! Your habits are on track."),
+    ]
+    call = im.find_emit_guidance_call(calls)
+    assert call is not None
+    payload = im.extract_emit_payload(call)
+    assert "Hi! Your habits are on track." in payload
+    # no emit call → None, empty payload
+    assert im.find_emit_guidance_call([calls[0]]) is None
+    assert im.extract_emit_payload(None) == ""
+
+
+class _PayloadJudge:
+    """Records what deliverable it was shown; scores high (proving the PAYLOAD,
+    not the assistant text, is what gets graded)."""
+
+    def __init__(self):
+        self.seen = []
+
+    def judge(self, criteria, target, *, model=None):
+        self.seen.append(str(target))
+        return {"pass": True, "score": 0.9, "reasoning": "delivered payload graded"}
+
+
+def _runner_factory(text, calls):
+    def factory(_defn):
+        def runner(_d, _t):
+            return text, list(calls), {}
+        return runner
+    return factory
+
+
+def test_delivery_agent_no_emit_scores_zero(monkeypatch):
+    """A delivery agent that returns TEXT but never calls emit_guidance scores 0
+    (it would be invisible in production) and records the failure."""
+    import app.agents.improve as im
+
+    monkeypatch.setattr(im, "synthesize_probe", lambda a: "Send my briefing.")
+    agent = _delivery_agent().model_copy(
+        update={"agent_tests": [im.make_judge_test(_delivery_agent())]})
+    judge = _PayloadJudge()
+    failures: list = []
+    ev = im.build_agent_evaluator(
+        agent, _runner_factory("Here is your briefing: lots of text...", []),
+        judge=judge, failures_sink=failures)
+    metrics = ev(ComponentVersion.of(agent.header.agent_id, "agent", agent.model_dump()))
+    assert metrics["score_floor"] == 0.0
+    assert metrics["pass_rate"] == 0.0
+    # the judge was NOT even consulted — it's a contract failure, not a quality one
+    assert judge.seen == []
+    assert failures and failures[0]["evaluator"] == "delivery-contract"
+    assert "emit_guidance" in failures[0]["judge_reasoning"]
+
+
+def test_delivery_agent_emit_grades_payload_not_text(monkeypatch):
+    """A delivery agent that calls emit_guidance scores high — and the JUDGE is
+    shown the EMITTED PAYLOAD, not the (invisible) assistant text."""
+    import app.agents.improve as im
+
+    monkeypatch.setattr(im, "synthesize_probe", lambda a: "Send my briefing.")
+    agent = _delivery_agent().model_copy(
+        update={"agent_tests": [im.make_judge_test(_delivery_agent())]})
+    judge = _PayloadJudge()
+    ev = im.build_agent_evaluator(
+        agent,
+        _runner_factory("invisible assistant text the user never sees",
+                        [_emit_call("DELIVERED: your briefing is ready.")]),
+        judge=judge)
+    metrics = ev(ComponentVersion.of(agent.header.agent_id, "agent", agent.model_dump()))
+    assert metrics["score_floor"] == 0.9
+    # judge graded the PAYLOAD, not the assistant text
+    assert any("DELIVERED: your briefing is ready." in s for s in judge.seen)
+    assert not any("invisible assistant text" in s for s in judge.seen)
+
+
+def test_non_delivery_agent_unchanged(monkeypatch):
+    """A non-delivery agent (no emit_guidance in allow-list) keeps text grading —
+    no emit_guidance call required, judge sees its assistant text."""
+    import app.agents.improve as im
+
+    monkeypatch.setattr(im, "synthesize_probe", lambda a: "Extract events.")
+    agent = _agent("support/event_extractor").model_copy(
+        update={"agent_tests": [im.make_judge_test(_agent("support/event_extractor"))]})
+    judge = _PayloadJudge()
+    ev = im.build_agent_evaluator(
+        agent, _runner_factory("Extracted 2 events: dentist, flight.", []),
+        judge=judge)
+    metrics = ev(ComponentVersion.of(agent.header.agent_id, "agent", agent.model_dump()))
+    assert metrics["score_floor"] == 0.9  # graded normally, no contract penalty
+    assert any("Extracted 2 events" in s for s in judge.seen)
+
+
+def test_branch_delivery_contract_no_emit_scores_zero(monkeypatch):
+    """A delivery ORCHESTRATOR that never calls emit_guidance scores 0."""
+    import app.agents.improve as im
+    from src import BranchTest
+    from src.testing.branch import BranchTrajectory
+
+    b = BranchTest(name="d::y", entry_agent="support/master_organizer",
+                   prompt="organize my week", path=("a", "b"))
+    judge = _PayloadJudge()
+    failures: list = []
+
+    def invoker_factory(_defn):
+        def invoke(_t):
+            return BranchTrajectory(output="a plan in invisible prose",
+                                    tool_calls=[ToolCallRecord(name="a")])
+        return invoke
+
+    ev = im.build_branch_evaluator([b], invoker_factory, judge=judge,
+                                   failures_sink=failures)
+    # delivery def: emit_guidance in allow-list
+    metrics = ev(ComponentVersion.of(
+        "support/master_organizer", "agent", _delivery_agent("support/master_organizer").model_dump()))
+    assert metrics["score_floor"] == 0.0
+    assert judge.seen == []
+    assert failures and "emit_guidance" in failures[0]["judge_reasoning"]
+
+
+def test_branch_delivery_contract_emit_grades_payload(monkeypatch):
+    import app.agents.improve as im
+    from src import BranchTest
+    from src.testing.branch import BranchTrajectory
+
+    b = BranchTest(name="d::y", entry_agent="support/master_organizer",
+                   prompt="organize my week", path=("a",))
+    judge = _PayloadJudge()
+
+    def invoker_factory(_defn):
+        def invoke(_t):
+            return BranchTrajectory(
+                output="invisible orchestrator prose",
+                tool_calls=[ToolCallRecord(name="a"),
+                            _emit_call("PLAN: Mon focus, Tue review.")])
+        return invoke
+
+    ev = im.build_branch_evaluator([b], invoker_factory, judge=judge)
+    metrics = ev(ComponentVersion.of(
+        "support/master_organizer", "agent",
+        _delivery_agent("support/master_organizer").model_dump()))
+    assert metrics["score_floor"] == 0.9
+    assert any("PLAN: Mon focus, Tue review." in s for s in judge.seen)
+
+
+def test_teacher_rewriter_preserves_delivery_contract():
+    """The teacher's system prompt carries the HARD preservation rule."""
+    import app.agents.improve_live as il
+
+    rule = il.DELIVERY_CONTRACT_RULE
+    low = rule.lower()
+    assert "emit_guidance" in low
+    assert "invisible" in low
+    assert "never remove" in low or "preserve" in low
+    # and it's embedded in the rewriter's system prompt
+    captured = {}
+
+    def fake_zai_chat(model, messages, **kw):
+        captured["system"] = next(m["content"] for m in messages if m["role"] == "system")
+        return "REWRITTEN PROMPT"
+
+    import pytest
+    monkey = pytest.MonkeyPatch()
+    monkey.setattr(il, "_zai_chat", fake_zai_chat)
+    try:
+        out = il.ZaiPromptRewriter(model="glm-5.1").rewrite(
+            "old prompt", "fix it", context={"failures": []})
+    finally:
+        monkey.undo()
+    assert out == "REWRITTEN PROMPT"
+    assert "emit_guidance" in captured["system"]
+    assert "INVISIBLE" in captured["system"]
+
+
+def test_compile_postamble_carries_contract_for_delivery_agent(monkeypatch, tmp_path):
+    """The candidate compile appends the delivery-contract instruction for a
+    delivery agent (so the model knows the rule), and NOT for a non-delivery one."""
+    import app.agents.improve_live as il
+
+    captured = {}
+
+    class _FakeCompileScript:
+        def __init__(self, **kw):
+            pass
+
+        def run(self):
+            return None
+
+    # capture the postamble the candidate is compiled with
+    real_validate = il.AgentDefinition.model_validate
+
+    monkeypatch.setattr(il, "CompileScript", _FakeCompileScript)
+
+    # spy on model_copy postamble by wrapping AgentDefinition after validate
+    orig_model_copy = il.AgentDefinition.model_copy
+
+    def spy_copy(self, *a, **k):
+        upd = k.get("update") or (a[0] if a else {})
+        if isinstance(upd, dict) and "postamble" in upd:
+            captured["postamble"] = upd["postamble"]
+        return orig_model_copy(self, *a, **k)
+
+    monkeypatch.setattr(il.AgentDefinition, "model_copy", spy_copy)
+
+    delivery = _delivery_agent().model_dump()
+    il._compile_one(delivery, tmp_path)
+    assert "emit_guidance" in captured["postamble"]
+    assert "INVISIBLE" in captured["postamble"]
+
+    captured.clear()
+    non_delivery = _agent("support/event_extractor").model_dump()
+    il._compile_one(non_delivery, tmp_path)
+    # tool-discipline guard present, but NOT the delivery contract
+    assert "TOOL DISCIPLINE" in captured["postamble"]
+    assert "DELIVERY CONTRACT" not in captured["postamble"]
