@@ -53,17 +53,38 @@ def test_split_variant_compiles_with_postfix(tmp_path):
 # --- deterministic runners for the improvement pipeline --------------------
 
 def _agent_runner_factory(_definition):
+    from app.agents.improve import is_delivery_agent
+
     def runner(_defn, test):
         # echo an output that satisfies the persona orchestrator's substring
-        # evaluator ("context"), with no tool calls
-        return ("I will analyse the context first, then plan.", [])
+        # evaluator ("context"). A DELIVERY agent (emit_guidance.py in its
+        # allow-list) must DELIVER via emit_guidance or it scores 0 (its assistant
+        # text is invisible in production) — so emit the payload through the tool.
+        text = "I will analyse the context first, then plan."
+        if is_delivery_agent(_defn):
+            return (text, [ToolCallRecord(
+                name="bash",
+                args={"command": "python scripts/emit_guidance.py --data "
+                      '\'{"intent":"reply","key_points":["%s"]}\'' % text},
+            )])
+        return (text, [])
     return runner
 
 
 def _branch_invoker_factory_for(_entry_agent):
+    from app.agents.improve import is_delivery_agent
+
     def factory(_defn):
         def invoke(test):
             calls = [ToolCallRecord(name=s) for s in test.path]
+            # A delivery orchestrator must deliver via emit_guidance or it scores 0.
+            if is_delivery_agent(_defn):
+                calls.append(ToolCallRecord(
+                    name="bash",
+                    args={"command": "python scripts/emit_guidance.py --data "
+                          '\'{"key_points":["Here is a plan for your week, with '
+                          'context."]}\''},
+                ))
             return BranchTrajectory(
                 output="Here is a plan for your week, with context.",
                 tool_calls=calls,
