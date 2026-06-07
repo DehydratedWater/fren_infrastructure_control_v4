@@ -18,6 +18,7 @@ criteria, into `.oac/promoted/`, where the registry picks it up next compile.
 from __future__ import annotations
 
 import json
+import re
 import statistics
 import threading
 from pathlib import Path
@@ -62,6 +63,109 @@ PASS = OptimisationCriterion(
     name="pass-tests",
     criteria=(Criterion(kind="pass_rate", target=1.0, hard=True),),
 )
+
+# --- production DELIVERY CONTRACT -------------------------------------------
+# In production an agent's plain assistant text is INVISIBLE to the user. The
+# ONLY way a message reaches the user is the agent calling
+# `python scripts/emit_guidance.py` (agent → emit_guidance → ledger →
+# persona_prose → Telegram). An agent whose allow-list permits emit_guidance is a
+# "delivery agent": for it, a candidate that returns text WITHOUT calling
+# emit_guidance would deliver NOTHING in production, so it must score 0.0 and the
+# evaluator must grade the EMITTED PAYLOAD (the message handed to emit_guidance),
+# not the assistant text.
+EMIT_GUIDANCE_SCRIPT = "scripts/emit_guidance.py"
+_NO_DELIVERY_REASON = (
+    "did not call emit_guidance.py — output would be invisible to the user in"
+    " production (assistant text is never delivered; only emit_guidance reaches"
+    " the user)"
+)
+
+
+def _allowed_commands(definition: dict[str, Any] | Any) -> list[str]:
+    """Every bash allowed-command pattern reachable from an agent definition.
+
+    Walks `extra_tools[].bash_tool.permission_bash.allowed_commands` on the
+    (possibly model_dump'd) agent definition. Tolerant of both dict dumps and
+    pydantic objects so it works on a candidate `version.definition` (a dict) and
+    on an `AgentDefinition`.
+    """
+    if hasattr(definition, "model_dump"):
+        definition = definition.model_dump()
+    cmds: list[str] = []
+    if not isinstance(definition, dict):
+        return cmds
+    for tool in definition.get("extra_tools") or []:
+        bash = (tool or {}).get("bash_tool") if isinstance(tool, dict) else None
+        perm = (bash or {}).get("permission_bash") if isinstance(bash, dict) else None
+        for c in ((perm or {}).get("allowed_commands") or []) if isinstance(perm, dict) else []:
+            if isinstance(c, str):
+                cmds.append(c)
+    return cmds
+
+
+def is_delivery_agent(definition: dict[str, Any] | Any) -> bool:
+    """True if the agent's compiled tool allow-list permits emit_guidance.py.
+
+    These agents MUST deliver via emit_guidance in production; non-delivery agents
+    (e.g. event_extractor — no emit_guidance in its allow-list) keep current
+    text-only grading.
+    """
+    return any(EMIT_GUIDANCE_SCRIPT in c for c in _allowed_commands(definition))
+
+
+def find_emit_guidance_call(calls: list[ToolCallRecord]) -> ToolCallRecord | None:
+    """The first tool call whose bash command invoked emit_guidance.py, if any.
+
+    The runner captures a bash call's command into `args` (from the opencode
+    event's `state.input.command`). A delivery happened iff such a call exists.
+    """
+    for c in calls or []:
+        cmd = str(c.args.get("command") or "") if isinstance(c.args, dict) else ""
+        if EMIT_GUIDANCE_SCRIPT in cmd:
+            return c
+    return None
+
+
+def extract_emit_payload(call: ToolCallRecord | None) -> str:
+    """The message payload the agent handed to emit_guidance.py.
+
+    emit_guidance is invoked as `python scripts/emit_guidance.py --data '<json>'`
+    (the persona/* convention) or with `--message`/a positional arg. Pull the
+    human-meaningful deliverable out of the captured command so the JUDGE grades
+    what the user would actually receive — not the invisible assistant text. Falls
+    back to the whole command tail if no recognised flag is present.
+    """
+    if call is None or not isinstance(call.args, dict):
+        return ""
+    cmd = str(call.args.get("command") or "")
+    if not cmd:
+        return ""
+    # `--data '<json>'` (emit_guidance's PersonaGuidance schema) — surface the
+    # user-facing fields (key_points / intent / must_mention) the judge cares about.
+    m = re.search(r"--data\s+('([^']*)'|\"([^\"]*)\"|(\S+))", cmd)
+    if m:
+        raw = m.group(2) or m.group(3) or m.group(4) or ""
+        try:
+            obj = json.loads(raw)
+            parts: list[str] = []
+            for key in ("intent", "key_points", "must_mention", "actions_taken"):
+                v = obj.get(key)
+                if isinstance(v, list):
+                    parts.extend(str(x) for x in v if x)
+                elif v:
+                    parts.append(str(v))
+            if parts:
+                return "\n".join(parts)
+        except Exception:  # noqa: BLE001
+            return raw
+        return raw
+    # `--message '<text>'`
+    m = re.search(r"--message\s+('([^']*)'|\"([^\"]*)\"|(\S.*))", cmd)
+    if m:
+        return (m.group(2) or m.group(3) or m.group(4) or "").strip()
+    # fall back to everything after the script path (a positional payload)
+    idx = cmd.find(EMIT_GUIDANCE_SCRIPT)
+    return cmd[idx + len(EMIT_GUIDANCE_SCRIPT):].strip()
 
 # Graded criterion for judge-scored tests: reward higher score_floor (continuous
 # 0..1) rather than all-or-nothing. The best-scoring candidate wins; a candidate
@@ -279,6 +383,10 @@ def build_agent_evaluator(
     to fix). The list is cleared each evaluation so it reflects the latest run.
     """
 
+    # A delivery agent (emit_guidance.py in its allow-list) MUST deliver via
+    # emit_guidance; the contract is enforced per-candidate below.
+    delivery = is_delivery_agent(agent.model_dump())
+
     def evaluator(version: ComponentVersion) -> dict[str, float]:
         tests = agent.agent_tests
         if failures_sink is not None:
@@ -299,6 +407,34 @@ def build_agent_evaluator(
                 signal = {}
             blocked = list(signal.get("blocked") or [])
             run_error = signal.get("error")
+
+            # DELIVERY CONTRACT: a delivery agent that did NOT call emit_guidance.py
+            # delivered NOTHING in production (its assistant text is invisible to the
+            # user). Score it a hard 0 and record the failure so the teacher learns
+            # to restore the contract. If it DID call emit_guidance, grade the
+            # EMITTED PAYLOAD (what the user receives), not the assistant text.
+            if delivery:
+                emit_call = find_emit_guidance_call(calls)
+                if emit_call is None:
+                    passes += 0
+                    scores.append(0.0)
+                    if failures_sink is not None:
+                        failures_sink.append({
+                            "test": t.name,
+                            "prompt": (t.prompt or "")[:200],
+                            "evaluator": "delivery-contract",
+                            "criterion": "must call python scripts/emit_guidance.py",
+                            "score": 0.0,
+                            "got_output": str(output)[:400],
+                            "judge_reasoning": _NO_DELIVERY_REASON,
+                            "blocked_tools": [n for n, _ in blocked],
+                            "blocked_attempts": len(blocked),
+                            "error": str(run_error)[:300] if run_error else None,
+                        })
+                    continue
+                payload = extract_emit_payload(emit_call)
+                if payload.strip():
+                    output = payload
             # Trajectory-aware: a handoff/tool agent's real output is its tool
             # calls, not assistant text. Without this, every such agent scores a
             # hard 0 (empty text) even when it delegates correctly. Show the judge
@@ -464,6 +600,9 @@ def build_branch_evaluator(
         if not branch_tests:
             return {"pass_rate": 1.0, "score_floor": 1.0}
         invoke = invoker_factory(version.definition)
+        # An orchestrator whose own allow-list permits emit_guidance MUST deliver
+        # via it — the same production contract as a per-agent delivery agent.
+        delivery = is_delivery_agent(version.definition)
         passes = 0
         scores: list[float] = []
         for bt in branch_tests:
@@ -471,6 +610,31 @@ def build_branch_evaluator(
             traj = invoke(bt)
             output = traj.output
             chain = [c.name for c in (traj.tool_calls or [])]
+
+            # DELIVERY CONTRACT: a delivery orchestrator that never called
+            # emit_guidance.py delivered nothing in production → hard 0.
+            if delivery:
+                emit_call = find_emit_guidance_call(list(traj.tool_calls or []))
+                if emit_call is None:
+                    scores.append(0.0)
+                    if failures_sink is not None:
+                        failures_sink.append({
+                            "test": jt.name,
+                            "criterion": "must call python scripts/emit_guidance.py",
+                            "score": 0.0,
+                            "dispatch_chain": chain[:8],
+                            "got_output": str(output)[:400],
+                            "judge_reasoning": _NO_DELIVERY_REASON,
+                            "blocked_tools": [n for n, _ in
+                                              (getattr(traj, "blocked_tools", None) or [])],
+                            "blocked_attempts": len(getattr(traj, "blocked_tools", None) or []),
+                            "error": (str(getattr(traj, "error", None))[:300]
+                                      if getattr(traj, "error", None) else None),
+                        })
+                    continue
+                payload = extract_emit_payload(emit_call)
+                if payload.strip():
+                    output = payload
             # if the orchestrator acted only via dispatch/tools (no prose), show
             # the judge what it DID so it can grade the actions, not an empty turn.
             if not str(output).strip() and chain:
