@@ -793,3 +793,111 @@ def test_compile_postamble_carries_contract_for_delivery_agent(monkeypatch, tmp_
     # tool-discipline guard present, but NOT the delivery contract
     assert "TOOL DISCIPLINE" in captured["postamble"]
     assert "DELIVERY CONTRACT" not in captured["postamble"]
+
+
+# --- 9. STRONG delivery postamble injection (production + autoloop) ----------
+# The ~38 delivery agents that don't instruct emit_guidance in their baseline must
+# get the strong DELIVERY_POSTAMBLE injected at compile time (so the model reliably
+# ends its run by calling emit_guidance.py). The ~36 that already instruct it must
+# NOT be double-injected, and non-delivery agents must be untouched. All mocked.
+
+def _agent_with_prompt(aid, prompt):
+    return _agent(aid).model_copy(update={"system_prompt": prompt})
+
+
+def test_delivery_postamble_is_strong_and_concrete():
+    """The postamble carries the exact emit_guidance CLI + the working markers a
+    small model needs (modelled on goals/evening_focus's Message Discipline)."""
+    import app.agents.improve as im
+
+    p = im.DELIVERY_POSTAMBLE
+    low = p.lower()
+    assert "invisible" in low
+    assert "message discipline" in low
+    # the EXACT invocation form, with --data and the real PersonaGuidance fields
+    assert "python scripts/emit_guidance.py --data" in p
+    assert "intent" in p and "key_points" in p and "message_kind" in p
+    # imperative: the FINAL action must be the emit call
+    assert "final action" in low
+
+
+def test_prompt_instructs_emit_detection():
+    import app.agents.improve as im
+
+    # a prompt that references emit_guidance / PersonaGuidance is "already instructing"
+    assert im.prompt_instructs_emit(
+        _agent_with_prompt("x", "Deliver via emit_guidance.").model_dump()) is True
+    assert im.prompt_instructs_emit(
+        _agent_with_prompt("x", "Emit a PersonaGuidance per run.").model_dump()) is True
+    assert im.prompt_instructs_emit(
+        _agent_with_prompt("x", "Call the emit-guidance tool.").model_dump()) is True
+    # a prompt that says nothing about it is NOT
+    assert im.prompt_instructs_emit(
+        _agent_with_prompt("x", "Summarise the user's day.").model_dump()) is False
+
+
+def test_with_delivery_postamble_injects_for_broken_delivery_agent():
+    """A delivery agent (emit_guidance in allow-list) whose prompt does NOT instruct
+    emit gets the strong postamble appended exactly once (idempotent)."""
+    import app.agents.improve as im
+
+    agent = _delivery_agent("support/daily_briefer").model_copy(
+        update={"system_prompt": "Summarise the user's day.", "postamble": "base."})
+    assert im.needs_delivery_postamble(agent) is True
+
+    out = im.with_delivery_postamble(agent)
+    assert im.DELIVERY_POSTAMBLE.strip() in (out.postamble or "")
+    assert (out.postamble or "").startswith("base.")
+    # idempotent: a second pass does not double-add
+    again = im.with_delivery_postamble(out)
+    assert (again.postamble or "").count("python scripts/emit_guidance.py --data") == 1
+
+
+def test_with_delivery_postamble_skips_agent_that_already_instructs():
+    """A delivery agent whose prompt ALREADY instructs emit (the ~36 working ones,
+    e.g. goals/evening_focus) is NOT double-given the postamble."""
+    import app.agents.improve as im
+
+    agent = _delivery_agent("goals/evening_focus").model_copy(update={
+        "system_prompt": "Emit exactly ONE PersonaGuidance per run via emit_guidance.",
+        "postamble": "",
+    })
+    assert im.needs_delivery_postamble(agent) is False
+    out = im.with_delivery_postamble(agent)
+    assert im.DELIVERY_POSTAMBLE.strip() not in (out.postamble or "")
+    assert out is agent  # unchanged passthrough
+
+
+def test_with_delivery_postamble_leaves_non_delivery_agent_unchanged():
+    """A non-delivery agent (no emit_guidance in its allow-list) is never touched."""
+    import app.agents.improve as im
+
+    agent = _agent_with_prompt("support/event_extractor", "Extract events.")
+    assert im.is_delivery_agent(agent.model_dump()) is False
+    out = im.with_delivery_postamble(agent)
+    assert out is agent
+    assert im.DELIVERY_POSTAMBLE.strip() not in (out.postamble or "")
+
+
+def test_build_registry_injects_postamble_for_real_broken_delivery_agents():
+    """End-to-end on the REAL fleet: production build_registry injects the strong
+    postamble for known-broken delivery agents (daily_briefer, nudge_strategist)
+    and NOT for an already-instructing one (evening_focus) nor a non-delivery one."""
+    import app.agents.improve as im
+    from app.agents.registry import build_registry
+
+    reg = build_registry()
+    marker = "python scripts/emit_guidance.py --data"
+    post_by_id = {}
+    for variant in reg._agents.values():
+        d = variant.agent_definition
+        post_by_id[d.header.agent_id] = d.postamble or ""
+
+    # known-broken delivery agents now carry the strong postamble
+    assert marker in post_by_id["support/daily_briefer"]
+    assert marker in post_by_id["goals/nudge_strategist"]
+    assert "INVISIBLE" in post_by_id["support/daily_briefer"]
+    # an already-instructing delivery agent is NOT double-given the postamble
+    assert post_by_id["goals/evening_focus"].count(marker) == 0
+    # a non-delivery agent is untouched
+    assert marker not in post_by_id.get("support/event_extractor", "")

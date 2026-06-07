@@ -38,12 +38,27 @@ def build_registry(*, project_root: Path | None = None) -> AgentRegistry:
     root = project_root or PROJECT_ROOT
     slots: list[TemplateSlot] = []
     for agent in all_agents():
-        agent_id = reg.register_with_improvements(
-            agent.header.agent_id,
+        # PRODUCTION DELIVERY CONTRACT: a delivery agent (emit_guidance.py in its
+        # allow-list) whose prompt does NOT already instruct emit_guidance would
+        # produce ONLY invisible assistant text — delivering nothing. Inject the
+        # strong DELIVERY_POSTAMBLE (modelled on goals/evening_focus) so the model
+        # reliably ends its run by calling emit_guidance.py. We merge any promoted
+        # improvements FIRST, then decide injection on the FINAL shipping prompt so
+        # we never double-add for the ~36 agents that already instruct it (or a
+        # promoted prompt that learned it). See app/agents/improve.py.
+        from app.agents.improve import with_delivery_postamble
+        from src.improvement.snapshot import apply_promoted_to_tree
+
+        improved = apply_promoted_to_tree(
             agent,
-            base_params,
             project_root=root,
             model_class=agent.model_class,
+        )
+        improved = with_delivery_postamble(improved)
+        agent_id = reg.register_agent(
+            agent.header.agent_id,
+            improved,
+            base_params,
         )
         # also_compile_as_primary → the compiler emits BOTH
         # `<name>.md` (mode: subagent, for Task dispatch from an orchestrator)

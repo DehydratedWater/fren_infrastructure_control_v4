@@ -210,14 +210,17 @@ def _compile_one(definition: dict[str, Any], target: Path) -> str:
         " the turn."
     )
     # DELIVERY CONTRACT postamble: for an agent whose allow-list permits
-    # emit_guidance.py, ALWAYS append the explicit delivery instruction so the
-    # model knows its assistant text is invisible and it must call emit_guidance
-    # (the evaluator then enforces the call actually happens). This survives even
-    # if a teacher rewrite somehow weakened the body.
-    from app.agents.improve import is_delivery_agent
-    if is_delivery_agent(agent):
-        _guard = _guard + "\n\n" + DELIVERY_CONTRACT_RULE
+    # emit_guidance.py but whose prompt does NOT already instruct emit_guidance,
+    # append the STRONG DELIVERY_POSTAMBLE (the exact `python scripts/emit_guidance.py
+    # --data '{...}'` invocation, modelled on goals/evening_focus) so optimisation
+    # tunes WITH the working delivery contract — the SAME postamble production ships.
+    # A weak generic rule did NOT get qwen to comply; this concrete one does. The
+    # evaluator then enforces the call actually happens. with_delivery_postamble is
+    # idempotent + a no-op for agents that already instruct emit, so it never
+    # double-adds.
+    from app.agents.improve import with_delivery_postamble
     agent = agent.model_copy(update={"postamble": (agent.postamble or "") + _guard})
+    agent = with_delivery_postamble(agent)
     agent_id = agent.header.agent_id
     reg = AgentRegistry()
     rid = reg.register_agent(agent_id, agent, DEFAULT_WORKER.preset.to_model_parameters())

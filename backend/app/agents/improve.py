@@ -113,6 +113,97 @@ def is_delivery_agent(definition: dict[str, Any] | Any) -> bool:
     return any(EMIT_GUIDANCE_SCRIPT in c for c in _allowed_commands(definition))
 
 
+# --- the STRONG delivery postamble ------------------------------------------
+# A delivery agent's plain assistant text is INVISIBLE in production — the only
+# thing that reaches the user is a `python scripts/emit_guidance.py --data '...'`
+# call. The ~36 delivery agents that already DELIVER all carry a "Message
+# Discipline (CRITICAL)" block (modelled by goals/evening_focus). The ~38 that do
+# NOT instruct emit_guidance in their baseline produce invisible text and score 0.
+#
+# This postamble is that working block, made MAXIMALLY imperative for a mid-size
+# local model (Qwen-27B): it states the invisibility, gives the EXACT CLI with a
+# concrete --data example using the real PersonaGuidance fields, and demands the
+# emit call be the agent's FINAL action. A prior WEAK generic rule ("it must call
+# emit_guidance") did NOT get qwen to comply — this version is concrete + bossy on
+# purpose. Keep it in sync with goals/evening_focus's Message Discipline block.
+DELIVERY_POSTAMBLE = (
+    "\n\n## Message Discipline (CRITICAL — your reply is INVISIBLE unless you emit it)\n"
+    "Your plain assistant text is NEVER shown to the user. The ONLY way anything"
+    " reaches the user is by running the emit_guidance tool. A turn that ends"
+    " without an emit_guidance call delivers NOTHING — it is a hard failure.\n"
+    "\n"
+    "RULES (follow exactly):\n"
+    "1. Do your work, then CONSOLIDATE everything into exactly ONE PersonaGuidance"
+    " and deliver it by calling emit_guidance. Do NOT call send_message. Do NOT"
+    " emit more than once.\n"
+    "2. `key_points` are PLAIN FACTS — the real, complete content for the user"
+    " (what you found / did / want them to do), NOT a summary of what you 'will'"
+    " do. persona_prose composes the final wording in Twily's voice, so do not"
+    " pre-write prose.\n"
+    "3. Pick the right `message_kind`: reply | nudge | briefing | workflow_result"
+    " | ack (use ack ONLY for a trivial 'ok/on it' one-liner). `tone` is optional.\n"
+    "4. Your FINAL action MUST be the emit_guidance call below. Never expose tool"
+    " mechanics, run ids, or JSON to the user.\n"
+    "\n"
+    "Deliver with EXACTLY this command (relative path, interpreter `python`):\n"
+    "  python scripts/emit_guidance.py --data '{\"intent\":\"<one line: what you"
+    " are doing>\",\"key_points\":[\"<the actual content for the user, in full>\"],"
+    "\"message_kind\":\"reply\"}'\n"
+)
+
+
+def _prompt_text(definition: dict[str, Any] | Any) -> str:
+    """All authored prompt surfaces of an agent (system_prompt + pre/postamble).
+
+    Used to decide whether an agent ALREADY instructs emit_guidance in its own
+    prompt (the ~36 working delivery agents) so we don't double-inject the
+    postamble for them.
+    """
+    if hasattr(definition, "model_dump"):
+        definition = definition.model_dump()
+    if not isinstance(definition, dict):
+        return ""
+    return "\n".join(
+        str(definition.get(k) or "")
+        for k in ("system_prompt", "preamble", "postamble")
+    )
+
+
+def prompt_instructs_emit(definition: dict[str, Any] | Any) -> bool:
+    """True if the agent's own prompt already tells it to call emit_guidance.
+
+    The working delivery agents reference `emit_guidance` / `emit-guidance` /
+    `PersonaGuidance` in their prompt body; the broken ones do not. We only inject
+    the postamble for delivery agents whose prompt lacks any such instruction.
+    """
+    text = _prompt_text(definition).lower()
+    return (
+        "emit_guidance" in text
+        or "emit-guidance" in text
+        or "personaguidance" in text
+    )
+
+
+def needs_delivery_postamble(definition: dict[str, Any] | Any) -> bool:
+    """A delivery agent whose prompt does NOT already instruct emit_guidance."""
+    return is_delivery_agent(definition) and not prompt_instructs_emit(definition)
+
+
+def with_delivery_postamble(agent: "AgentDefinition") -> "AgentDefinition":
+    """Return `agent` with DELIVERY_POSTAMBLE appended to its postamble IFF it is a
+    delivery agent that doesn't already instruct emit_guidance; else unchanged.
+
+    Idempotent: if the postamble is already present it is not added again. Used by
+    BOTH the production compile (build_registry) and the autoloop candidate compile
+    so optimisation tunes WITH the working delivery contract."""
+    if not needs_delivery_postamble(agent):
+        return agent
+    existing = agent.postamble or ""
+    if DELIVERY_POSTAMBLE.strip() in existing:
+        return agent
+    return agent.model_copy(update={"postamble": existing + DELIVERY_POSTAMBLE})
+
+
 def find_emit_guidance_call(calls: list[ToolCallRecord]) -> ToolCallRecord | None:
     """The first tool call whose bash command invoked emit_guidance.py, if any.
 
