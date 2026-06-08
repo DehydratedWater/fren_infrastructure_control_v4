@@ -215,6 +215,26 @@ DELIVERY_PREAMBLE = (
 )
 
 
+# A COMPACT skip allowance for SELF-INSTRUCTING delivery agents — the ~36 agents
+# that already tell themselves to call emit_guidance in their own prompt (so they
+# don't get DELIVERY_PREAMBLE) but whose prompt says "emit exactly one guidance per
+# run", i.e. they have NO way to stay silent. Scheduled ones (winddown every 15min
+# 00-03, evening_focus, meal_planner) would otherwise message every tick. This adds
+# the skip path without re-stating the (already-present) emit instruction.
+SKIP_CLAUSE = (
+    "QUIET-TICK RULE — READ FIRST: You run on a schedule and MOST runs should send"
+    " NOTHING. If there is no real trigger, the user is busy, nothing is new since"
+    " your last message, or you would repeat or stale-deliver (e.g. an overnight"
+    " 'go to sleep' at midday), then SKIP — send nothing — by ending your turn with"
+    " exactly:\n"
+    "  python scripts/emit_guidance.py --data '{\"intent\":\"nothing to send\","
+    "\"key_points\":[],\"message_kind\":\"skip\"}'\n"
+    "A skip is a correct SUCCESS, not a failure. Do NOT invent a message to fill"
+    " silence; never resend or stale-deliver. Only deliver when there is something"
+    " genuinely NEW and timely. When in doubt, SKIP.\n\n"
+)
+
+
 def _prompt_text(definition: dict[str, Any] | Any) -> str:
     """All authored prompt surfaces of an agent (system_prompt + pre/postamble).
 
@@ -275,6 +295,23 @@ def with_delivery_postamble(agent: "AgentDefinition") -> "AgentDefinition":
         "system_prompt": new_base,
         "postamble": existing + DELIVERY_POSTAMBLE,
     })
+
+
+def with_skip_clause(agent: "AgentDefinition") -> "AgentDefinition":
+    """Prepend the QUIET-TICK skip allowance to a SELF-INSTRUCTING delivery agent.
+
+    Complements with_delivery_postamble: that one handles delivery agents whose
+    prompt LACKS an emit instruction (it injects the full preamble, which already
+    contains skip). This one handles delivery agents whose prompt ALREADY instructs
+    emit but has no skip path (winddown, evening_focus, meal_planner, ...) so they
+    can validly stay silent instead of emitting every scheduled tick. No-op for
+    non-delivery agents, for agents that get the full preamble, and idempotent."""
+    if not is_delivery_agent(agent) or not prompt_instructs_emit(agent):
+        return agent
+    base = agent.system_prompt or ""
+    if "QUIET-TICK RULE" in base or DELIVERY_PREAMBLE in base or '"message_kind":"skip"' in base:
+        return agent  # already has a skip path (idempotent)
+    return agent.model_copy(update={"system_prompt": SKIP_CLAUSE + base})
 
 
 def find_emit_guidance_call(calls: list[ToolCallRecord]) -> ToolCallRecord | None:

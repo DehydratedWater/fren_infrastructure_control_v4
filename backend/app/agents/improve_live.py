@@ -218,9 +218,10 @@ def _compile_one(definition: dict[str, Any], target: Path) -> str:
     # evaluator then enforces the call actually happens. with_delivery_postamble is
     # idempotent + a no-op for agents that already instruct emit, so it never
     # double-adds.
-    from app.agents.improve import with_delivery_postamble
+    from app.agents.improve import with_delivery_postamble, with_skip_clause
     agent = agent.model_copy(update={"postamble": (agent.postamble or "") + _guard})
     agent = with_delivery_postamble(agent)
+    agent = with_skip_clause(agent)
     agent_id = agent.header.agent_id
     reg = AgentRegistry()
     rid = reg.register_agent(agent_id, agent, DEFAULT_WORKER.preset.to_model_parameters())

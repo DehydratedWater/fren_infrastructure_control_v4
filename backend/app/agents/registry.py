@@ -54,7 +54,7 @@ def build_registry(*, project_root: Path | None = None) -> AgentRegistry:
         # improvements FIRST, then decide injection on the FINAL shipping prompt so
         # we never double-add for the ~36 agents that already instruct it (or a
         # promoted prompt that learned it). See app/agents/improve.py.
-        from app.agents.improve import with_delivery_postamble
+        from app.agents.improve import with_delivery_postamble, with_skip_clause
         from src.improvement.snapshot import apply_promoted_to_tree
 
         improved = apply_promoted_to_tree(
@@ -62,7 +62,11 @@ def build_registry(*, project_root: Path | None = None) -> AgentRegistry:
             project_root=root,
             model_class=agent.model_class,
         )
+        # Inject the delivery contract for emit-less delivery agents, AND the skip
+        # allowance for self-instructing delivery agents (winddown/evening_focus/…)
+        # so scheduled agents can stay silent instead of spamming every tick.
         improved = with_delivery_postamble(improved)
+        improved = with_skip_clause(improved)
         agent_params = vision_params if agent.model_class == "vision" else base_params
         agent_id = reg.register_agent(
             agent.header.agent_id,
