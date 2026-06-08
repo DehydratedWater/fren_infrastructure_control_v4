@@ -632,26 +632,39 @@ def _format_volatile_context_block(ctx: ChatContext) -> str:
     if ctx.conversation_digest:
         parts.append("## Conversation digest (rolling situational summary)\n" + ctx.conversation_digest)
 
-    if ctx.inner_thoughts:
-        thought_lines = ["## Recent inner thoughts (private — do NOT quote directly, use for tone continuity)"]
-        for t in ctx.inner_thoughts:
-            ts = (t.get("created_at") or "")[:16]
-            title = (t.get("title") or "").strip()
-            content = (t.get("content") or "").strip()
-            if not content:
-                continue
-            if len(content) > 400:
-                content = content[:400] + "..."
-            emotion = title.split(" — ")[0] if " — " in title else title
-            thought_lines.append(f"- [{ts}] ({emotion}) {content}")
-        if len(thought_lines) > 1:
-            parts.append("\n".join(thought_lines))
+    inner = _format_inner_thoughts(ctx.inner_thoughts)
+    if inner:
+        parts.append(inner)
 
     ralf_block = _format_active_ralfs(ctx.active_ralfs)
     if ralf_block:
         parts.append(ralf_block)
 
     return "\n\n".join(parts)
+
+
+def _format_inner_thoughts(inner_thoughts: list[dict[str, Any]]) -> str:
+    """Render the recent inner-thoughts / inner-monologue block.
+
+    Shared by the persona_prose render path and the proactive-agent context
+    loader so both surfaces present the same shape.
+    """
+    if not inner_thoughts:
+        return ""
+    thought_lines = ["## Recent inner thoughts (private — do NOT quote directly, use for tone continuity)"]
+    for t in inner_thoughts:
+        ts = (t.get("created_at") or "")[:16]
+        title = (t.get("title") or "").strip()
+        content = (t.get("content") or "").strip()
+        if not content:
+            continue
+        if len(content) > 400:
+            content = content[:400] + "..."
+        emotion = title.split(" — ")[0] if " — " in title else title
+        thought_lines.append(f"- [{ts}] ({emotion}) {content}")
+    if len(thought_lines) == 1:
+        return ""
+    return "\n".join(thought_lines)
 
 
 def _format_active_ralfs(active: list[dict[str, Any]]) -> str:
@@ -997,6 +1010,126 @@ async def fetch_chat_context(chat_id: int, *, history_limit: int = 30) -> ChatCo
         conversation_digest=conversation_digest,
         active_ralfs=active_ralfs,
     )
+
+
+# ── Proactive-agent context loader ─────────────────────────────────────────
+
+
+async def build_proactive_context_block() -> str:
+    """Assemble the volatile-state context block for PROACTIVE (scheduled) agents.
+
+    v3's proactive agents (periodic_checker, nudge_strategist, winddown, …)
+    received the conversation digest + 24h chat history via the scheduler's
+    ``_enrich_prompt``, but emotional_state / vibe / inner_thoughts only ever
+    reached them if the small fleet model chose to call the personality_core /
+    chat_history tools — which it frequently did NOT, leaving the proactive
+    voice context-starved and repetitive. This loader pulls the SAME volatile
+    sources persona_prose's render path uses (``_format_volatile_context_block``)
+    so the proactive agent sees them inline, no tool-call required.
+
+    Every source is best-effort: a failed or empty fetch contributes nothing and
+    the block degrades cleanly (returns "" when nothing is available). Sources
+    that need ingestion before they populate (Garmin health, camera room-state)
+    are included WHEN a row is present and silently skipped when absent — this
+    loader never fabricates data.
+
+    Returns a markdown block (no trailing separator) or "" when empty.
+    """
+    parts: list[str] = []
+
+    # Emotional state — current snapshot from the personality core.
+    try:
+        from app.db.repos.emotional_state import EmotionalStateRepo
+
+        current = await EmotionalStateRepo().get_current()
+        emotional = _format_emotional_snapshot(dict(current) if current else {})
+        if emotional:
+            parts.append(emotional)
+    except Exception as e:
+        logger.warning("build_proactive_context_block: emotional_state fetch failed: %s", e)
+
+    # Vibe blend.
+    try:
+        from app.db.repos.persona_vibe import VibeStateRepo
+
+        vibe = dict(await VibeStateRepo().get(chat_id=0))
+        vibe_block = _format_vibe(vibe)
+        if vibe_block:
+            parts.append(vibe_block)
+    except Exception as e:
+        logger.warning("build_proactive_context_block: vibe fetch failed: %s", e)
+
+    # Recent inner thoughts / inner-monologue (last 3) — voice continuity cue.
+    try:
+        from app.db.repos.memories import MemoriesRepo
+
+        thoughts = await MemoriesRepo().search_by_tags(["inner_monologue"], limit=3)
+        inner = _format_inner_thoughts(
+            [
+                {
+                    "created_at": str(t.get("created_at") or ""),
+                    "title": str(t.get("title") or ""),
+                    "content": str(t.get("content") or ""),
+                }
+                for t in thoughts
+            ]
+        )
+        if inner:
+            parts.append(inner)
+    except Exception as e:
+        logger.warning("build_proactive_context_block: inner_thoughts fetch failed: %s", e)
+
+    # Recent activity blocks (camera/room state, last 6h) — present only once an
+    # ingestion job populates the table; degrades to nothing when empty.
+    try:
+        activity = _format_activity_blocks(await _fetch_recent_activity_blocks())
+        if activity:
+            parts.append(activity)
+    except Exception as e:
+        logger.warning("build_proactive_context_block: activity_blocks fetch failed: %s", e)
+
+    return "\n\n".join(p for p in parts if p)
+
+
+async def _fetch_recent_activity_blocks(hours: int = 6) -> list[dict[str, Any]]:
+    """Best-effort recent activity_blocks fetch (room-state / presence signals)."""
+    from app.db.repos.activity_blocks import ActivityBlocksRepo
+
+    return await ActivityBlocksRepo().get_recent_blocks(hours=hours)
+
+
+def _format_activity_blocks(blocks: list[dict[str, Any]]) -> str:
+    """Render recent activity blocks (presence / room-state / health) for the proactive context.
+
+    Each block may carry a ``health_snapshot`` (Garmin body-battery / HR / stress
+    captured at block time) — surfaced inline when present so the proactive agent
+    sees the same kind of live-signal v3 lines referenced ("nine percent body
+    battery") without a separate Garmin tool call.
+    """
+    if not blocks:
+        return ""
+    lines = ["## Recent activity blocks (presence / room-state, last 6h)"]
+    for b in blocks[:8]:
+        start = str(b.get("started_at") or "")[:16]
+        end = str(b.get("ended_at") or "")[:16]
+        label = str(b.get("title") or b.get("activity_type") or b.get("description") or "").strip()
+        if not label:
+            continue
+        span = f"{start}–{end}" if end else start
+        health = b.get("health_snapshot")
+        health_str = ""
+        if isinstance(health, dict) and health:
+            bits = []
+            for k in ("body_battery", "stress", "heart_rate", "sleep_hours"):
+                v = health.get(k)
+                if v is not None:
+                    bits.append(f"{k}={v}")
+            if bits:
+                health_str = " · " + ", ".join(bits)
+        lines.append(f"- [{span}] {label}{health_str}")
+    if len(lines) == 1:
+        return ""
+    return "\n".join(lines)
 
 
 # ── Main entry point ──────────────────────────────────────────────────────

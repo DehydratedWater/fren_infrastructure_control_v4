@@ -604,7 +604,26 @@ class Scheduler:
         except Exception:
             logger.debug("Failed to fetch conversation digest", exc_info=True)
 
-        # Chat history — last 24h, capped at 40k chars (~10k tokens)
+        # Volatile persona state — emotional_state, vibe, inner_thoughts, and
+        # (when ingested) activity/room-state. v3's proactive agents only saw
+        # these if the fleet model chose to call the personality_core /
+        # chat_history tools, which it frequently skipped — starving the
+        # proactive voice. Loading them inline here (the same sources
+        # persona_prose's render path uses) gives the proactive agent the full
+        # v3 context set without depending on a tool call. Degrades cleanly:
+        # contributes nothing when every source is empty.
+        try:
+            from app.telegram.persona_prose import build_proactive_context_block
+
+            volatile = await build_proactive_context_block()
+            if volatile:
+                prefix_parts.append(volatile)
+        except Exception:
+            logger.debug("Failed to build proactive volatile context", exc_info=True)
+
+        # Chat history — last 24h, capped at 40k chars (~10k tokens). This block
+        # includes Twily's OWN recent sends so the proactive agent can see what
+        # it already said and avoid repeating itself (the primary anti-loop fix).
         try:
             from app.db.repos.chat import ChatMessagesRepo
 
@@ -613,7 +632,11 @@ class Scheduler:
             msgs = await repo.get_history(days=2, limit=300, clearance="full")
             msgs = [m for m in msgs if m.get("timestamp_unix", 0) > since_ts]
             if msgs:
-                lines = ["## Chat History (last 24h)"]
+                lines = [
+                    "## Chat History (last 24h)",
+                    "Includes Twily's own recent messages. Before sending, scan this so you "
+                    "do NOT repeat a reminder/topic already raised — surface something new.",
+                ]
                 total = 0
                 for m in msgs:
                     ts = str(m.get("timestamp", ""))[:16]
