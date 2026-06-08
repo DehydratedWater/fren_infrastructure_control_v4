@@ -240,7 +240,7 @@ class ExecutionLedgerRepo:
 
     async def list_artifacts(self, run_id: str) -> list[dict[str, Any]]:
         sql = """
-            SELECT artifact_id, artifact_type, version, producer, status, created_at
+            SELECT artifact_id, artifact_type, version, producer, status, created_at, payload
             FROM execution_artifacts
             WHERE run_id = :run_id
             ORDER BY created_at

@@ -102,6 +102,21 @@ class EmitGuidanceTool(ScriptTool[Input, Output]):
         if is_skip_guidance(guidance):
             return await self._emit_skip(guidance, run_id)
 
+        # ── One-delivery-per-run guard ──
+        # The model sometimes calls emit_guidance several times in a single run
+        # despite "exactly once" — each call would deliver another near-identical
+        # message (the nudge spam: 4 deliveries from 1 run). The tool calls are
+        # sequential within a run, so by the time a 2nd call lands, the 1st has
+        # already written its persona_response. If a real (non-skip) message was
+        # already delivered for this run_id, suppress this duplicate.
+        if await self._already_delivered(run_id):
+            print(
+                f"[emit_guidance] run {run_id} already delivered a message — "
+                "suppressing duplicate emit (one message per run)",
+                file=sys.stderr,
+            )
+            return Output(success=True, run_id=run_id, delivered_text="")
+
         # ── Ack fast-path: deliver verbatim, no LLM ──
         if guidance.message_kind == "ack":
             return await self._emit_ack(guidance, run_id)
@@ -110,6 +125,34 @@ class EmitGuidanceTool(ScriptTool[Input, Output]):
         return await self._emit_full(
             guidance, run_id, ExecutionLedgerRepo, fetch_chat_context, generate_persona_message
         )
+
+    async def _already_delivered(self, run_id: str) -> bool:
+        """True if a real (non-skip) persona_response was already delivered for run_id.
+
+        Guards against the model calling emit_guidance multiple times in one run.
+        Skip/empty responses (delivered=False, blank text) do NOT count — a run that
+        skipped then legitimately decided to deliver still delivers once.
+        """
+        import json as _json
+
+        from app.db.repos.execution_ledger import ExecutionLedgerRepo
+
+        try:
+            arts = await ExecutionLedgerRepo().list_artifacts(run_id)
+            for a in arts or []:
+                if not isinstance(a, dict) or a.get("artifact_type") != "persona_response":
+                    continue
+                p = a.get("payload") or {}
+                if isinstance(p, str):
+                    try:
+                        p = _json.loads(p)
+                    except Exception:
+                        p = {}
+                if p.get("delivered") is not False and str(p.get("delivered_text") or "").strip():
+                    return True
+        except Exception as e:
+            print(f"[emit_guidance] dedup check failed for {run_id}: {e}", file=sys.stderr)
+        return False
 
     async def _emit_skip(self, guidance, run_id: str) -> Output:
         """Record a contract-satisfying SKIP — deliver nothing to the user.
