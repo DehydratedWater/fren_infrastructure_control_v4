@@ -54,6 +54,7 @@ from app.agents._tools import (
     user_config_tool,
     visual_report_tool,
 )
+from app.agents.proactive_probes import proactive_probes
 from src import (
     AgentDefinition,
     AgentTest,
@@ -1046,6 +1047,9 @@ def agents() -> list[AgentDefinition]:
                         SubstringEvaluator(needle="user_busy", case_sensitive=False),
                     ),
                 ),
+                # Autoloop probes: variety / anti-repetition / grounded / skip,
+                # built from realistic assembled contexts across evolving ticks.
+                *proactive_probes(),
             ],
         ),
         define_agent(
@@ -1103,6 +1107,8 @@ def agents() -> list[AgentDefinition]:
                         SubstringEvaluator(needle="gentle_reminder", case_sensitive=False),
                     ),
                 ),
+                # Autoloop probes: variety / anti-repetition / grounded / skip.
+                *proactive_probes(),
             ],
         ),
         define_agent(
@@ -1201,6 +1207,11 @@ def agents() -> list[AgentDefinition]:
                         SubstringEvaluator(needle="sleep", case_sensitive=False),
                     ),
                 ),
+                # Autoloop probes: variety / anti-repetition / grounded / skip.
+                # Winddown is the agent that hallucinated "sleep debt critical";
+                # the grounded-no-health probe + deterministic gate target exactly
+                # that failure.
+                *proactive_probes(),
             ],
         ),
     ]

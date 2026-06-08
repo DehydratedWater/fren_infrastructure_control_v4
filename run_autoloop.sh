@@ -5,6 +5,9 @@
 #
 #   ./run_autoloop.sh --refresh --agent goals/nudge_strategist   # recopy prod data, then run
 #   ./run_autoloop.sh --agent support/daily_briefer              # reuse existing copy
+#   ./run_autoloop.sh --proactive-probes                         # tune the proactive
+#       agents against the context-signal probe suite (variety / anti-repetition /
+#       grounded / skip) in backend/app/agents/proactive_probes.py
 set -euo pipefail
 cd "$(dirname "$0")/backend"
 set -a; source ../.env 2>/dev/null || true; set +a

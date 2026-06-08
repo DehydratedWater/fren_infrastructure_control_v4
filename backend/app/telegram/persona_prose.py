@@ -1034,8 +1034,18 @@ async def build_proactive_context_block() -> str:
     loader never fabricates data.
 
     Returns a markdown block (no trailing separator) or "" when empty.
+
+    The block ALWAYS opens with an anti-fabrication guard (see
+    ``_anti_fabrication_guard``) listing which signal categories actually have
+    data this tick, so the agent cannot invent body-battery / sleep-debt / room
+    state that was never provided — even on a tick where every data source is
+    empty.
     """
     parts: list[str] = []
+    # Track which signal categories actually carried data this tick. The
+    # anti-fabrication guard is built from this set so the agent is told, in
+    # plain terms, exactly which signals it may reference and which are ABSENT.
+    present: set[str] = set()
 
     # Emotional state — current snapshot from the personality core.
     try:
@@ -1045,6 +1055,7 @@ async def build_proactive_context_block() -> str:
         emotional = _format_emotional_snapshot(dict(current) if current else {})
         if emotional:
             parts.append(emotional)
+            present.add("emotional_state")
     except Exception as e:
         logger.warning("build_proactive_context_block: emotional_state fetch failed: %s", e)
 
@@ -1056,6 +1067,7 @@ async def build_proactive_context_block() -> str:
         vibe_block = _format_vibe(vibe)
         if vibe_block:
             parts.append(vibe_block)
+            present.add("vibe")
     except Exception as e:
         logger.warning("build_proactive_context_block: vibe fetch failed: %s", e)
 
@@ -1076,19 +1088,80 @@ async def build_proactive_context_block() -> str:
         )
         if inner:
             parts.append(inner)
+            present.add("inner_thoughts")
     except Exception as e:
         logger.warning("build_proactive_context_block: inner_thoughts fetch failed: %s", e)
 
     # Recent activity blocks (camera/room state, last 6h) — present only once an
-    # ingestion job populates the table; degrades to nothing when empty.
+    # ingestion job populates the table; degrades to nothing when empty. A block
+    # may carry a health_snapshot (Garmin body-battery / stress / HR captured at
+    # block time) which we surface inline — this is the ONLY path health data
+    # reaches the proactive agent, so it can never be referenced when absent.
     try:
-        activity = _format_activity_blocks(await _fetch_recent_activity_blocks())
+        blocks = await _fetch_recent_activity_blocks()
+        activity = _format_activity_blocks(blocks)
         if activity:
             parts.append(activity)
+            present.add("activity_blocks")
+            if any(isinstance(b.get("health_snapshot"), dict) and b.get("health_snapshot") for b in blocks):
+                present.add("health")
     except Exception as e:
         logger.warning("build_proactive_context_block: activity_blocks fetch failed: %s", e)
 
-    return "\n\n".join(p for p in parts if p)
+    # The guard goes FIRST so it frames everything below it. It is emitted even
+    # when `parts` is empty — a context-starved tick is exactly when the agent is
+    # most tempted to hallucinate, so it must still be told to stay grounded.
+    guard = _anti_fabrication_guard(present)
+    body = "\n\n".join(p for p in parts if p)
+    if body:
+        return f"{guard}\n\n{body}"
+    return guard
+
+
+def _anti_fabrication_guard(present: set[str]) -> str:
+    """Build the anti-fabrication / grounding instruction for proactive agents.
+
+    Lists the signal categories that ACTUALLY have data this tick and the ones
+    that are ABSENT, then forbids inventing any absent sensor/health/room fact.
+    This is the fix for the "sixteen hours past bedtime, sleep debt critical"
+    hallucination: with no Garmin row present, ``health`` is in the absent list
+    and the agent is explicitly told it has NO sleep / body-battery / heart-rate
+    data and must not reference any.
+
+    Always returns a non-empty block — grounding matters most on empty ticks.
+    """
+    # Human-facing labels for each tracked signal category.
+    labels = {
+        "emotional_state": "Twily's current emotional state",
+        "vibe": "Twily's current vibe blend",
+        "inner_thoughts": "Twily's recent inner thoughts",
+        "activity_blocks": "recent activity / room-state observations",
+        "health": "Garmin health (body battery, stress, heart rate, sleep)",
+    }
+    have = [labels[k] for k in labels if k in present]
+    missing = [labels[k] for k in labels if k not in present]
+
+    lines = [
+        "## ⚠️ GROUNDING CONTRACT — read before composing",
+        "You may ONLY reference signals that are actually present in the context "
+        "below. Do NOT invent, estimate, or assume any sensor / health / room "
+        "fact. If a signal is not in the provided context, you have NO data on "
+        "it — say nothing about it.",
+        "Specifically: NEVER state a body-battery level, sleep duration, sleep "
+        "debt, bedtime, heart rate, stress level, or what the room/desk looks "
+        "like unless that exact figure or observation appears verbatim below. "
+        "Phrases like \"sleep debt critical\", \"hours past bedtime\", or "
+        "\"body battery is low\" are FABRICATION when no health data is present.",
+    ]
+    if have:
+        lines.append("Signals present THIS tick (you may use these): " + "; ".join(have) + ".")
+    else:
+        lines.append("Signals present THIS tick: NONE of the sensor/health/activity signals.")
+    if missing:
+        lines.append(
+            "Signals ABSENT THIS tick (you have NO data — do not reference): " + "; ".join(missing) + "."
+        )
+    return "\n".join(lines)
 
 
 async def _fetch_recent_activity_blocks(hours: int = 6) -> list[dict[str, Any]]:
