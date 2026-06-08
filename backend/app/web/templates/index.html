@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block body %}
+
+<div id="health" hx-get="/partials/health" hx-trigger="every 10s" hx-swap="innerHTML">
+  {% include "partials/health.html" %}
+</div>
+
+<main class="grid">
+
+  <section class="panel panel-wide">
+    <h2>Proactive messages <span class="muted">(persona_response)</span></h2>
+    <div id="proactive" hx-get="/partials/proactive" hx-trigger="every 10s" hx-swap="innerHTML">
+      {% include "partials/proactive.html" %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Agent runs <span class="muted">(execution_runs)</span></h2>
+    <div id="runs" hx-get="/partials/runs" hx-trigger="every 10s" hx-swap="innerHTML">
+      {% include "partials/runs.html" %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Chat <span class="muted">(chat_messages)</span></h2>
+    <div id="chat" hx-get="/partials/chat" hx-trigger="every 10s" hx-swap="innerHTML">
+      {% include "partials/chat.html" %}
+    </div>
+  </section>
+
+  <section class="panel panel-wide">
+    <h2>Context fed to agents</h2>
+    <div id="context" hx-get="/partials/context" hx-trigger="every 10s" hx-swap="innerHTML">
+      {% include "partials/context.html" %}
+    </div>
+  </section>
+
+</main>
+{% endblock %}

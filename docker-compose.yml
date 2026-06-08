@@ -76,6 +76,38 @@ services:
       bot:
         condition: service_started
 
+  # opencode session viewer — browse the agents' raw opencode sessions (v3-style,
+  # like docker-opencode-web). Reads the shared session store on fren_v4_data.
+  # Open http://<host>:4098
+  opencode-web:
+    <<: *backend
+    environment:
+      XDG_DATA_HOME: /data/agents/.opencode/data
+      SERVICE: opencode-web
+    entrypoint: ["opencode", "web", "--hostname", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "4098:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Read-only monitoring dashboard (FastAPI + Jinja2 + HTMX). Browse what the
+  # agents are doing: proactive persona_response messages, agent runs, the
+  # context they're fed (digest / inner_monologue / emotional_state / activity),
+  # the chat, and a health strip. Auto-refreshes every 10s. Never writes the DB.
+  # Open http://<host>:8090
+  web:
+    <<: *backend
+    environment:
+      PYTHONPATH: /srv/oac:/app:/app/backend
+      AGENTS_DIR: ${AGENTS_DIR:-/data/agents}
+      SERVICE: web
+    ports:
+      - "8090:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   fren_v4_db_data:
   fren_v4_data:

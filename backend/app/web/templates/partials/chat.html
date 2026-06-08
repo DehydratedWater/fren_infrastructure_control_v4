@@ -1,0 +1,13 @@
+{% if not chat %}
+  <p class="empty">No chat messages yet.</p>
+{% else %}
+<ul class="chatlist">
+  {% for c in chat %}
+  <li class="chatmsg {{ 'mine' if c.sender == 'twily' else 'theirs' }}">
+    <span class="chat-sender">{{ c.sender }}</span>
+    <span class="chat-when">{{ c.timestamp.strftime('%m-%d %H:%M') if c.timestamp else '' }}</span>
+    <div class="chat-body">{{ c.message }}</div>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}

@@ -1,0 +1,56 @@
+<div class="ctxgrid">
+
+  <div class="ctxbox">
+    <h3>conversation_digest</h3>
+    {% if digest %}
+      <pre class="digest">{{ digest }}</pre>
+    {% else %}
+      <p class="empty">No conversation_digest note.</p>
+    {% endif %}
+  </div>
+
+  <div class="ctxbox">
+    <h3>emotional_state</h3>
+    {% if emotional %}
+      <p class="emo-desc">{{ emotional.description }}</p>
+      {% if emotional.mood_shift %}<p class="muted">shift: {{ emotional.mood_shift }}</p>{% endif %}
+      <p class="muted">{{ emotional.created_at.strftime('%m-%d %H:%M') if emotional.created_at else '' }}</p>
+    {% else %}
+      <p class="empty">No emotional_state recorded.</p>
+    {% endif %}
+  </div>
+
+  <div class="ctxbox">
+    <h3>inner_monologue <span class="muted">(memories)</span></h3>
+    {% if monologue %}
+      <ul class="monolist">
+      {% for m in monologue %}
+        <li>
+          <span class="mono-title">{{ m.title }}</span>
+          <div class="mono-content">{{ m.content }}</div>
+        </li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">No inner_monologue memories.</p>
+    {% endif %}
+  </div>
+
+  <div class="ctxbox">
+    <h3>activity_blocks</h3>
+    {% if blocks %}
+      <ul class="blocklist">
+      {% for b in blocks %}
+        <li>
+          <span class="blk-when">{{ b.started_at.strftime('%H:%M') if b.started_at else '' }}</span>
+          <span class="blk-type">{{ b.activity_type }}</span>
+          <span class="blk-title">{{ b.title }}</span>
+        </li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">No recent activity blocks.</p>
+    {% endif %}
+  </div>
+
+</div>

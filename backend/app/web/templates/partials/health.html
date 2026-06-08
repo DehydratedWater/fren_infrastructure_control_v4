@@ -1,0 +1,17 @@
+<div class="healthstrip">
+  <span class="pill {{ 'ok' if health.db_ok else 'bad' }}">
+    db {{ 'reachable' if health.db_ok else 'DOWN' }}
+  </span>
+  <span class="pill {{ 'ok' if health.qwen_url else 'warn' }}">
+    qwen {{ health.qwen_url or 'unset' }}
+  </span>
+  <span class="pill">chat {{ health.chat_count }}</span>
+  <span class="pill">runs {{ health.run_count }}</span>
+  <span class="pill">persona_response {{ health.persona_count }}</span>
+  <span class="pill">last run
+    {{ health.last_run_at.strftime('%m-%d %H:%M') if health.last_run_at else '—' }}
+  </span>
+  <span class="pill">last chat
+    {{ health.last_chat_at.strftime('%m-%d %H:%M') if health.last_chat_at else '—' }}
+  </span>
+</div>

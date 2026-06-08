@@ -1,0 +1,94 @@
+:root {
+  --bg: #11131a; --panel: #1a1d27; --box: #212533; --line: #2c3142;
+  --fg: #e6e8ef; --muted: #8b91a3; --accent: #8a7cff;
+  --ok: #2faf6b; --bad: #d4504e; --warn: #c8922e; --skip: #6b7080;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 14px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+.muted { color: var(--muted); font-size: 12px; }
+.empty { color: var(--muted); font-style: italic; padding: 8px 0; }
+
+.topbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 18px; background: #0c0e14; border-bottom: 1px solid var(--line);
+}
+.brand { font-weight: 700; color: var(--accent); }
+
+.healthstrip {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 10px 18px; background: #0c0e14; border-bottom: 1px solid var(--line);
+}
+.pill {
+  padding: 3px 9px; border-radius: 12px; background: var(--box);
+  border: 1px solid var(--line); font-size: 12px;
+}
+.pill.ok { border-color: var(--ok); color: #76e0a8; }
+.pill.bad { border-color: var(--bad); color: #f3938f; }
+.pill.warn { border-color: var(--warn); color: #e6c074; }
+
+.grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 14px;
+}
+.panel {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 12px 14px; min-width: 0;
+}
+.panel-wide { grid-column: 1 / -1; }
+.panel h2 { margin: 0 0 10px; font-size: 15px; }
+
+.counts { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+.badge.delivered { background: rgba(47,175,107,.18); color: #76e0a8; }
+.badge.skipped { background: rgba(107,112,128,.25); color: #aab0c0; }
+.badge.repeat { background: rgba(212,80,78,.18); color: #f3938f; }
+
+.msglist, .chatlist, .monolist, .blocklist { list-style: none; margin: 0; padding: 0; }
+.msg {
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 8px 10px; margin-bottom: 8px; background: var(--box);
+}
+.msg.is-skip { opacity: .65; }
+.msg.is-repeat { border-color: var(--bad); }
+.msg-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+.tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; font-weight: 700; }
+.tag.deliver { background: var(--ok); color: #04210f; }
+.tag.skip { background: var(--skip); color: #11131a; }
+.tag.rep { background: var(--bad); color: #2a0c0c; }
+.tag.kind { background: var(--line); color: var(--muted); }
+.owner { color: var(--accent); font-size: 12px; }
+.when { color: var(--muted); font-size: 11px; margin-left: auto; }
+.msg-text { white-space: pre-wrap; word-break: break-word; }
+
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { text-align: left; color: var(--muted); border-bottom: 1px solid var(--line); padding: 4px 6px; }
+.tbl td { padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.tbl td.owner { color: var(--accent); }
+.tbl td.num { text-align: right; }
+.status { padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+.status.completed { background: rgba(47,175,107,.18); color: #76e0a8; }
+.status.running { background: rgba(200,146,46,.18); color: #e6c074; }
+.status.failed, .status.superseded { background: rgba(212,80,78,.18); color: #f3938f; }
+
+.chatmsg { padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.chat-sender { font-weight: 700; color: var(--accent); }
+.chatmsg.theirs .chat-sender { color: #76e0a8; }
+.chat-when { color: var(--muted); font-size: 11px; margin-left: 8px; }
+.chat-body { white-space: pre-wrap; word-break: break-word; margin-top: 2px; }
+
+.ctxgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ctxbox { background: var(--box); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+.ctxbox h3 { margin: 0 0 8px; font-size: 13px; }
+.digest { white-space: pre-wrap; word-break: break-word; margin: 0; font-size: 12px; max-height: 360px; overflow: auto; }
+.emo-desc { margin: 0 0 6px; }
+.mono-title { color: var(--accent); font-size: 12px; }
+.mono-content { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 2px 0 8px; color: #c8ccd8; }
+.blocklist li { display: flex; gap: 8px; padding: 2px 0; font-size: 12px; }
+.blk-when { color: var(--muted); }
+.blk-type { color: var(--accent); }
+
+@media (max-width: 880px) {
+  .grid, .ctxgrid { grid-template-columns: 1fr; }
+}

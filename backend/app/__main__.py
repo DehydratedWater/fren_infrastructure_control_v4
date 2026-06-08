@@ -88,6 +88,18 @@ def _run_checker() -> None:
     asyncio.run(_checker_main())
 
 
+def _run_web() -> None:
+    """Serve the read-only monitoring dashboard on 0.0.0.0:8000 via uvicorn."""
+    import uvicorn
+
+    uvicorn.run(
+        "app.web.app:app",
+        host="0.0.0.0",  # noqa: S104 — container service, port published in compose
+        port=8000,
+        log_level="info",
+    )
+
+
 def _run_compile() -> None:
     """Compile the whole fleet (all worker variants) into settings.agents_dir."""
     from pathlib import Path
@@ -229,13 +241,15 @@ def _dispatch(service: str, argv: list[str]) -> None:
         _run_scheduler()
     elif service == "checker":
         _run_checker()
+    elif service == "web":
+        _run_web()
     elif service == "compile":
         _run_compile()
     elif service == "improve":
         _run_improve(argv)
     else:
         print(
-            f"unknown service: {service!r} (use bot|scheduler|checker|compile|improve)",
+            f"unknown service: {service!r} (use bot|scheduler|checker|web|compile|improve)",
             file=sys.stderr,
         )
         sys.exit(2)
