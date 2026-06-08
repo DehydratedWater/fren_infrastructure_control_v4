@@ -131,7 +131,7 @@ jobs:
     agent: script:scripts/activity_observer.py
     prompt: ''
     description: Periodic activity observation (camera + screen, 06:00-03:00 Warsaw)
-    enabled: false
+    enabled: true
     timeout: 360
   activity_observation_night:
     cron: '*/15 3-4 * * *'
@@ -139,7 +139,7 @@ jobs:
     prompt: ''
     description: Night activity observation — light/wake detection only (03:00-05:00
       UTC)
-    enabled: false
+    enabled: true
     timeout: 360
   activity_daily_summary:
     cron: '*/5 5-23,0-2 * * *'
@@ -195,14 +195,14 @@ jobs:
     agent: script:scripts/conversation_digest.py
     prompt: ''
     description: Rolling conversation digest — situational context for all agents
-    enabled: false
+    enabled: true
     timeout: 600
   inner_monologue:
     cron: '*/15 6-23,0-4 * * *'
     agent: script:scripts/inner_monologue.py
     prompt: ''
     description: Twily's inner monologue — thoughts, emotions, imagination, dreams
-    enabled: false
+    enabled: true
     timeout: 300
   event_habit_bridge:
     cron: '*/10 5-23,0-4 * * *'
