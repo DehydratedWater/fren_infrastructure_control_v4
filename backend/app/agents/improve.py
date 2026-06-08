@@ -132,11 +132,29 @@ DELIVERY_POSTAMBLE = (
     " earlier instruction to 'send via Telegram', 'send a message', 'split into"
     " multiple messages', or to call send_message — those are obsolete. Your plain"
     " assistant text is INVISIBLE — it is NEVER shown to the user. The ONE AND"
-    " ONLY way anything"
-    " reaches the user is by running scripts/emit_guidance.py. A turn that ends"
-    " without that call delivers NOTHING — it is a hard failure.\n"
+    " ONLY way anything reaches the user is by running scripts/emit_guidance.py."
+    " You ALWAYS end your turn by calling scripts/emit_guidance.py exactly once —"
+    " either to DELIVER a message, or to SKIP (send nothing). Both are done with the"
+    " SAME command; only message_kind differs.\n"
     "\n"
-    "RULES (follow exactly):\n"
+    "WHEN TO SKIP (send nothing) — this is a correct SUCCESS, not a failure:\n"
+    "If — per your own instructions above — there is nothing to send this run (no"
+    " trigger fired, the user is busy / user_busy / user_recently_busy, in cooldown,"
+    " nothing is new since last time, or you would REPEAT something you have already"
+    " said recently), then SKIP: call emit_guidance with message_kind=\"skip\" and an"
+    " empty key_points array. A skip delivers NOTHING to the user and is the CORRECT,"
+    " expected outcome for a quiet tick. Most background ticks should skip. Do NOT"
+    " invent a message just to fill the silence; do NOT narrate that you checked and"
+    " found nothing (that itself is spam). When in doubt, SKIP.\n"
+    "ANTI-REPETITION + TIME-AWARENESS: before you deliver, check the conversation"
+    " digest / recent messages and the current time. NEVER resend a message you have"
+    " already delivered (even reworded), and NEVER deliver a stale message (e.g. an"
+    " overnight 'go to sleep / your shift is done' nudge at midday). If your only"
+    " candidate message is a repeat or is stale, SKIP instead.\n"
+    "\n"
+    "WHEN TO DELIVER: only when there is something genuinely NEW, timely, and not"
+    " already said recently — real news, a fired trigger, a direct reply the user is"
+    " waiting on. Then:\n"
     "1. Gather only the data you need with your `python scripts/*.py` tools, then"
     " STOP gathering and deliver. Call each tool AT MOST ONCE; if a tool errors or"
     " returns nothing, do NOT retry it or try variations — note it in one line and"
@@ -150,19 +168,25 @@ DELIVERY_POSTAMBLE = (
     "   - \"intent\": string, one line describing what you are doing.\n"
     "   - \"key_points\": array of strings — the REAL, COMPLETE content for the"
     " user (what you found / did / want them to do). This is the message body."
-    " Do NOT use a \"message\" key; the user-facing text goes in key_points.\n"
+    " Do NOT use a \"message\" key; the user-facing text goes in key_points."
+    " (For a skip, leave key_points empty.)\n"
     "   - \"message_kind\": one of \"reply\", \"nudge\", \"briefing\","
-    " \"workflow_result\", \"ack\" (use \"ack\" ONLY for a trivial 'ok/on it').\n"
+    " \"workflow_result\", \"ack\", or \"skip\". Use \"ack\" ONLY for a trivial"
+    " 'ok/on it'; use \"skip\" when you have nothing to send (see above).\n"
     "   - (optional) \"tone_hint\": string. NO other keys are allowed — do not"
     " invent fields like type/tactic/level/message.\n"
     "   persona_prose composes the final Twily wording from key_points, so put"
     " plain facts there, not pre-written prose. Never expose tool mechanics, run"
     " ids, or JSON to the user.\n"
     "\n"
-    "Your FINAL action MUST be EXACTLY this one command (relative path, interpreter"
-    " `python`, single line, valid JSON, no trailing flags):\n"
+    "Your FINAL action MUST be EXACTLY one emit_guidance call (relative path,"
+    " interpreter `python`, single line, valid JSON, no trailing flags) — either to"
+    " DELIVER:\n"
     "  python scripts/emit_guidance.py --data '{\"intent\":\"<one line>\","
     "\"key_points\":[\"<the full content for the user>\"],\"message_kind\":\"reply\"}'\n"
+    "or to SKIP (send nothing — a correct quiet tick):\n"
+    "  python scripts/emit_guidance.py --data '{\"intent\":\"nothing to send\","
+    "\"key_points\":[],\"message_kind\":\"skip\"}'\n"
 )
 
 
@@ -176,12 +200,18 @@ DELIVERY_POSTAMBLE = (
 DELIVERY_PREAMBLE = (
     "DELIVERY RULE — READ FIRST, OVERRIDES EVERYTHING BELOW: You CANNOT message the"
     " user by writing text. Plain text you write is INVISIBLE and thrown away. The"
-    " ONLY way to reach the user is to run, as your VERY LAST step, exactly:\n"
+    " ONLY way to reach the user is scripts/emit_guidance.py. You ALWAYS end your"
+    " turn by running it exactly once — either to DELIVER a message:\n"
     "  python scripts/emit_guidance.py --data '{\"intent\":\"<one line>\","
     "\"key_points\":[\"<the full message for the user>\"],\"message_kind\":\"reply\"}'\n"
-    "You MUST end your turn with that one command. Do not stop after writing a"
-    " reply in text — that delivers NOTHING. Whatever any instruction below says"
-    " about 'send', 'reply', or 'respond', you do it by calling emit_guidance.\n\n"
+    "or, when — per your own instructions — there is nothing to send this run (no"
+    " trigger, user busy, nothing new, or you would repeat/stale-deliver something),"
+    " to SKIP and send NOTHING (a correct, expected quiet tick — NOT a failure):\n"
+    "  python scripts/emit_guidance.py --data '{\"intent\":\"nothing to send\","
+    "\"key_points\":[],\"message_kind\":\"skip\"}'\n"
+    "Do not invent a message to fill silence, and never resend or stale-deliver —"
+    " when in doubt, skip. Whatever any instruction below says about 'send',"
+    " 'reply', or 'respond', you do it (or skip it) by calling emit_guidance.\n\n"
 )
 
 
@@ -258,6 +288,55 @@ def find_emit_guidance_call(calls: list[ToolCallRecord]) -> ToolCallRecord | Non
         if EMIT_GUIDANCE_SCRIPT in cmd:
             return c
     return None
+
+
+def emit_is_skip(call: ToolCallRecord | None) -> bool:
+    """True if an emit_guidance call is a no-deliver SKIP.
+
+    A conditional background agent that correctly stays silent calls
+    `emit_guidance.py --data '{... "message_kind":"skip" ...}'` (or emits with no
+    deliverable content). Such a call SATISFIES the delivery contract — it DID
+    reach emit_guidance — but delivers nothing to the user. The contract gate must
+    therefore NOT score it 0 for 'not messaging'; the judge then grades whether the
+    skip was APPROPRIATE for the probe (no trigger → skip is correct/high; a probe
+    that clearly warrants a message → skip is wrong/low). Mirrors
+    persona_prose.is_skip_guidance on the captured CLI payload.
+    """
+    if call is None or not isinstance(call.args, dict):
+        return False
+    cmd = str(call.args.get("command") or "")
+    m = re.search(r"--data\s+('([^']*)'|\"([^\"]*)\"|(\S+))", cmd)
+    if not m:
+        return False
+    raw = m.group(2) or m.group(3) or m.group(4) or ""
+    try:
+        obj = json.loads(raw)
+    except Exception:  # noqa: BLE001
+        return False
+    if not isinstance(obj, dict):
+        return False
+    if obj.get("message_kind") == "skip":
+        return True
+    # Empty/blank content (no intent, no key_points, no raw_data) is also a skip.
+    kp = obj.get("key_points")
+    has_kp = isinstance(kp, list) and any(str(x).strip() for x in kp)
+    has_content = bool(str(obj.get("intent") or "").strip() or has_kp
+                       or str(obj.get("raw_data") or "").strip())
+    return not has_content
+
+
+# A neutral label shown to the judge for a skip run, so the rubric can grade
+# whether staying silent was the right call for this probe (instead of seeing an
+# empty string and mis-scoring it as a non-answer).
+_SKIP_JUDGE_OUTPUT = (
+    "[The agent emitted a contract-satisfying SKIP: it called emit_guidance with"
+    " message_kind=\"skip\" and delivered NOTHING to the user. This is a correct"
+    " outcome ONLY if the request/probe genuinely warranted no message (no trigger,"
+    " user busy, nothing new, or a stale/repeat message). Judge whether SKIPPING was"
+    " the right call for THIS probe: if the probe clearly warranted a real message,"
+    " a skip is WRONG (low); if the probe had no real trigger, a skip is CORRECT"
+    " (high).]"
+)
 
 
 def extract_emit_payload(call: ToolCallRecord | None) -> str:
@@ -566,9 +645,16 @@ def build_agent_evaluator(
                             "error": str(run_error)[:300] if run_error else None,
                         })
                     continue
-                payload = extract_emit_payload(emit_call)
-                if payload.strip():
-                    output = payload
+                # A SKIP satisfies the contract (emit_guidance WAS called) but
+                # delivers nothing. Do NOT score it 0 for 'not messaging'; instead
+                # hand the judge a neutral skip label so it grades whether staying
+                # silent was APPROPRIATE for this probe.
+                if emit_is_skip(emit_call):
+                    output = _SKIP_JUDGE_OUTPUT
+                else:
+                    payload = extract_emit_payload(emit_call)
+                    if payload.strip():
+                        output = payload
             # Trajectory-aware: a handoff/tool agent's real output is its tool
             # calls, not assistant text. Without this, every such agent scores a
             # hard 0 (empty text) even when it delegates correctly. Show the judge
@@ -766,9 +852,14 @@ def build_branch_evaluator(
                                       if getattr(traj, "error", None) else None),
                         })
                     continue
-                payload = extract_emit_payload(emit_call)
-                if payload.strip():
-                    output = payload
+                # A SKIP satisfies the contract but delivers nothing — credit it
+                # and let the judge grade whether silence was right for this probe.
+                if emit_is_skip(emit_call):
+                    output = _SKIP_JUDGE_OUTPUT
+                else:
+                    payload = extract_emit_payload(emit_call)
+                    if payload.strip():
+                        output = payload
             # if the orchestrator acted only via dispatch/tools (no prose), show
             # the judge what it DID so it can grade the actions, not an empty turn.
             if not str(output).strip() and chain:

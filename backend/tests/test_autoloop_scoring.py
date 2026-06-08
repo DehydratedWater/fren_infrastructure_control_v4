@@ -853,9 +853,10 @@ def test_with_delivery_postamble_injects_for_broken_delivery_agent():
     assert (out.system_prompt or "").startswith(im.DELIVERY_PREAMBLE)
     assert "Summarise the user's day." in (out.system_prompt or "")
     # idempotent: a second pass does not double-add (postamble) and the primacy
-    # directive is not prepended twice.
+    # directive is not prepended twice. Count the once-per-injection block header
+    # (the emit CLI now legitimately appears twice per block — deliver + skip).
     again = im.with_delivery_postamble(out)
-    assert (again.postamble or "").count("python scripts/emit_guidance.py --data") == 1
+    assert (again.postamble or "").count("## Message Discipline (CRITICAL") == 1
     assert (again.system_prompt or "").count(im.DELIVERY_PREAMBLE) == 1
 
 
@@ -883,6 +884,153 @@ def test_with_delivery_postamble_leaves_non_delivery_agent_unchanged():
     out = im.with_delivery_postamble(agent)
     assert out is agent
     assert im.DELIVERY_POSTAMBLE.strip() not in (out.postamble or "")
+
+
+# --- 10. SKIP as a first-class, contract-satisfying outcome -----------------
+# Conditional background agents (periodic_checker, nudge_strategist) must be able
+# to stay SILENT without failing the delivery contract. A skip emit_guidance call
+# COUNTS as satisfying the contract; the judge then grades whether the silence was
+# appropriate. The postamble/preamble must teach skip + anti-repetition. All mocked.
+
+
+def _skip_emit_call(intent="nothing to send"):
+    cmd = (
+        "python scripts/emit_guidance.py --data "
+        '\'{"intent":"%s","key_points":[],"message_kind":"skip"}\'' % intent
+    )
+    return ToolCallRecord(name="bash", args={"command": cmd})
+
+
+def test_emit_is_skip_detects_skip_kind_and_empty_payload():
+    import app.agents.improve as im
+
+    assert im.emit_is_skip(_skip_emit_call()) is True
+    # empty content (no kind) is also a skip
+    empty = ToolCallRecord(name="bash", args={"command":
+        "python scripts/emit_guidance.py --data '{\"intent\":\"\",\"key_points\":[]}'"})
+    assert im.emit_is_skip(empty) is True
+    # a real reply is NOT a skip
+    assert im.emit_is_skip(_emit_call("Real news: 2 new commits.")) is False
+    assert im.emit_is_skip(None) is False
+
+
+def test_delivery_postamble_allows_skip_and_anti_repetition():
+    """The rewritten postamble + preamble must (a) permit a no-deliver skip as a
+    SUCCESS, (b) carry anti-repetition + time-awareness, and still (c) keep the
+    invisibility + emit_guidance contract."""
+    import app.agents.improve as im
+
+    for text in (im.DELIVERY_POSTAMBLE, im.DELIVERY_PREAMBLE):
+        low = text.lower()
+        assert "invisible" in low  # invisibility contract preserved
+        assert 'message_kind":"skip"' in text or '"skip"' in text  # skip kind taught
+        assert "skip" in low and "nothing" in low  # skip = send nothing
+    # postamble carries the explicit "skip is a correct SUCCESS, not a failure"
+    pl = im.DELIVERY_POSTAMBLE.lower()
+    assert "success" in pl and ("not a failure" in pl or "not a hard failure" in pl)
+    # anti-repetition + time/staleness awareness
+    assert "repeat" in pl or "resend" in pl
+    assert "stale" in pl
+    # both the deliver AND the skip CLI invocations are present
+    assert 'message_kind":"skip"' in im.DELIVERY_POSTAMBLE
+    assert 'message_kind":"reply"' in im.DELIVERY_POSTAMBLE
+    # the old absolute "ending without a message delivers NOTHING / hard failure"
+    # framing must be GONE for the no-message case (skip now delivers nothing on
+    # purpose). The postamble must no longer call an emit-less SKIP a hard failure.
+    assert "a turn that ends without that call delivers nothing" not in pl
+
+
+def test_contract_gate_credits_skip_not_zero(monkeypatch):
+    """A delivery agent that SKIPS (emit_guidance message_kind=skip) satisfies the
+    contract — it is NOT scored a hard 0. The judge grades whether the skip was
+    appropriate (here the judge approves → high score)."""
+    import app.agents.improve as im
+
+    monkeypatch.setattr(im, "synthesize_probe", lambda a: "Quiet tick, no trigger.")
+    agent = _delivery_agent().model_copy(
+        update={"agent_tests": [im.make_judge_test(_delivery_agent())]})
+
+    class _SkipJudge:
+        def __init__(self):
+            self.seen = []
+
+        def judge(self, criteria, target, *, model=None):
+            self.seen.append(str(target))
+            return {"pass": True, "score": 0.9, "reasoning": "silence was appropriate"}
+
+    judge = _SkipJudge()
+    failures: list = []
+    ev = im.build_agent_evaluator(
+        agent,
+        _runner_factory("invisible self-narration the user never sees",
+                        [_skip_emit_call()]),
+        judge=judge, failures_sink=failures)
+    metrics = ev(ComponentVersion.of(agent.header.agent_id, "agent", agent.model_dump()))
+    # NOT a contract-failure 0 — the judge WAS consulted and scored the skip
+    assert metrics["score_floor"] == 0.9
+    assert metrics["pass_rate"] == 1.0
+    # the judge saw the neutral SKIP label (so it can grade appropriateness),
+    # NOT the invisible assistant text
+    assert any("SKIP" in s for s in judge.seen)
+    assert not any("invisible self-narration" in s for s in judge.seen)
+    # no delivery-contract failure recorded
+    assert not any(f.get("evaluator") == "delivery-contract" for f in failures)
+
+
+def test_contract_gate_skip_can_be_judged_wrong(monkeypatch):
+    """A skip on a probe that clearly WARRANTED a message is graded LOW by the
+    judge (skip satisfies the contract, but appropriateness is still judged)."""
+    import app.agents.improve as im
+
+    monkeypatch.setattr(im, "synthesize_probe", lambda a: "URGENT: deadline in 10 min!")
+    agent = _delivery_agent().model_copy(
+        update={"agent_tests": [im.make_judge_test(_delivery_agent())]})
+
+    class _StrictJudge:
+        def judge(self, criteria, target, *, model=None):
+            # a skip when a message was clearly warranted → low
+            score = 0.1 if "SKIP" in str(target) else 0.9
+            return {"pass": score >= 0.7, "score": score, "reasoning": "should have sent"}
+
+    ev = im.build_agent_evaluator(
+        agent, _runner_factory("", [_skip_emit_call()]), judge=_StrictJudge())
+    metrics = ev(ComponentVersion.of(agent.header.agent_id, "agent", agent.model_dump()))
+    assert metrics["score_floor"] == 0.1  # judged inappropriate, but NOT a hard 0
+
+
+def test_branch_contract_gate_credits_skip(monkeypatch):
+    """A delivery ORCHESTRATOR that skips satisfies the contract (not a hard 0);
+    the judge grades whether the silence was appropriate."""
+    import app.agents.improve as im
+    from src import BranchTest
+    from src.testing.branch import BranchTrajectory
+
+    b = BranchTest(name="d::y", entry_agent="support/master_organizer",
+                   prompt="background tick", path=("a",))
+
+    class _SkipJudge:
+        def __init__(self):
+            self.seen = []
+
+        def judge(self, criteria, target, *, model=None):
+            self.seen.append(str(target))
+            return {"pass": True, "score": 0.85, "reasoning": "silence ok"}
+
+    judge = _SkipJudge()
+
+    def invoker_factory(_defn):
+        def invoke(_t):
+            return BranchTrajectory(
+                output="invisible orchestrator prose",
+                tool_calls=[ToolCallRecord(name="a"), _skip_emit_call()])
+        return invoke
+
+    ev = im.build_branch_evaluator([b], invoker_factory, judge=judge)
+    metrics = ev(ComponentVersion.of(
+        "support/master_organizer", "agent",
+        _delivery_agent("support/master_organizer").model_dump()))
+    assert metrics["score_floor"] == 0.85  # credited, judged — not a hard 0
+    assert any("SKIP" in s for s in judge.seen)
 
 
 def test_build_registry_injects_postamble_for_real_broken_delivery_agents():
