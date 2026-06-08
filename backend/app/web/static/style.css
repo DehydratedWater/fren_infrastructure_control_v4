@@ -89,6 +89,36 @@ body {
 .blk-when { color: var(--muted); }
 .blk-type { color: var(--accent); }
 
+/* run detail (view the session) */
+.run-row { cursor: pointer; }
+.run-row:hover td { background: var(--box); }
+.run-link { color: var(--accent); text-decoration: none; }
+.run-link:hover { text-decoration: underline; }
+.run-header { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 4px; }
+.rh { font-size: 12px; }
+.rh-k { color: var(--muted); margin-right: 4px; }
+h3.sub { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
+.trace-text {
+  white-space: pre-wrap; word-break: break-word; margin: 0;
+  background: var(--box); border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px 12px; font-size: 12px; max-height: 480px; overflow: auto;
+}
+.trace-error { color: #f3938f; font-size: 12px; margin: 0 0 8px; }
+.toollist { list-style: none; margin: 0; padding: 0; counter-reset: none; }
+.toolcall {
+  border: 1px solid var(--line); border-radius: 6px; background: var(--box);
+  padding: 8px 10px; margin-bottom: 8px;
+}
+.toolcall.tc-err { border-color: var(--bad); }
+.tc-head { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.tc-idx { color: var(--muted); font-size: 11px; min-width: 1.5em; }
+.tc-name { color: var(--accent); font-weight: 700; font-size: 13px; }
+.tc-cmd, .tc-errtext {
+  white-space: pre-wrap; word-break: break-word; margin: 2px 0 0;
+  font-size: 12px; color: #c8ccd8;
+}
+.tc-errtext { color: #f3938f; }
+
 @media (max-width: 880px) {
   .grid, .ctxgrid { grid-template-columns: 1fr; }
 }

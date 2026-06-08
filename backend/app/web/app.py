@@ -49,6 +49,14 @@ def create_app() -> FastAPI:
         }
         return _render(request, "index.html", ctx)
 
+    # ── run detail (view the session) ────────────────────────────────────────
+    @app.get("/run/{run_id}", response_class=HTMLResponse)
+    async def run_detail(request: Request, run_id: str) -> HTMLResponse:
+        detail = await data.run_detail(run_id)
+        if detail is None:
+            return _render(request, "run_detail.html", {"run_id": run_id, "missing": True})
+        return _render(request, "run_detail.html", {"run_id": run_id, **detail})
+
     # ── HTMX partial fragments (auto-refreshed) ──────────────────────────────
     @app.get("/partials/health", response_class=HTMLResponse)
     async def partial_health(request: Request) -> HTMLResponse:

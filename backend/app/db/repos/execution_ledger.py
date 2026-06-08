@@ -266,6 +266,32 @@ class ExecutionLedgerRepo:
             )
             return row is not None
 
+    async def prune_artifacts_by_type(self, artifact_type: str, keep: int) -> int:
+        """Delete all but the newest ``keep`` artifacts of one type.
+
+        Retention guard for high-churn artifact types (e.g. ``run_trace``, written
+        once per agent run — the periodic_checker alone fires every 5 min). Keeps
+        the table from growing unbounded. Returns the number of rows deleted.
+        """
+        sql = """
+            DELETE FROM execution_artifacts
+            WHERE artifact_type = :artifact_type
+              AND artifact_id NOT IN (
+                  SELECT artifact_id FROM execution_artifacts
+                  WHERE artifact_type = :artifact_type
+                  ORDER BY created_at DESC
+                  LIMIT :keep
+              )
+        """
+        async with get_async_session() as s:
+            res = await execute_sql(
+                s, sql, {"artifact_type": artifact_type, "keep": keep},
+            )
+            try:
+                return res.rowcount or 0
+            except Exception:  # noqa: BLE001 — driver may not expose rowcount
+                return 0
+
     async def get_run_status(self, run_id: str) -> dict[str, Any]:
         """Get run with its artifact summary."""
         run = await self.get_run(run_id)
