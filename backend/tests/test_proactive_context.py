@@ -134,6 +134,11 @@ async def test_proactive_block_includes_full_v3_source_set(monkeypatch):
     assert "## Recent inner thoughts" in block
     assert "## Recent activity blocks" in block
     assert "body_battery=9" in block
+    # Anti-fabrication guard frames the block and reports health PRESENT
+    # (the activity block carried a health_snapshot).
+    assert "GROUNDING CONTRACT" in block
+    assert block.index("GROUNDING CONTRACT") < block.index("## Current emotional state")
+    assert "Garmin health" in block  # listed among present signals
 
 
 # ── degrades cleanly when sources are empty ────────────────────────────────
@@ -159,7 +164,10 @@ class _EmptyActivityRepo:
         return []
 
 
-async def test_proactive_block_degrades_to_empty_when_all_sources_empty(monkeypatch):
+async def test_proactive_block_emits_guard_even_when_all_sources_empty(monkeypatch):
+    # When every data source is empty the block is NOT empty: it still carries
+    # the grounding contract, because a context-starved tick is exactly when the
+    # agent is most tempted to hallucinate sensor/health facts.
     _patch_repos(
         monkeypatch,
         emotional=_EmptyEmotionalRepo,
@@ -169,7 +177,30 @@ async def test_proactive_block_degrades_to_empty_when_all_sources_empty(monkeypa
     )
 
     block = await build_proactive_context_block()
-    assert block == ""
+    assert "GROUNDING CONTRACT" in block
+    assert "Signals present THIS tick: NONE" in block
+    # health is absent → it must be named in the "do not reference" list
+    assert "Garmin health" in block
+    assert "FABRICATION" in block
+    # no real data sections present
+    assert "## Current emotional state" not in block
+    assert "## Recent activity blocks" not in block
+
+
+def test_anti_fabrication_guard_lists_present_and_absent():
+    from app.telegram.persona_prose import _anti_fabrication_guard
+
+    # Only emotional_state present → health must be flagged absent.
+    g = _anti_fabrication_guard({"emotional_state"})
+    assert "GROUNDING CONTRACT" in g
+    assert "emotional state" in g
+    assert "ABSENT THIS tick" in g
+    assert "Garmin health" in g  # absent → named in the do-not-reference list
+
+    # Health present → it appears in the "may use" list, not the absent list.
+    g2 = _anti_fabrication_guard({"health", "activity_blocks"})
+    assert "may use these" in g2
+    assert "Garmin health" in g2
 
 
 async def test_proactive_block_partial_sources_no_crash(monkeypatch):
