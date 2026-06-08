@@ -55,11 +55,13 @@ class Output(BaseModel):
 class EmitGuidanceTool(ScriptTool[Input, Output]):
     name = "emit_guidance"
     description = (
-        "Emit a PersonaGuidance JSON. For message_kind='ack' this delivers a Twily-voiced "
-        "one-liner ack instantly (sub-second, no LLM). For all other kinds (reply, briefing, "
-        "workflow_result, nudge, selfie_caption, video_caption) this calls persona_prose to "
-        "render Twily voice and delivers via send_message.py. Returns the delivered text on "
-        "stdout. REPLACES send_message.py — do NOT call send_message.py directly."
+        "Emit a PersonaGuidance JSON. For message_kind='skip' this delivers NOTHING to the "
+        "user (a correct, contract-satisfying silent run — use it with empty key_points when "
+        "you have nothing new to send this run). For message_kind='ack' this delivers a "
+        "Twily-voiced one-liner ack instantly (sub-second, no LLM). For all other kinds "
+        "(reply, briefing, workflow_result, nudge, selfie_caption, video_caption) this calls "
+        "persona_prose to render Twily voice and delivers via send_message.py. Returns the "
+        "delivered text on stdout. REPLACES send_message.py — do NOT call send_message.py directly."
     )
     stream_format = StreamFormat.TEXT
     stream_field = "data"
@@ -89,6 +91,17 @@ class EmitGuidanceTool(ScriptTool[Input, Output]):
 
         guidance = parse_guidance_from_agent_output(raw_json)
 
+        # ── Skip fast-path: contract-satisfying SILENCE, deliver NOTHING ──
+        # A conditional background agent that has nothing to send this run emits
+        # message_kind="skip" (or an empty guidance). The delivery contract is
+        # satisfied (emit_guidance ran) but the user receives nothing — no LLM
+        # render, no Telegram send. We record the emit so the post-run hook +
+        # autoloop contract-gate see it. See persona_prose.is_skip_guidance.
+        from app.telegram.persona_prose import is_skip_guidance
+
+        if is_skip_guidance(guidance):
+            return await self._emit_skip(guidance, run_id)
+
         # ── Ack fast-path: deliver verbatim, no LLM ──
         if guidance.message_kind == "ack":
             return await self._emit_ack(guidance, run_id)
@@ -96,6 +109,50 @@ class EmitGuidanceTool(ScriptTool[Input, Output]):
         # ── Full-render path: persona_prose inline ──
         return await self._emit_full(
             guidance, run_id, ExecutionLedgerRepo, fetch_chat_context, generate_persona_message
+        )
+
+    async def _emit_skip(self, guidance, run_id: str) -> Output:
+        """Record a contract-satisfying SKIP — deliver nothing to the user.
+
+        The agent decided (per its own instructions) there is nothing to send
+        this run. We write a `persona_guidance` artifact (so the run's delivery
+        contract is on record + auditable) and a `persona_response` artifact with
+        empty delivered_text (so the post-run safety net sees the run as delivered
+        and never fires its synth fallback). No persona_prose LLM call, no
+        send_message — the user receives NOTHING. Silence is the success here.
+        """
+        from app.db.repos.execution_ledger import ExecutionLedgerRepo
+
+        artifact_id = ""
+        try:
+            repo = ExecutionLedgerRepo()
+            await repo.ensure_run(run_id, interaction_mode="emit_guidance_skip")
+            await repo.write_artifact(
+                run_id=run_id,
+                artifact_type="persona_guidance",
+                payload={**guidance.to_dict(), "skipped": True},
+                producer="emit_guidance",
+            )
+            row = await repo.write_artifact(
+                run_id=run_id,
+                artifact_type="persona_response",
+                payload={
+                    "delivered_text": "",
+                    "kind": guidance.message_kind,
+                    "skipped": True,
+                    "delivered": False,
+                },
+                producer="emit_guidance",
+            )
+            artifact_id = row.get("artifact_id", "")
+        except Exception as e:
+            print(f"[emit_guidance] skip audit write failed: {e}", file=sys.stderr)
+
+        return Output(
+            success=True,
+            run_id=run_id,
+            artifact_id=artifact_id,
+            delivered_text="",
         )
 
     async def _emit_ack(self, guidance, run_id: str) -> Output:

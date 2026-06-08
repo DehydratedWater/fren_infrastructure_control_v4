@@ -287,7 +287,40 @@ MessageKind = Literal[
     "selfie_caption",
     "video_caption",
     "workflow_result",
+    # "skip": a no-deliver outcome. A conditional background agent (periodic
+    # checker, nudge strategist, ...) that — per its OWN instructions — has
+    # nothing to send this run (no trigger, user busy, nothing new, would repeat
+    # itself) emits guidance with message_kind="skip" and empty key_points. This
+    # SATISFIES the delivery contract (emit_guidance WAS called, so the post-run
+    # hook + autoloop contract-gate see a real emit) but DELIVERS NOTHING to the
+    # user — no persona_prose render, no Telegram send. Correct silence is a
+    # first-class SUCCESS, not a failure. See _emit_full / generate_persona_message.
+    "skip",
 ]
+
+# A message_kind=="skip" guidance (or any guidance with no real content) is a
+# deliberate no-op: the contract is satisfied (emit_guidance ran) but nothing is
+# delivered. Centralised here so emit_guidance and persona_prose agree.
+SKIP_MESSAGE_KIND = "skip"
+
+
+def is_skip_guidance(guidance: "PersonaGuidance") -> bool:
+    """True if this guidance should DELIVER NOTHING (a correct silent run).
+
+    Either the agent explicitly chose message_kind="skip", or it emitted with no
+    deliverable content at all (empty intent + empty key_points + no raw_data +
+    no attachments) — both mean "nothing to say this run". Treating empty/blank
+    content as a skip makes an under-specified emit safe instead of spammy.
+    """
+    if guidance.message_kind == SKIP_MESSAGE_KIND:
+        return True
+    has_content = bool(
+        guidance.intent.strip()
+        or [k for k in guidance.key_points if k and k.strip()]
+        or guidance.raw_data.strip()
+        or guidance.attachments
+    )
+    return not has_content
 
 
 @dataclass(frozen=True, slots=True)
@@ -333,6 +366,7 @@ class PersonaGuidance:
             "selfie_caption",
             "video_caption",
             "workflow_result",
+            "skip",
         ):
             mk = "reply"
 
@@ -1004,6 +1038,53 @@ async def generate_persona_message(
     from app.settings import get_settings
 
     settings = get_settings()
+
+    # ── SKIP short-circuit (no-deliver, contract-satisfying silence) ──
+    # A conditional background agent that — per its own instructions — has nothing
+    # to send this run emits message_kind="skip" (or an empty guidance). That is a
+    # CORRECT outcome: the agent DID call emit_guidance (so the run's delivery
+    # contract is satisfied and the post-run hook sees the emit), but the user must
+    # receive NOTHING — no persona_prose LLM call, no Telegram send. We still write
+    # a persona_response artifact (delivered_text="") so deliver_guidance_from_ledger
+    # treats the run as delivered and never fires its synth fallback, and we trace
+    # it so a silent run is fully debuggable.
+    if is_skip_guidance(guidance):
+        logger.info(
+            "persona_prose: SKIP (no-deliver) for run_id=%s — message_kind=%r, "
+            "key_points=%r. Contract satisfied, nothing delivered.",
+            run_id,
+            guidance.message_kind,
+            guidance.key_points,
+        )
+        skip_trace: dict[str, Any] = {
+            "run_id": run_id,
+            "kind": guidance.message_kind,
+            "model": "(skip)",
+            "provider": "(skip)",
+            "system_prompt": "",
+            "messages": [],
+            "raw_output": "",
+            "thinking": "",
+            "stripped_output": "",
+            "delivered_text": "",
+            "temperature": None,
+            "max_tokens": None,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "duration_ms": 0,
+            "context_summary": {"skipped": True},
+            "guidance": guidance.to_dict(),
+            "fallback_triggered": False,
+            "skipped": True,
+            "suppressed_reason": "agent_skip",
+        }
+        # Write the trace + a (empty) persona_response so the contract is on record.
+        if run_id:
+            try:
+                await _write_trace_artifacts(skip_trace)
+            except Exception:
+                logger.exception("persona_prose: failed to write skip trace artifacts")
+        return skip_trace
 
     # ── Placeholder / debug / internal-status filter ──
     # Three suppression categories:
