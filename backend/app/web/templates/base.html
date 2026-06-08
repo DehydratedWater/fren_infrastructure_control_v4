@@ -4,12 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>fren v4 · dashboard</title>
-  <script src="https://unpkg.com/htmx.org@1.9.12" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="/static/style.css">
+  <!-- HTMX vendored locally — the dashboard runs on a LAN box with no guaranteed
+       internet; a CDN <script> in <head> would block/stall rendering. defer so it
+       never blocks the (already server-rendered) content. -->
+  <script src="/static/htmx.min.js" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <span class="brand">fren v4 · monitor</span>
+    <a class="brand" href="/">fren v4 · monitor</a>
+    <nav class="topnav">
+      <a href="/#proactive">Proactive</a>
+      <a href="/#runs">Runs</a>
+      <a href="/#chat">Chat</a>
+      <a href="/#context">Context</a>
+    </nav>
     <span class="muted">read-only · auto-refresh 10s</span>
   </header>
   {% block body %}{% endblock %}
