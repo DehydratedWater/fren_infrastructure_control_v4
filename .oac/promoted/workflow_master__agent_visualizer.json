@@ -3,9 +3,9 @@
   "version": {
     "component_id": "workflow_master/agent_visualizer",
     "kind": "agent",
-    "content_hash": "54851e335f41d92abeb7481130245a907e0087fa4ce6bab0dd28080451d9ff68",
+    "content_hash": "dc12779f838c0c5aaa333920caf8bf21474a4f2c316d9893ba64bd45926a694d",
     "parent_hash": null,
-    "timestamp": "2026-06-05T16:15:10",
+    "timestamp": "2026-06-08T03:31:56",
     "author": "human",
     "definition": {
       "header": {
@@ -78,7 +78,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: Scans agent definitions, extracts subagent/Task references, builds a color-coded dependency graph, and outputs a Mermaid or text-based diagram with filter/highlight focus modes.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: Scans agent definitions, extracts subagent/Task references, builds a color-coded dependency graph, and outputs a Mermaid or text-based diagram with filter/highlight focus modes.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -105,7 +105,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.9
+      "score_floor": 0.95
     },
     "notes": ""
   },

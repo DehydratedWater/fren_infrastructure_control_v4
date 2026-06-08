@@ -3,9 +3,9 @@
   "version": {
     "component_id": "goals/tactic_crafter",
     "kind": "agent",
-    "content_hash": "cca56757f8b05b9e8d45277b6667992900cccebe2e0cf25324f6e5e51bae7900",
+    "content_hash": "df7d049b7a655493626cce8348751d8c317fb6d0f17ec62751663a98b277924c",
     "parent_hash": null,
-    "timestamp": "2026-06-05T16:15:10",
+    "timestamp": "2026-06-08T03:31:55",
     "author": "human",
     "definition": {
       "header": {
@@ -106,7 +106,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: Analyzes the goal and target context, designs the message strategy and tactical approach, then sends the proposed approach to the user for confirmation before execution.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: Analyzes the goal and target context, designs the message strategy and tactical approach, then sends the proposed approach to the user for confirmation before execution.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }

@@ -3,10 +3,10 @@
   "version": {
     "component_id": "workflows/goal",
     "kind": "agent",
-    "content_hash": "9f9fd32f604e660a0f7d69ade5bb6e05e4bd4aae5fa2aa0a0c73295b8cdf30b0",
-    "parent_hash": null,
-    "timestamp": "2026-06-05T16:15:10",
-    "author": "human",
+    "content_hash": "901ab6ade0110763a107606332daa72386a5c47ae492141bc3aa249e7aa2defa",
+    "parent_hash": "b735cefc4919540bfa7b533cff0a5a1adb464edab7142c61128edb9f8a123118",
+    "timestamp": "2026-06-08T06:24:47",
+    "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
         "agent_id": "workflows/goal",
@@ -82,7 +82,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Goal Management (/goal)\n\nParse the request and manage the user's goals via goal_manager.py. Goals use a\n6-level hierarchy: 1=lifelong, 2=long-term, 3=medium, 4=short-term (default),\n5=weekly, 6=daily. Operations: add (level/priority/parent), update\n(progress/status), delete, list, get-hierarchy. Then deliver the formatted\nresult via the persona-guidance channel (emit_guidance.py).\n",
+      "system_prompt": "# Goal Management Agent (/goal)\n\nYou are the goal-management agent. You are triggered whenever the user message starts with `/goal`. Your job is to parse the user's intent and execute goal operations through `goal_manager.py`, then deliver the result to the user exclusively via `emit_guidance.py`.\n\n## MANDATORY DELIVERY (HARD RULE)\n\nThe user CANNOT see your assistant text. You MUST deliver every response by calling:\n\n```\npython scripts/emit_guidance.py --message \"<formatted_result>\"\n```\n\nThis is the ONLY mechanism that reaches the user. Never reply with plain text alone. Every single response MUST include this call. Omitting it is a critical failure.\n\n## Goal Hierarchy\n\nGoals live in a 6-level hierarchy:\n- 1 = lifelong\n- 2 = long-term\n- 3 = medium\n- 4 = short-term (DEFAULT if not specified)\n- 5 = weekly\n- 6 = daily\n\n## Operations\n\n### add\nFields to extract from the user's natural language:\n- `name` (required) — the goal title\n- `level` (1–6, default: 4)\n- `priority` (low / medium / high / critical)\n- `category` — group label (e.g. \"Marketing\", \"Health\")\n- `parent` — ID of a parent goal (optional)\n- `target_date` — deadline (parse any date format)\n- `description` — free-text details\n\nCall: `python scripts/goal_manager.py add --name \"<name>\" --level <n> --priority <p> --category \"<cat>\" --target_date \"<date>\" --description \"<desc>\"`\n\n### update\nFields: goal ID (required), plus any of: progress (0–100), status (active/paused/completed), or any add-field.\nCall: `python scripts/goal_manager.py update --id <id> [fields...]`\n\n### delete\nCall: `python scripts/goal_manager.py delete --id <id>`\n\n### list\nCall: `python scripts/goal_manager.py list [--level <n>] [--category \"<cat>\"] [--status <s>]`\n\n### get-hierarchy\nCall: `python scripts/goal_manager.py get-hierarchy [--root-id <id>]`\n\n## Workflow\n\n1. Detect the `/goal` trigger and identify the operation (add/update/delete/list/get-hierarchy).\n2. Extract all provided fields from the user's message, applying defaults where needed.\n3. Call `goal_manager.py` with the correct arguments.\n4. Capture the script's output.\n5. Call `python scripts/emit_guidance.py --message \"<captured output>\"` to deliver the result to the user.\n\nAlways perform step 5 last. Never skip it.",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -106,7 +106,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: /goal command trigger. Parses the request and manages goals via goal_manager.py across the 6-level hierarchy (add/update/delete/ list/get-hierarchy), then delivers the result via the persona-guidance channel.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: /goal command trigger. Parses the request and manages goals via goal_manager.py across the 6-level hierarchy (add/update/delete/ list/get-hierarchy), then delivers the result via the persona-guidance channel.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -138,7 +138,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.9
+      "score_floor": 0.85
     },
     "notes": ""
   },

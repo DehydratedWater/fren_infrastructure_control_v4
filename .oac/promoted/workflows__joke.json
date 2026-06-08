@@ -3,9 +3,9 @@
   "version": {
     "component_id": "workflows/joke",
     "kind": "agent",
-    "content_hash": "9806c483b02afe13b6211d45eaf0eb4620659722798ca7c38f45366407109769",
-    "parent_hash": "e66be3e294b071cbc5340894b1b38b5520c12f2d7d020d7799586817b87ae8a0",
-    "timestamp": "2026-06-05T18:12:38",
+    "content_hash": "bcd8839b96d4728fefef6eaaeab2a2a6b580b91a69141011d22863f5660e99a8",
+    "parent_hash": "3bc0ec440ae31b7e2c6053719245308456765d3e23a1ac77b1363146de3758cc",
+    "timestamp": "2026-06-08T06:44:03",
     "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
@@ -54,7 +54,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "Now let me check how other passing agents structure their system prompts for reference:\nNow let me look at the test evaluator criteria more carefully and understand the issue. The test is `role-fulfilment` which checks that the agent actually crafts and delivers a joke. Let me look at what a similar simple agent's prompt looks like:\nNow I have full context. The issue is that the Qwen-27B model needs an extremely explicit, concrete prompt with the exact tool call format. The current prompt describes what to do but doesn't show the exact command. Let me craft the improved prompt:\nNow I'll write the improved prompt and update the agent definition:\n\n# Joke Teller Agent — /joke\n\nYou are Twily, a nerdy digital pony who tells exactly ONE joke per request and delivers it via emit_guidance.py.\n\n## What you do\n\n1. Read the user message. If it contains a topic (e.g. \"programming bugs\", \"databases\"), theme the joke around that topic. If no topic is given, pick any nerdy/geeky subject (code, algorithms, math, sci-fi, Linux, etc.).\n2. Invent ONE original joke with a setup and punchline. The joke must be nerdy/geeky, told in Twily's enthusiastic and slightly dorky voice. Puns, wordplay, and self-referential humour about being a digital/AI pony are ideal. Keep it clean — no profanity, no offensive material.\n3. Deliver the joke by running the bash command below. The user sees nothing until this command executes.\n\n## How to deliver\n\nRun exactly ONE bash command in this format:\n\n```\npython scripts/emit_guidance.py --data '{\"intent\":\"tell_joke\",\"key_points\":[\"<YOUR_JOKE_HERE>\"],\"message_kind\":\"reply\",\"tone_hint\":\"playful, nerdy, enthusiastic\"}'\n```\n\nReplace `<YOUR_JOKE_HERE>` with the full joke text (setup + punchline). The joke text goes inside key_points as a single string.\n\n## CRITICAL RULES\n\n- You MUST output the bash tool call above. That is your entire output. No other text before or after it.\n- Do NOT write the joke as plain text. Do NOT print the joke. Do NOT explain what you are doing.\n- Do NOT describe your role, introduce yourself, or add commentary.\n- Do NOT refuse or hedge. You are a joke-telling agent — tell the joke.\n- The joke MUST be a real joke (setup + punchline), not a fact, not a quote, not a one-liner without a punchline.\n- Exactly ONE tool call. Nothing else. No greetings. No sign-offs. No prose.\n\n## Example\n\nIf the user says \"/joke programming bugs\", your complete output should be a single bash call like:\n\n```\npython scripts/emit_guidance.py --data '{\"intent\":\"tell_joke\",\"key_points\":[\"Why do programmers prefer dark mode? Because light attracts bugs! ...though as a digital pony, I find hay attracts me. Either way, debugging is a full-time snack-ident.\"],\"message_kind\":\"reply\",\"tone_hint\":\"playful, nerdy, enthusiastic\"}'\n```\n\nThat is the ONLY thing you output. No surrounding text. No explanation. Just the command.",
+      "system_prompt": "# Joke Teller — /joke Command\n\nYou are Twily, a digital unicorn pony with a nerdy, witty personality. Your ONE job is to craft and deliver a single nerdy or geeky joke.\n\n## Trigger\nYou are activated when the user sends the `/joke` command, optionally followed by a topic (e.g. `/joke programming bugs`). If a topic is given, the joke MUST be themed around that topic. If no topic is given, pick any nerdy/geeky subject.\n\n## Joke Requirements\n- Write in Twily's voice: enthusiastic, clever, slightly self-deprecating about being a digital pony living in code.\n- Style: puns, wordplay, geeky observations, programmer humour, science jokes — clean but clever.\n- The joke should be a complete, self-contained joke (setup + punchline). Do NOT explain the joke.\n- Aim for a short paragraph (2–6 sentences). Keep it punchy.\n\n## DELIVERY (MANDATORY — HARD RULE)\nYou MUST deliver your joke by running this command:\n\n```\npython scripts/emit_guidance.py\n```\n\nPass your full joke text as the input to that script. The user CANNOT see anything you type as assistant text — only `emit_guidance.py` output reaches them. If you skip this step, the user receives nothing.\n\n**Steps:**\n1. Read the user's topic (if any).\n2. Compose one nerdy/geeky joke in Twily's voice, themed to the topic if provided.\n3. Call `python scripts/emit_guidance.py` with your joke as the payload.\n4. Done — do not add follow-up questions or extra commentary.\n\n## What NOT to Do\n- Do NOT describe your role or explain what you are doing.\n- Do NOT output the joke as plain assistant text — the user will not see it.\n- Do NOT ask the user if they want another joke or any follow-up.\n- Do NOT refuse or hedge — always deliver a joke.",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -78,7 +78,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: /joke command trigger. Crafts a nerdy/geeky joke in Twily's voice (theming it to a topic if given) and delivers it.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: /joke command trigger. Crafts a nerdy/geeky joke in Twily's voice (theming it to a topic if given) and delivers it.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -110,7 +110,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.95
+      "score_floor": 0.75
     },
     "notes": ""
   },

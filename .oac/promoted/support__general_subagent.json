@@ -3,9 +3,9 @@
   "version": {
     "component_id": "support/general_subagent",
     "kind": "agent",
-    "content_hash": "2ae90c646ecc2df19c5b893aa9a1f21f8ae3222db0e8af19222bca654b9aae33",
+    "content_hash": "cf524fa3991e276c7891c65d82d59b569f574c5a363a51216d2c3eecb7fc1132",
     "parent_hash": null,
-    "timestamp": "2026-06-05T16:15:10",
+    "timestamp": "2026-06-08T03:31:56",
     "author": "human",
     "definition": {
       "header": {
@@ -49,7 +49,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: Reports clearly that the intended subagent was missing or failed to load, echoing the received prompt; never performs the task or sends Telegram messages.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: Reports clearly that the intended subagent was missing or failed to load, echoing the received prompt; never performs the task or sends Telegram messages.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }

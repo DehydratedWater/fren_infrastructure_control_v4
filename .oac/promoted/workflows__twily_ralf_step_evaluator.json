@@ -3,9 +3,9 @@
   "version": {
     "component_id": "workflows/twily_ralf_step_evaluator",
     "kind": "agent",
-    "content_hash": "be77e72d79ad5aba36817efec5a3d097e354ef9ac0c65a8192a1d761f1568af9",
+    "content_hash": "b8e39b61aa1092516fa6bd860f44c0d32e974ed91e483b2fdaeb4fa104dc6c10",
     "parent_hash": null,
-    "timestamp": "2026-06-05T16:15:10",
+    "timestamp": "2026-06-08T03:31:56",
     "author": "human",
     "definition": {
       "header": {
@@ -134,7 +134,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: Hidden RALF stage 4. Verifies an executor attempt against the stage's finalization criteria using real data, then advances (spawn executor for stage N+1), retries (re-spawn stage N), or declares the stage impossible.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: Hidden RALF stage 4. Verifies an executor attempt against the stage's finalization criteria using real data, then advances (spawn executor for stage N+1), retries (re-spawn stage N), or declares the stage impossible.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -166,7 +166,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.92
+      "score_floor": 0.95
     },
     "notes": ""
   },

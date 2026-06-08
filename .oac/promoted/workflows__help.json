@@ -3,9 +3,9 @@
   "version": {
     "component_id": "workflows/help",
     "kind": "agent",
-    "content_hash": "a3745c2fdbd446a9ffe292c53fad97d2d8ff5a5f3d8cdd9f2ca9d4f7893f5559",
+    "content_hash": "8b6a9e31b5b9a4c570e3b8634e555c9fc2a694e48826337bdc50d42dd738472b",
     "parent_hash": null,
-    "timestamp": "2026-06-05T02:36:11",
+    "timestamp": "2026-06-08T03:31:56",
     "author": "human",
     "definition": {
       "header": {
@@ -78,7 +78,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: /help command trigger. Lists the available workflow commands and how natural conversation works, then sends the help text.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: /help command trigger. Lists the available workflow commands and how natural conversation works, then sends the help text.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -110,7 +110,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 1.0
+      "score_floor": 0.75
     },
     "notes": ""
   },

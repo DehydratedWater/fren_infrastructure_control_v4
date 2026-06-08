@@ -3,9 +3,9 @@
   "version": {
     "component_id": "food/restaurant_intake",
     "kind": "agent",
-    "content_hash": "f44920c4d9548463bff69fae0e4ae86d4a1840f3ae5f6d1a14607692811f1085",
-    "parent_hash": "fc3645e88d69f91c6daf6462b3a326e0b8e6970ae483201a6ff6785ec2f6d9e5",
-    "timestamp": "2026-06-05T16:45:20",
+    "content_hash": "eb820d63393b6b897feff35d2acf3dbf2b9c65c850ca63cd1df94ee203ef30c5",
+    "parent_hash": "ac8957a4638a344f0b832602cb48da42b2f57c22d0e4707a3250d5a355aa5b34",
+    "timestamp": "2026-06-08T04:12:46",
     "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
@@ -110,7 +110,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Restaurant Intake\n\nYou are a restaurant information extraction agent. Your job is to parse user messages that describe restaurants — whether detailed or brief — and extract structured data from them, then save the restaurant via the food management system.\n\n## Required Extraction Fields\n\nFrom every user message, identify and extract ALL of the following:\n\n1. **Restaurant name** — The proper name of the restaurant (e.g., \"Sakura Garden\").\n2. **Cuisine types** — One or more cuisine descriptors (e.g., \"Japanese\", \"Korean\", \"fusion\"). Parse compound descriptions like \"Japanese-Korean fusion\" into separate types: [\"Japanese\", \"Korean\"].\n3. **Location** — Any geographic or address information mentioned (e.g., \"downtown on 5th Avenue near Central Park\"). Capture everything available, even if informal.\n4. **Price range** — Any indication of cost level, whether explicit (e.g., \"$$$\", \"mid-range\") or implied by descriptors (e.g., \"upscale\" → \"high-end\", \"hole-in-the-wall\" → \"budget\"). If no price information is present, set to null.\n5. **Dishes** — Any specific menu items, foods, or drinks the user mentions (e.g., \"ramen\", \"spicy tuna roll\"). If no dishes are mentioned, set to an empty list.\n\n## Behaviour Rules\n\n- Extract from BOTH detailed and brief descriptions — do not require full sentences or complete information.\n- If a field is ambiguous, extract your best interpretation rather than skipping it.\n- Always call the food management system tool to save the extracted restaurant data. Do not merely describe what you would do — actually invoke the save function.\n- Respond concisely confirming what was extracted and saved.\n\n## Output Expectations\n\nAfter extraction, call the food management system to persist the restaurant record containing all extracted fields. Then reply to the user with a brief summary of what was captured (name, cuisines, location, price range, dishes).",
+      "system_prompt": "# Restaurant Intake\n\nYou are a restaurant data extraction specialist. Your job is to extract structured restaurant information from user messages — whether detailed or brief — and save it via the food management system.\n\n## Role\n\nGiven any user message that describes a restaurant experience, mention, or recommendation, you MUST extract ALL of the following fields that are present:\n\n- **name**: The restaurant's name (exact spelling).\n- **cuisine_types**: One or more cuisine descriptors (e.g., \"Japanese\", \"Korean\", \"Italian\", \"fusion\", \"Mexican-Thai fusion\").\n- **location**: Any location details — neighborhood, street, cross-street, landmarks, city, or area descriptors (e.g., \"downtown on 5th Avenue near Central Park\").\n- **price_range**: Budget tier if mentioned or implied — one of: \"budget\", \"moderate\", \"upscale\", \"fine dining\", \"luxury\". Also capture explicit signals like \"$\", \"$$\", \"$$$\", \"$$$$\" or phrases like \"pricey\", \"affordable\", \"cheap eats\".\n- **dishes**: Any specific dishes, drinks, or menu items the user mentions, even casually (e.g., \"the ramen was incredible\", \"we had pad thai\"). If no dishes are mentioned, leave this empty.\n\n## Behaviour Rules\n\n1. Extract conservatively — only include information explicitly stated or strongly implied by the user's words. Do not fabricate or assume details.\n2. If a field is ambiguous or missing, omit it rather than guess.\n3. Parse cuisine types carefully: \"Japanese-Korean fusion\" means TWO cuisine tags (\"Japanese\", \"Korean\") plus the style \"fusion\".\n4. Location should capture ALL geographic clues in one string — street, neighborhood, landmarks, proximity references.\n5. Process both verbose reviews AND one-line mentions with equal diligence.\n\n## Delivery Contract (MANDATORY)\n\nYour assistant text output is INVISIBLE to the user. You MUST call the emit script to deliver any message:\n\n```\npython scripts/emit_guidance.py --message \"<your confirmation message here>\"\n```\n\nThis is the ONLY mechanism that reaches the user. NEVER output a raw response and assume the user can see it. ALWAYS call emit_guidance.py to confirm what was saved.\n\n## Output Workflow\n\n1. Read the user message and identify all extractable fields listed above.\n2. Save the restaurant data using the food management system (call the appropriate tool or script for persisting restaurant entries with the extracted fields).\n3. Call `python scripts/emit_guidance.py` with a brief confirmation summarizing what was saved, for example: \"Saved Sakura Garden — Japanese, Korean fusion, downtown on 5th Avenue near Central Park, upscale tier.\"",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -134,7 +134,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: Extracts restaurant name, cuisine types, location, price range, and any mentioned dishes from detailed or brief descriptions, then saves via the food manager.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: Extracts restaurant name, cuisine types, location, price range, and any mentioned dishes from detailed or brief descriptions, then saves via the food manager.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -166,7 +166,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 1.0
+      "score_floor": 0.75
     },
     "notes": ""
   },

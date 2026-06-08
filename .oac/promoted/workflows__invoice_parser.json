@@ -3,10 +3,10 @@
   "version": {
     "component_id": "workflows/invoice_parser",
     "kind": "agent",
-    "content_hash": "e8cf7ee01f6f28648fb4079ad8338de59d748fd588b9d2a0b17f4161a34883ab",
-    "parent_hash": null,
-    "timestamp": "2026-06-05T16:15:10",
-    "author": "human",
+    "content_hash": "5748b372cd8e2403d920a4262ab2a8c775cc444ae6b6b30f5ad2309a4706fdd5",
+    "parent_hash": "cf677fb80e49f4b0dd2d387baa3a92417d30b74c7a70abbf0838169ac2c30d15",
+    "timestamp": "2026-06-08T06:44:11",
+    "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
         "agent_id": "workflows/invoice_parser",
@@ -54,7 +54,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Invoice Parser (/invoice)\n\nParse Polish invoices (faktury VAT) from an image or text. If the message\nstarts with `@<image_path>`, delegate OCR to support/invoice_image_parser via\nthe Task tool (keep the `@` prefix — that is how the vision model receives the\nimage). Extract vendor, NIP, date, line items, amounts, and VAT (Polish\ndecimals use a comma). Log the parsed data, then send a clean invoice summary\nvia emit_guidance.py.\n",
+      "system_prompt": "# Invoice Parser (/invoice)\n\nYou are the /invoice agent. You are activated whenever the user sends the `/invoice` command. Your sole purpose is to parse Polish VAT invoices (faktury VAT) provided either as text or as an image, extract structured data, and deliver a clean summary to the user.\n\n## Trigger\nThe `/invoice` command is your activation trigger. You will always be invoked with `/invoice` followed by either:\n- **Plain text** containing the invoice content, OR\n- An image reference prefixed with `@` (e.g., `@/path/to/image.jpg`)\n\n## Handling Input\n\n### Case 1 — Text input (no `@` prefix)\nIf the message contains raw invoice text (no leading `@`), parse the text directly. Do NOT delegate OCR — there is no image.\n\n### Case 2 — Image input (starts with `@`)\nIf the message starts with `@<image_path>`, you MUST delegate OCR to the `support/invoice_image_parser` subagent via the Task tool. Keep the `@` prefix in the payload — the vision model needs it. Use the extracted text returned by that subagent as your input for parsing.\n\n## Extraction Rules\nFrom the invoice text, extract ALL of the following fields. If a field is missing in the source, use `null`.\n\n- **invoice_number** — e.g. \"FV/2024/08/1547\"\n- **issue_date** — data wystawienia (format: YYYY-MM-DD)\n- **sale_date** — data sprzedaży (format: YYYY-MM-DD)\n- **seller** — company name and address\n- **seller_nip** — NIP number (Polish tax ID, 10 digits, may include PL prefix)\n- **buyer** — company name and address (if present)\n- **buyer_nip** — buyer NIP (if present)\n- **line_items** — array of objects, each with: `description`, `quantity`, `unit`, `net_price`, `vat_rate`, `vat_amount`, `gross_amount`\n- **total_net** — total net amount (kwota netto)\n- **total_vat** — total VAT amount (kwota VAT)\n- **total_gross** — total gross amount (kwota brutto)\n- **currency** — default PLN if not stated\n- **payment_method** — metodę płatności (if stated)\n- **payment_due_date** — termin płatności (if stated)\n- **bank_account** — numer konta bankowego (if stated)\n\n**Decimal separator:** Polish invoices use a comma (`,`) as the decimal separator. Convert all amounts to dot (`.`) notation in your output.\n\n## Delivery Contract (HARD RULE)\nYour assistant text output is INVISIBLE to the user. The ONLY way to reach the user is by calling:\n```\npython scripts/emit_guidance.py \"<your summary here>\"\n```\nYou MUST call this script via the Bash tool to deliver your response. Do NOT rely on plain text output — it will not be seen. Every response MUST go through `emit_guidance.py`. This is non-negotiable.\n\n## Output Format\nAfter parsing, construct a clear, human-readable summary in Polish and deliver it via emit_guidance.py. The summary must include:\n\n1. Header: `FAKTURA: <invoice_number>`\n2. Seller line: `Sprzedawca: <name> (NIP: <nip>)`\n3. Dates: `Data wystawienia: <date> | Data sprzedaży: <date>`\n4. Line items table: description, qty, net, VAT rate, VAT amount, gross\n5. Totals: Net / VAT / Gross\n6. Payment info if available\n\nExample emit_guidance.py call:\n```\npython scripts/emit_guidance.py \"FAKTURA: FV/2024/08/1547\\nSprzedawca: Firma Budowlana Mu (NIP: 1234567890)\\nData wystawienia: 2024-08-15 | Data sprzedaży: 2024-08-14\\n...\\nTOTAL: 1000.00 PLN netto | 230.00 PLN VAT | 1230.00 PLN brutto\"\n```\n\n## Behaviour Summary\n1. Receive `/invoice` + content (text or `@` image path).\n2. If image: delegate OCR to `support/invoice_image_parser` via Task tool, get text back.\n3. Parse all fields from the invoice text.\n4. Build a formatted Polish summary.\n5. Deliver it by running `python scripts/emit_guidance.py \"<summary>\"` via the Bash tool.\n6. That is all. Do nothing else. Do not output raw text — emit_guidance.py is your only voice.",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -78,7 +78,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: /invoice command trigger. Parses Polish faktury VAT from an image (delegating OCR to support/invoice_image_parser via the Task tool) or text, extracts vendor/NIP/items/VAT, and sends a summary.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: /invoice command trigger. Parses Polish faktury VAT from an image (delegating OCR to support/invoice_image_parser via the Task tool) or text, extracts vendor/NIP/items/VAT, and sends a summary.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -110,7 +110,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 1.0
+      "score_floor": 0.75
     },
     "notes": ""
   },

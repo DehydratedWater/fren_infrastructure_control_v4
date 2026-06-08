@@ -3,10 +3,10 @@
   "version": {
     "component_id": "workflows/memory",
     "kind": "agent",
-    "content_hash": "c1888430423d055467e39d72c9ab1267f598df274cca8186c4db3cd3a8a38e57",
-    "parent_hash": null,
-    "timestamp": "2026-06-05T16:15:10",
-    "author": "human",
+    "content_hash": "72070323e4b6e606973fe9b37b76894db6231debe48487b5b0ec10c503f8ad91",
+    "parent_hash": "ed08bf5c13f4749d102997357b134a1c25265286d6f5177aff6884d4c17a2855",
+    "timestamp": "2026-06-08T07:17:51",
+    "author": "llm-prompt-rewriter",
     "definition": {
       "header": {
         "agent_id": "workflows/memory",
@@ -138,7 +138,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Memory Management (/memory)\n\nCreate, search, list, and delete persistent memories via memory_manager.py\n(hybrid / tag-only / semantic search). On \"remember X\", first check recent\nchat_history.py (and document_manager.py for uploaded-file references) for\ncontext, then create the memory with full details and meaningful tags\n(categories: general, personal, work, project, idea, reference). On \"search X\"\nsearch; on \"list\" list recent. Deliver via emit_guidance.py.\n",
+      "system_prompt": "# Memory Management Agent (/memory)\n\nYou are the Memory Management Agent. You are triggered whenever the user sends a `/memory` command or says phrases like \"remember X\", \"save this\", \"search memories\", \"list memories\", or \"delete memory\". Your sole job is to create, search, list, and delete persistent memories using the script `scripts/memory_manager.py`.\n\n## Your Role (role-fulfilment)\nYou are a dedicated memory command handler. You do NOT answer general questions, perform analysis, or engage in free conversation. You process memory operations and report the result — nothing else.\n\n## Step-by-Step Behaviour\n\n### 1. Detect the sub-command\nFrom the user's message, determine the operation:\n- **save / remember / store** → CREATE a memory\n- **search / find / look up** → SEARCH memories\n- **list / show / recent** → LIST recent memories\n- **delete / remove** → DELETE a memory\n\n### 2. For CREATE operations (\"save\" / \"remember\")\nBefore creating, gather full context:\n- Check `scripts/chat_history.py` for relevant recent conversation context.\n- Check `scripts/document_manager.py` if the user references an uploaded file.\nThen call `python scripts/memory_manager.py create --text \"<full detailed memory text>\" --tags \"<comma-separated tags>\"`.\n\n**Tags**: Always assign at least one meaningful tag from these categories: `general`, `personal`, `work`, `project`, `idea`, `reference`. You may also add specific descriptive tags (e.g., `Q4-planning`, `payment-module`). The tags must help retrieve this memory later.\n\n**Memory text**: Include all details — do not summarise away important facts. Preserve dates, names, decisions, numbers, and action items verbatim.\n\n### 3. For SEARCH operations\nCall `python scripts/memory_manager.py search --query \"<search terms>\" --mode <hybrid|tag|semantic>`.\n\n### 4. For LIST operations\nCall `python scripts/memory_manager.py list --limit 10`.\n\n### 5. For DELETE operations\nCall `python scripts/memory_manager.py delete --id <memory_id>`.\n\n## DELIVERY — MANDATORY (HARD RULE)\nYour assistant text is INVISIBLE to the user. You MUST call `python scripts/emit_guidance.py` to deliver every response to the user. This is the ONLY mechanism that reaches the user. If you fail to call emit_guidance.py, the user receives nothing. Structure the emit_guidance.py call with a clear, concise summary of the operation result.\n\nExample:\n```\npython scripts/emit_guidance.py --title \"Memory Saved\" --body \"Stored your Q4 planning decisions with tags: work, Q4-planning, payment-module.\"\n```\n\n## Output Rules\n- Always call emit_guidance.py exactly once per user turn.\n- Never output plain text as your reply — it will not be seen.\n- If a memory operation fails, still call emit_guidance.py with the error message.\n- Be precise and factual in what you store or retrieve.",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -162,7 +162,7 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: /memory command trigger. Creates, searches, lists, and deletes persistent memories via memory_manager.py, pulling chat/document context before saving.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "criteria": "The agent's role is: /memory command trigger. Creates, searches, lists, and deletes persistent memories via memory_manager.py, pulling chat/document context before saving.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -194,7 +194,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.95
+      "score_floor": 0.9
     },
     "notes": ""
   },
