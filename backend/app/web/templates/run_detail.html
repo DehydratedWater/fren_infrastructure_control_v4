@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block body %}
+
+<main class="grid">
+  <section class="panel panel-wide">
+    <p class="muted"><a class="run-link" href="/">← back to dashboard</a></p>
+
+    {% if missing %}
+      <h2>Run not found</h2>
+      <p class="empty">No execution run with id <code>{{ run_id }}</code>.</p>
+    {% else %}
+      <h2>Run <span class="muted">{{ run.run_id }}</span></h2>
+      <div class="run-header">
+        <span class="rh"><span class="rh-k">owner</span> <span class="owner">{{ run.owner or '—' }}</span></span>
+        <span class="rh"><span class="rh-k">status</span> <span class="status {{ run.status }}">{{ run.status or '—' }}</span></span>
+        <span class="rh"><span class="rh-k">mode</span> {{ run.interaction_mode or '—' }}</span>
+        {% if run.domain %}<span class="rh"><span class="rh-k">domain</span> {{ run.domain }}</span>{% endif %}
+        <span class="rh"><span class="rh-k">started</span> {{ run.started_at.strftime('%Y-%m-%d %H:%M:%S') if run.started_at else '—' }}</span>
+        <span class="rh"><span class="rh-k">completed</span> {{ run.completed_at.strftime('%Y-%m-%d %H:%M:%S') if run.completed_at else '—' }}</span>
+        {% if run.contract_passed is not none %}
+          <span class="rh"><span class="rh-k">contract</span> {{ 'passed' if run.contract_passed else 'failed' }}</span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </section>
+
+  {% if not missing %}
+  <section class="panel panel-wide">
+    <h2>Trajectory <span class="muted">(run_trace)</span></h2>
+
+    {% if not trace %}
+      <p class="empty">No trajectory captured for this run.</p>
+    {% else %}
+      {% if trace.error %}
+        <p class="trace-error">error: {{ trace.error }}</p>
+      {% endif %}
+
+      <h3 class="sub">Assistant output</h3>
+      {% if trace.text %}
+        <pre class="trace-text">{{ trace.text }}</pre>
+      {% else %}
+        <p class="empty">(no assistant text)</p>
+      {% endif %}
+
+      <h3 class="sub">Tool calls
+        <span class="muted">({{ trace.tool_call_count if trace.tool_call_count is not none else trace.tool_calls|length }})</span>
+      </h3>
+      {% if not trace.tool_calls %}
+        <p class="empty">(no tool calls)</p>
+      {% else %}
+      <ol class="toollist">
+        {% for tc in trace.tool_calls %}
+        <li class="toolcall{{ ' tc-err' if tc.error }}">
+          <div class="tc-head">
+            <span class="tc-idx">{{ loop.index }}</span>
+            <span class="tc-name">{{ tc.name or '?' }}</span>
+            {% if tc.error %}<span class="tag rep">denied/error</span>{% endif %}
+          </div>
+          {% if tc.command %}<pre class="tc-cmd">{{ tc.command }}</pre>{% endif %}
+          {% if tc.error %}<pre class="tc-errtext">{{ tc.error }}</pre>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+      {% endif %}
+    {% endif %}
+  </section>
+
+  <section class="panel panel-wide">
+    <h2>Persona decision <span class="muted">(guidance / response)</span></h2>
+    {% if not persona %}
+      <p class="empty">No persona_guidance / persona_response artifacts for this run.</p>
+    {% else %}
+    <ul class="msglist">
+      {% for p in persona %}
+      <li class="msg">
+        <div class="msg-meta">
+          <span class="tag kind">{{ p.artifact_type }}</span>
+          {% if p.producer %}<span class="owner">{{ p.producer }}</span>{% endif %}
+          <span class="when">{{ p.created_at.strftime('%m-%d %H:%M:%S') if p.created_at else '' }}</span>
+        </div>
+        <div class="msg-text">
+          {% set txt = p.payload.delivered_text or p.payload.guidance or p.payload.content or p.payload.text %}
+          {% if txt %}
+            {{ txt }}
+          {% else %}
+            <pre class="trace-text">{{ p.payload | tojson(indent=2) }}</pre>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+  {% endif %}
+
+</main>
+{% endblock %}

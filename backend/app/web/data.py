@@ -147,6 +147,74 @@ async def recent_runs(limit: int = 30) -> list[dict[str, Any]]:
         return await fetch_all(s, sql, {"limit": limit})
 
 
+# ── single run detail (view-the-session) ──────────────────────────────────────
+
+
+async def run_detail(run_id: str) -> dict[str, Any] | None:
+    """One run's header + trajectory + persona artifacts, for ``/run/{id}``.
+
+    Read-only. Returns ``None`` when the run row doesn't exist. The trajectory
+    comes from the ``run_trace`` artifact the runner persists (assistant output +
+    ordered tool calls); it may be missing for older runs, in which case
+    ``trace`` is ``None`` and the page shows "no trajectory captured".
+    """
+    run_sql = """
+        SELECT run_id, owner, status, interaction_mode, domain,
+               started_at, completed_at, contract_passed
+        FROM execution_runs WHERE run_id = :run_id
+    """
+    art_sql = """
+        SELECT artifact_type, version, producer, payload, created_at
+        FROM execution_artifacts WHERE run_id = :run_id
+        ORDER BY artifact_type, version DESC
+    """
+    async with get_async_session() as s:
+        run = await fetch_one(s, run_sql, {"run_id": run_id})
+        if not run:
+            return None
+        arts = await fetch_all(s, art_sql, {"run_id": run_id})
+
+    run = dict(run)
+    trace: dict[str, Any] | None = None
+    persona: list[dict[str, Any]] = []
+    seen_persona: set[str] = set()
+    for a in arts:
+        atype = a.get("artifact_type")
+        payload = a.get("payload") or {}
+        if isinstance(payload, str):
+            import json
+
+            try:
+                payload = json.loads(payload)
+            except Exception:  # noqa: BLE001
+                payload = {"content": payload}
+        if atype == "run_trace" and trace is None:
+            # rows are ordered version DESC within type → first is the latest
+            trace = {
+                "text": payload.get("text") or "",
+                "tool_calls": payload.get("tool_calls") or [],
+                "tool_call_count": payload.get("tool_call_count"),
+                "ok": payload.get("ok"),
+                "error": payload.get("error"),
+                "producer": a.get("producer") or "",
+            }
+        elif atype in ("persona_guidance", "persona_response"):
+            # collapse to the latest version per type (rows are version DESC)
+            if atype in seen_persona:
+                continue
+            seen_persona.add(atype)
+            persona.append(
+                {
+                    "artifact_type": atype,
+                    "producer": a.get("producer") or "",
+                    "created_at": a.get("created_at"),
+                    "payload": payload,
+                }
+            )
+
+    return {"run": run, "trace": trace, "persona": persona}
+
+
 # ── context the agents are fed ────────────────────────────────────────────────
 
 

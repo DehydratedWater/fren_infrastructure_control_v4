@@ -7,8 +7,8 @@
   </thead>
   <tbody>
   {% for r in runs %}
-    <tr>
-      <td class="owner">{{ r.owner or '—' }}</td>
+    <tr class="run-row" onclick="window.location='/run/{{ r.run_id }}'">
+      <td class="owner"><a class="run-link" href="/run/{{ r.run_id }}">{{ r.owner or '—' }}</a></td>
       <td><span class="status {{ r.status }}">{{ r.status or '—' }}</span></td>
       <td>{{ r.interaction_mode or '—' }}</td>
       <td>{{ r.started_at.strftime('%m-%d %H:%M') if r.started_at else '—' }}</td>
