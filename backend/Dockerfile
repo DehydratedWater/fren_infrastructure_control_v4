@@ -14,7 +14,7 @@ WORKDIR /app
 # Core + the integration tools' runtime libs (tuya/google/pdf/docx/embeddings/
 # media/charts/youtube) so every ported tool runs, matching v3's dependency set.
 RUN pip install --upgrade pip && \
-    pip install fastapi 'uvicorn[standard]' 'sqlalchemy[asyncio]' asyncpg alembic \
+    pip install fastapi 'uvicorn[standard]' 'jinja2>=3.1' 'sqlalchemy[asyncio]' asyncpg alembic \
         'pydantic[email]>=2.6' pydantic-settings pyjwt python-dotenv \
         httpx croniter apscheduler python-telegram-bot pyyaml \
         langchain-core langchain-openai \
