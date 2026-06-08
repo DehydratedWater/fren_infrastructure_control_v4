@@ -91,6 +91,23 @@ services:
       db:
         condition: service_healthy
 
+  # Read-only monitoring dashboard (FastAPI + Jinja2 + HTMX). Browse what the
+  # agents are doing: proactive persona_response messages, agent runs, the
+  # context they're fed (digest / inner_monologue / emotional_state / activity),
+  # the chat, and a health strip. Auto-refreshes every 10s. Never writes the DB.
+  # Open http://<host>:8090
+  web:
+    <<: *backend
+    environment:
+      PYTHONPATH: /srv/oac:/app:/app/backend
+      AGENTS_DIR: ${AGENTS_DIR:-/data/agents}
+      SERVICE: web
+    ports:
+      - "8090:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   fren_v4_db_data:
   fren_v4_data:
