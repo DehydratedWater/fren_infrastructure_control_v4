@@ -1,0 +1,39 @@
+<div class="counts">
+  <span class="badge delivered">{{ persona.delivered_count }} delivered</span>
+  <span class="badge skipped">{{ persona.skipped_count }} skipped</span>
+  {% if persona.repeat_groups %}
+    <span class="badge repeat">{{ persona.repeat_groups }} repeat group(s)</span>
+  {% endif %}
+  <span class="muted">of {{ persona.total }} total runs</span>
+</div>
+
+{% if not persona.messages %}
+  <p class="empty">No persona_response artifacts yet.</p>
+{% else %}
+<ul class="msglist">
+  {% for m in persona.messages %}
+  <li class="msg {{ 'is-skip' if m.is_skip else 'is-delivered' }}{{ ' is-repeat' if m.repeat_group }}">
+    <div class="msg-meta">
+      {% if m.is_skip %}
+        <span class="tag skip">SKIP</span>
+      {% else %}
+        <span class="tag deliver">SENT</span>
+      {% endif %}
+      {% if m.repeat_group %}
+        <span class="tag rep">repeat #{{ m.repeat_group }}</span>
+      {% endif %}
+      {% if m.kind %}<span class="tag kind">{{ m.kind }}</span>{% endif %}
+      <span class="owner">{{ m.owner or m.producer or '—' }}</span>
+      <span class="when">{{ m.created_at.strftime('%m-%d %H:%M:%S') if m.created_at else '' }}</span>
+    </div>
+    <div class="msg-text">
+      {% if m.is_skip %}
+        <em class="muted">(skipped — no message delivered)</em>
+      {% else %}
+        {{ m.delivered_text }}
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
