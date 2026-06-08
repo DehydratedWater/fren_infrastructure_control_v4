@@ -387,8 +387,11 @@ class Scheduler:
                 cmd = ["python", script_path]
                 if prompt:
                     cmd.extend(prompt.split())
+                # Run from AGENTS_DIR — `scripts/` is symlinked there, so the
+                # relative `scripts/X.py` resolves (project_root=/app/backend has
+                # no scripts/, which 'can't open file'-failed every cron tick).
                 proc = await asyncio.create_subprocess_exec(
-                    *cmd, cwd=str(project_root), env=env,
+                    *cmd, cwd=str(settings.agents_dir), env=env,
                     stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
                 )
                 _stdout, stderr = await asyncio.wait_for(
