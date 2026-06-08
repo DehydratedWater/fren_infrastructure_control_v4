@@ -640,6 +640,18 @@ class Scheduler:
         except Exception:
             logger.debug("Failed to fetch conversation digest", exc_info=True)
 
+        # Volatile proactive context — emotional_state, vibe, inner_thoughts,
+        # recent activity (parity with v3's proactive enrich). Best-effort; the
+        # block degrades to "" when its data sources are empty (Phase-B ingestion).
+        try:
+            from app.telegram.persona_prose import build_proactive_context_block
+
+            volatile = await build_proactive_context_block()
+            if volatile:
+                prefix_parts.append(volatile)
+        except Exception:
+            logger.debug("Failed to build proactive volatile context", exc_info=True)
+
         # Chat history — last 24h, capped at 40k chars (~10k tokens)
         try:
             from app.db.repos.chat import ChatMessagesRepo
@@ -649,7 +661,11 @@ class Scheduler:
             msgs = await repo.get_history(days=2, limit=300, clearance="full")
             msgs = [m for m in msgs if m.get("timestamp_unix", 0) > since_ts]
             if msgs:
-                lines = ["## Chat History (last 24h)"]
+                lines = [
+                    "## Chat History (last 24h)",
+                    "Includes Twily's own recent messages. Before sending, scan this so you "
+                    "do NOT repeat a reminder/topic already raised — surface something new.",
+                ]
                 total = 0
                 for m in msgs:
                     ts = str(m.get("timestamp", ""))[:16]
