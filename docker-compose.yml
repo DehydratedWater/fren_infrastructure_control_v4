@@ -40,6 +40,15 @@ services:
       PYTHONPATH: /srv/oac:/app:/app/backend
       AGENTS_DIR: ${AGENTS_DIR:-/data/agents}
       SERVICE: bot
+    # Host webcam/desk-camera devices for the camera_capture tool (twily_selfie /
+    # persona_media). Without these the container has no /dev/video* and ffmpeg's
+    # v4l2 capture fails. Note: if the host has no camera, comment these out or the
+    # bot won't start.
+    devices:
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+      - /dev/video3:/dev/video3
 
   # Autonomous cron-driven agent runner.
   scheduler:

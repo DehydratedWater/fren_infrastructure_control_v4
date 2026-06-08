@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
 from src import ScriptTool
 from pydantic import BaseModel, Field
+
+# Device candidates per logical camera, preferred first. Multi-node UVC cameras
+# expose several /dev/video* nodes where only one is the live capture node (others
+# are metadata-only or busy), so we fall back across them and use the first that
+# yields a frame. Overridable via FREN_WEBCAM_DEVICE / FREN_DESK_DEVICE.
+_WEBCAM_DEVICES = [os.getenv("FREN_WEBCAM_DEVICE", "/dev/video0"), "/dev/video2", "/dev/video1", "/dev/video3"]
+_DESK_DEVICES = [os.getenv("FREN_DESK_DEVICE", "/dev/video2"), "/dev/video0", "/dev/video3", "/dev/video1"]
 
 
 class Input(BaseModel):
@@ -55,6 +63,22 @@ def _capture(device: str, out_path: Path) -> bool:
         return False
 
 
+def _capture_first(devices: list[str], out_path: Path) -> bool:
+    """Try each candidate device in order; succeed on the first that yields a frame.
+
+    Tolerates a busy/metadata-only preferred node (e.g. /dev/video0 'Device or
+    resource busy') by falling back to the next working camera node.
+    """
+    seen: set[str] = set()
+    for device in devices:
+        if device in seen:
+            continue
+        seen.add(device)
+        if _capture(device, out_path):
+            return True
+    return False
+
+
 class CameraCaptureTool(ScriptTool[Input, Output]):
     name = "camera-capture"
     description = "Capture a photo from webcam or desk camera"
@@ -70,17 +94,17 @@ class CameraCaptureTool(ScriptTool[Input, Output]):
 
         if inp.command in ("webcam", "both"):
             path = CAPTURES_DIR / f"cam_{ts}.jpg"
-            if _capture("/dev/video0", path):
+            if _capture_first(_WEBCAM_DEVICES, path):
                 webcam_path = str(path)
             else:
-                errors.append("webcam capture failed")
+                errors.append("webcam capture failed (no working /dev/video* node)")
 
         if inp.command in ("desk", "both"):
             path = CAPTURES_DIR / f"cam_desk_{ts}.jpg"
-            if _capture("/dev/video2", path):
+            if _capture_first(_DESK_DEVICES, path):
                 desk_path = str(path)
             else:
-                errors.append("desk camera capture failed")
+                errors.append("desk camera capture failed (no working /dev/video* node)")
 
         if inp.command not in ("webcam", "desk", "both"):
             return Output(success=False, error=f"Unknown command: {inp.command}. Use: webcam, desk, both")
