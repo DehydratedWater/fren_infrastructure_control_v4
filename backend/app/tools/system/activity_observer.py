@@ -93,6 +93,35 @@ async def _describe(image_path: str) -> str:
         return ""
 
 
+async def _fetch_health_snapshot() -> dict:
+    """Best-effort live Garmin snapshot to attach to the observation block.
+
+    Returns {} unless the device is synced AND the Grafana/InfluxDB endpoint is
+    reachable AND a non-empty current reading comes back — so on an unsynced
+    device or absent token the block carries no health and nothing can be
+    fabricated downstream. Requires GRAPHANA_GARMIN_DATA_KEY in the env.
+    """
+    import os
+
+    if not os.environ.get("GRAPHANA_GARMIN_DATA_KEY"):
+        return {}
+    try:
+        from app.tools.context.garmin_health import GarminHealthTool, Input
+
+        result = await GarminHealthTool()._run(Input(command="current"))  # type: ignore[attr-defined]
+        if not getattr(result, "success", False) or not getattr(result, "data", None):
+            return {}
+        d = result.data
+        snap: dict = {}
+        for src, dst in (("body_battery", "body_battery"), ("stress_level", "stress"), ("heart_rate", "heart_rate")):
+            if d.get(src) is not None:
+                snap[dst] = d[src]
+        return snap
+    except Exception as e:
+        print(f"[activity_observer] garmin snapshot fetch failed (storing without): {e}")
+        return {}
+
+
 async def _store_block(description: str, image_path: str) -> bool:
     """Write the observation as an activity_blocks row. Returns True on success."""
     try:
@@ -100,6 +129,9 @@ async def _store_block(description: str, image_path: str) -> bool:
 
         now = datetime.now(UTC)
         title = description[:80].strip()
+        # Attach a live Garmin snapshot ONLY if the device is synced + reachable.
+        # Empty {} otherwise — the loader/digest never invent health.
+        health = await _fetch_health_snapshot()
         block = {
             "started_at": now,
             "ended_at": None,
@@ -109,7 +141,7 @@ async def _store_block(description: str, image_path: str) -> bool:
             "tags": ["camera", "room_state"],
             "confidence": 0.9,
             "environment": {"image_path": image_path},
-            "health_snapshot": {},  # camera carries NO health — never fabricated
+            "health_snapshot": health,
         }
         # insert_blocks (not replace_recent) so each observation accumulates as a
         # distinct timeline entry the loader can show as changing material.

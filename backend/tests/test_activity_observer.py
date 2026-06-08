@@ -34,6 +34,8 @@ async def test_store_block_writes_observation_no_health(monkeypatch):
     import app.db.repos.activity_blocks as ab
 
     monkeypatch.setattr(ab, "ActivityBlocksRepo", _Repo)
+    # device not synced / no token -> no health attached
+    monkeypatch.setattr(ao, "_fetch_health_snapshot", lambda: _async({}))
     ok = await ao._store_block("A person is at the desk, screen on.", "data/captures/cam_x.jpg")
     assert ok is True
     block = captured["blocks"][0]
@@ -43,6 +45,28 @@ async def test_store_block_writes_observation_no_health(monkeypatch):
     # camera carries NO health — must be empty so it can never be fabricated
     assert block["health_snapshot"] == {}
     assert block["environment"]["image_path"].endswith("cam_x.jpg")
+
+
+async def test_store_block_attaches_garmin_when_present(monkeypatch):
+    captured: dict = {}
+
+    class _Repo:
+        async def insert_blocks(self, block_date, blocks):
+            captured["blocks"] = blocks
+            return len(blocks)
+
+    import app.db.repos.activity_blocks as ab
+
+    monkeypatch.setattr(ab, "ActivityBlocksRepo", _Repo)
+    # device synced -> live snapshot attaches to the block
+    monkeypatch.setattr(ao, "_fetch_health_snapshot", lambda: _async({"body_battery": 14, "stress": 60}))
+    await ao._store_block("Desk occupied.", "data/captures/y.jpg")
+    assert captured["blocks"][0]["health_snapshot"] == {"body_battery": 14, "stress": 60}
+
+
+async def test_fetch_health_snapshot_empty_without_token(monkeypatch):
+    monkeypatch.delenv("GRAPHANA_GARMIN_DATA_KEY", raising=False)
+    assert await ao._fetch_health_snapshot() == {}
 
 
 async def test_run_skips_when_capture_fails(monkeypatch):
