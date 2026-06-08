@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.agents.config import DEFAULT_WORKER
+from app.agents.config import DEFAULT_WORKER, QWEN_VL
 from app.agents.domains import all_agent_defs
 from src import (
     AgentDefinition,
@@ -35,6 +35,14 @@ def all_agents() -> list[AgentDefinition]:
 def build_registry(*, project_root: Path | None = None) -> AgentRegistry:
     reg = AgentRegistry()
     base_params = DEFAULT_WORKER.preset.to_model_parameters()
+    # v3 parity: vision-class agents (e.g. food/product_image_indexer,
+    # support/image_processor) are HARD-BOUND to the local vision model
+    # (local-vllm-image/qwen3-8b-vl) at definition time — v3's
+    # apply_model(builder, MODEL_VISION). Every worker variant marks "vision"
+    # as a passthrough class, so these agents keep this base model across ALL
+    # variants instead of being rerouted onto a text-only model. Binding the
+    # vision preset HERE is what that passthrough preserves.
+    vision_params = QWEN_VL.to_model_parameters()
     root = project_root or PROJECT_ROOT
     slots: list[TemplateSlot] = []
     for agent in all_agents():
@@ -55,10 +63,11 @@ def build_registry(*, project_root: Path | None = None) -> AgentRegistry:
             model_class=agent.model_class,
         )
         improved = with_delivery_postamble(improved)
+        agent_params = vision_params if agent.model_class == "vision" else base_params
         agent_id = reg.register_agent(
             agent.header.agent_id,
             improved,
-            base_params,
+            agent_params,
         )
         # also_compile_as_primary → the compiler emits BOTH
         # `<name>.md` (mode: subagent, for Task dispatch from an orchestrator)
