@@ -1,0 +1,240 @@
+{
+  "workflow_json": {
+    "92:1": {
+      "inputs": {
+        "unet_name": "ltx-2.3-22b-dev-Q4_K_M.gguf"
+      },
+      "class_type": "UnetLoaderGGUF",
+      "_meta": {"title": "Load GGUF UNet"}
+    },
+    "92:25": {
+      "inputs": {
+        "vae_name": "ltx-2.3-22b-dev_video_vae.safetensors"
+      },
+      "class_type": "VAELoader",
+      "_meta": {"title": "Load Video VAE"}
+    },
+    "92:60": {
+      "inputs": {
+        "text_encoder": "gemma_3_12B_it_fp4_mixed.safetensors",
+        "ckpt_name": "ltx-2.3-22b-dev_embeddings_connectors.safetensors",
+        "device": "default"
+      },
+      "class_type": "LTXAVTextEncoderLoader",
+      "_meta": {"title": "LTXV Audio Text Encoder Loader"}
+    },
+    "92:48": {
+      "inputs": {
+        "ckpt_name": "ltx-2.3-22b-dev_audio_vae.safetensors"
+      },
+      "class_type": "LTXVAudioVAELoader",
+      "_meta": {"title": "LTXV Audio VAE Loader"}
+    },
+    "92:89": {
+      "inputs": {
+        "image": "pasted/image.png"
+      },
+      "class_type": "LoadImage",
+      "_meta": {"title": "Load Input Image"}
+    },
+    "92:5": {
+      "inputs": {
+        "img_compression": 35,
+        "image": ["92:89", 0]
+      },
+      "class_type": "LTXVPreprocess",
+      "_meta": {"title": "Preprocess Image"}
+    },
+    "92:3": {
+      "inputs": {
+        "text": "The scene comes to life with cinematic motion, camera slowly pushes forward, natural movement, detailed textures, smooth animation, 4K quality",
+        "clip": ["92:60", 0]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": {"title": "Positive Prompt"}
+    },
+    "92:4": {
+      "inputs": {
+        "text": "blurry, low quality, still frame, watermark, overlay, text, subtitle, pixelated, jpeg artifacts, flickering",
+        "clip": ["92:60", 0]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": {"title": "Negative Prompt"}
+    },
+    "92:8": {
+      "inputs": {
+        "positive": ["92:3", 0],
+        "negative": ["92:4", 0],
+        "vae": ["92:25", 0],
+        "image": ["92:5", 0],
+        "width": 960,
+        "height": 544,
+        "length": 81,
+        "batch_size": 1,
+        "strength": 1.0
+      },
+      "class_type": "LTXVImgToVideo",
+      "_meta": {"title": "LTXVImgToVideo"}
+    },
+    "92:22": {
+      "inputs": {
+        "frame_rate": 24,
+        "positive": ["92:8", 0],
+        "negative": ["92:8", 1]
+      },
+      "class_type": "LTXVConditioning",
+      "_meta": {"title": "LTXVConditioning"}
+    },
+    "92:51": {
+      "inputs": {
+        "frames_number": 81,
+        "frame_rate": 24,
+        "batch_size": 1,
+        "audio_vae": ["92:48", 0]
+      },
+      "class_type": "LTXVEmptyLatentAudio",
+      "_meta": {"title": "LTXV Empty Latent Audio"}
+    },
+    "92:56": {
+      "inputs": {
+        "video_latent": ["92:8", 2],
+        "audio_latent": ["92:51", 0]
+      },
+      "class_type": "LTXVConcatAVLatent",
+      "_meta": {"title": "LTXVConcatAVLatent"}
+    },
+    "92:9": {
+      "inputs": {
+        "steps": 20,
+        "max_shift": 2.05,
+        "base_shift": 0.95,
+        "stretch": true,
+        "terminal": 0.1,
+        "latent": ["92:56", 0]
+      },
+      "class_type": "LTXVScheduler",
+      "_meta": {"title": "LTXVScheduler"}
+    },
+    "92:67": {
+      "inputs": {
+        "noise_seed": 42
+      },
+      "class_type": "RandomNoise",
+      "_meta": {"title": "RandomNoise"}
+    },
+    "92:14": {
+      "inputs": {
+        "sampler_name": "euler_ancestral"
+      },
+      "class_type": "KSamplerSelect",
+      "_meta": {"title": "KSamplerSelect"}
+    },
+    "92:47": {
+      "inputs": {
+        "cfg": 4.0,
+        "model": ["92:1", 0],
+        "positive": ["92:22", 0],
+        "negative": ["92:22", 1]
+      },
+      "class_type": "CFGGuider",
+      "_meta": {"title": "CFGGuider"}
+    },
+    "92:41": {
+      "inputs": {
+        "noise": ["92:67", 0],
+        "guider": ["92:47", 0],
+        "sampler": ["92:14", 0],
+        "sigmas": ["92:9", 0],
+        "latent_image": ["92:56", 0]
+      },
+      "class_type": "SamplerCustomAdvanced",
+      "_meta": {"title": "SamplerCustomAdvanced"}
+    },
+    "92:80": {
+      "inputs": {
+        "av_latent": ["92:41", 0]
+      },
+      "class_type": "LTXVSeparateAVLatent",
+      "_meta": {"title": "LTXVSeparateAVLatent"}
+    },
+    "92:18": {
+      "inputs": {
+        "samples": ["92:80", 0],
+        "vae": ["92:25", 0]
+      },
+      "class_type": "VAEDecode",
+      "_meta": {"title": "VAE Decode"}
+    },
+    "92:110": {
+      "inputs": {
+        "samples": ["92:80", 1],
+        "audio_vae": ["92:48", 0]
+      },
+      "class_type": "LTXVAudioVAEDecode",
+      "_meta": {"title": "LTXV Audio VAE Decode"}
+    },
+    "92:97": {
+      "inputs": {
+        "fps": 24,
+        "images": ["92:18", 0],
+        "audio": ["92:110", 0]
+      },
+      "class_type": "CreateVideo",
+      "_meta": {"title": "Create Video"}
+    },
+    "75": {
+      "inputs": {
+        "filename_prefix": "video/ltx23_i2v_gguf",
+        "format": "auto",
+        "codec": "auto",
+        "video": ["92:97", 0]
+      },
+      "class_type": "SaveVideo",
+      "_meta": {"title": "Save Video"}
+    }
+  },
+  "parameter_schema": {
+    "positive_prompt": {
+      "type": "string",
+      "node_id": "92:3",
+      "input_key": "text",
+      "description": "Positive prompt for I2V animation"
+    },
+    "negative_prompt": {
+      "type": "string",
+      "node_id": "92:4",
+      "input_key": "text",
+      "description": "Negative prompt"
+    },
+    "input_image": {
+      "type": "string",
+      "node_id": "92:89",
+      "input_key": "image",
+      "description": "Reference image filename"
+    },
+    "seed": {
+      "type": "integer",
+      "node_id": "92:67",
+      "input_key": "noise_seed",
+      "description": "Random seed"
+    },
+    "width": {
+      "type": "integer",
+      "node_id": "92:8",
+      "input_key": "width",
+      "description": "Video width (default 960)"
+    },
+    "height": {
+      "type": "integer",
+      "node_id": "92:8",
+      "input_key": "height",
+      "description": "Video height (default 544)"
+    },
+    "frames": {
+      "type": "integer",
+      "node_id": "92:8",
+      "input_key": "length",
+      "description": "Number of frames (81=~3.4s @ 24fps)"
+    }
+  }
+}

@@ -1,0 +1,692 @@
+{
+  "workflow_id": "ltx2_i2v",
+  "category": "i2v",
+  "workflow_json": {
+    "75": {
+      "_meta": {
+        "title": "Save Video"
+      },
+      "inputs": {
+        "codec": "auto",
+        "video": [
+          "92:97",
+          0
+        ],
+        "format": "auto",
+        "video-preview": "",
+        "filename_prefix": "video/LTX_2.0_i2v"
+      },
+      "class_type": "SaveVideo"
+    },
+    "98": {
+      "_meta": {
+        "title": "Load Image"
+      },
+      "inputs": {
+        "image": "pasted/image (1).png"
+      },
+      "class_type": "LoadImage"
+    },
+    "102": {
+      "_meta": {
+        "title": "Resize Image/Mask"
+      },
+      "inputs": {
+        "input": [
+          "98",
+          0
+        ],
+        "resize_type": "match size",
+        "scale_method": "lanczos",
+        "resize_type.crop": "center",
+        "resize_type.match": [
+          "98",
+          0
+        ]
+      },
+      "class_type": "ResizeImageMaskNode"
+    },
+    "105": {
+      "_meta": {
+        "title": "Int"
+      },
+      "inputs": {
+        "value": 19
+      },
+      "class_type": "PrimitiveInt"
+    },
+    "92:1": {
+      "_meta": {
+        "title": "Load Checkpoint"
+      },
+      "inputs": {
+        "ckpt_name": "ltx-2-19b-dev.safetensors"
+      },
+      "class_type": "CheckpointLoaderSimple"
+    },
+    "92:3": {
+      "_meta": {
+        "title": "CLIP Text Encode (Prompt)"
+      },
+      "inputs": {
+        "clip": [
+          "92:60",
+          0
+        ],
+        "text": "Sunlight pours through the blinds of a small home office, turning dust motes into glitter in the air. A lavender, horned, pony-like young woman sits perched at the edge of a desk, framed by two leafy plants and a wide window behind her. She tilts her head with an earnest, almost playful smile\u2014curiosity sparkling in her large violet eyes.\n\nA slim laptop sits closed beside a notepad covered with neat, meticulous scribbles.\n\nShe leans forward, voice bright but focused.\n\n\u201cOkay,\u201d she says, tapping one finger against her chin as if assembling a plan in real time. \u201cLet\u2019s check your data.\u201d\n\nBefore you can answer, she reaches past you with quick confidence and pulls the laptop toward herself. The motion is gentle, but decisive\u2014like someone who\u2019s already halfway through solving the problem and doesn\u2019t want to lose momentum. She flips the lid open, and the screen\u2019s glow catches in her eyes.\n\nHer expression shifts: the smile stays, but now it\u2019s sharpened by intent.\n\nShe\u2019s already typing\u2014fast, precise keystrokes\u2014then clicking through a familiar set of folders and dashboards. Windows bloom across the display: tables, charts, timestamps, and a scrolling feed of entries. She drags one panel wider, minimizes another, then opens a log file with the crisp certainty of someone who\u2019s done this a hundred times.\n\n\u201cMhm\u2026 mhm,\u201d she murmurs, scanning quicker than seems reasonable. \u201cSo that\u2019s the trend line. And this\u2014wait\u2014this timestamp doesn\u2019t match your reported sync.\u201d\n\nHer ears twitch slightly as she navigates deeper, fingers alternating between trackpad swipes and confident keyboard shortcuts. She filters results, sorts columns, pulls up a timeline view\u2014then pauses, zooms in, and highlights a single row like it\u2019s just confessed to something.\n\n\u201cYou\u2019re not in trouble,\u201d she adds quickly, glancing up as if she\u2019s heard your worry before. \u201cI just want to see what the numbers are really saying.\u201d\n\nShe turns the laptop a few degrees so you can see\u2014graphs and entries, one anomaly circled in pale blue\u2014then pivots it back and continues, already chasing the next clue. A new tab opens. Another query runs. The cursor darts.\n\n\u201cAlright,\u201d she says, eyes narrowing in satisfied concentration as the results populate. \u201cNow we\u2019re getting somewhere.\u201d"
+      },
+      "class_type": "CLIPTextEncode"
+    },
+    "92:4": {
+      "_meta": {
+        "title": "CLIP Text Encode (Prompt)"
+      },
+      "inputs": {
+        "clip": [
+          "92:60",
+          0
+        ],
+        "text": "blurry, low quality, still frame, frames, watermark, overlay, titles, has blurbox, has subtitles"
+      },
+      "class_type": "CLIPTextEncode"
+    },
+    "92:8": {
+      "_meta": {
+        "title": "KSamplerSelect"
+      },
+      "inputs": {
+        "sampler_name": "euler"
+      },
+      "class_type": "KSamplerSelect"
+    },
+    "92:9": {
+      "_meta": {
+        "title": "LTXVScheduler"
+      },
+      "inputs": {
+        "steps": 20,
+        "latent": [
+          "92:56",
+          0
+        ],
+        "stretch": true,
+        "terminal": 0.1,
+        "max_shift": 2.05,
+        "base_shift": 0.95
+      },
+      "class_type": "LTXVScheduler"
+    },
+    "92:11": {
+      "_meta": {
+        "title": "RandomNoise"
+      },
+      "inputs": {
+        "noise_seed": [
+          "105",
+          0
+        ]
+      },
+      "class_type": "RandomNoise"
+    },
+    "92:22": {
+      "_meta": {
+        "title": "LTXVConditioning"
+      },
+      "inputs": {
+        "negative": [
+          "92:4",
+          0
+        ],
+        "positive": [
+          "92:3",
+          0
+        ],
+        "frame_rate": 25
+      },
+      "class_type": "LTXVConditioning"
+    },
+    "92:41": {
+      "_meta": {
+        "title": "SamplerCustomAdvanced"
+      },
+      "inputs": {
+        "noise": [
+          "92:11",
+          0
+        ],
+        "guider": [
+          "92:47",
+          0
+        ],
+        "sigmas": [
+          "92:9",
+          0
+        ],
+        "sampler": [
+          "92:8",
+          0
+        ],
+        "latent_image": [
+          "92:56",
+          0
+        ]
+      },
+      "class_type": "SamplerCustomAdvanced"
+    },
+    "92:43": {
+      "_meta": {
+        "title": "EmptyLTXVLatentVideo"
+      },
+      "inputs": {
+        "width": 720,
+        "height": 1280,
+        "length": [
+          "92:62",
+          0
+        ],
+        "batch_size": 1
+      },
+      "class_type": "EmptyLTXVLatentVideo"
+    },
+    "92:47": {
+      "_meta": {
+        "title": "CFGGuider"
+      },
+      "inputs": {
+        "cfg": 4,
+        "model": [
+          "92:1",
+          0
+        ],
+        "negative": [
+          "92:22",
+          1
+        ],
+        "positive": [
+          "92:22",
+          0
+        ]
+      },
+      "class_type": "CFGGuider"
+    },
+    "92:48": {
+      "_meta": {
+        "title": "LTXV Audio VAE Loader"
+      },
+      "inputs": {
+        "ckpt_name": "ltx-2-19b-dev.safetensors"
+      },
+      "class_type": "LTXVAudioVAELoader"
+    },
+    "92:51": {
+      "_meta": {
+        "title": "LTXV Empty Latent Audio"
+      },
+      "inputs": {
+        "audio_vae": [
+          "92:48",
+          0
+        ],
+        "batch_size": 1,
+        "frame_rate": 25,
+        "frames_number": [
+          "92:62",
+          0
+        ]
+      },
+      "class_type": "LTXVEmptyLatentAudio"
+    },
+    "92:56": {
+      "_meta": {
+        "title": "LTXVConcatAVLatent"
+      },
+      "inputs": {
+        "audio_latent": [
+          "92:51",
+          0
+        ],
+        "video_latent": [
+          "92:107",
+          0
+        ]
+      },
+      "class_type": "LTXVConcatAVLatent"
+    },
+    "92:60": {
+      "_meta": {
+        "title": "LTXV Audio Text Encoder Loader"
+      },
+      "inputs": {
+        "device": "default",
+        "ckpt_name": "ltx-2-19b-dev.safetensors",
+        "text_encoder": "gemma_3_12B_it_fp4_mixed.safetensors"
+      },
+      "class_type": "LTXAVTextEncoderLoader"
+    },
+    "92:62": {
+      "_meta": {
+        "title": "Length"
+      },
+      "inputs": {
+        "value": 97
+      },
+      "class_type": "PrimitiveInt"
+    },
+    "92:66": {
+      "_meta": {
+        "title": "KSamplerSelect"
+      },
+      "inputs": {
+        "sampler_name": "gradient_estimation"
+      },
+      "class_type": "KSamplerSelect"
+    },
+    "92:67": {
+      "_meta": {
+        "title": "RandomNoise"
+      },
+      "inputs": {
+        "noise_seed": 0
+      },
+      "class_type": "RandomNoise"
+    },
+    "92:68": {
+      "_meta": {
+        "title": "Load LoRA"
+      },
+      "inputs": {
+        "model": [
+          "92:1",
+          0
+        ],
+        "lora_name": "ltx-2-19b-distilled-lora-384.safetensors",
+        "strength_model": 1
+      },
+      "class_type": "LoraLoaderModelOnly"
+    },
+    "92:70": {
+      "_meta": {
+        "title": "SamplerCustomAdvanced"
+      },
+      "inputs": {
+        "noise": [
+          "92:67",
+          0
+        ],
+        "guider": [
+          "92:82",
+          0
+        ],
+        "sigmas": [
+          "92:73",
+          0
+        ],
+        "sampler": [
+          "92:66",
+          0
+        ],
+        "latent_image": [
+          "92:83",
+          0
+        ]
+      },
+      "class_type": "SamplerCustomAdvanced"
+    },
+    "92:73": {
+      "_meta": {
+        "title": "ManualSigmas"
+      },
+      "inputs": {
+        "sigmas": "0.909375, 0.725, 0.421875, 0.0"
+      },
+      "class_type": "ManualSigmas"
+    },
+    "92:76": {
+      "_meta": {
+        "title": "Load Latent Upscale Model"
+      },
+      "inputs": {
+        "model_name": "ltx-2-spatial-upscaler-x2-1.0.safetensors"
+      },
+      "class_type": "LatentUpscaleModelLoader"
+    },
+    "92:80": {
+      "_meta": {
+        "title": "LTXVSeparateAVLatent"
+      },
+      "inputs": {
+        "av_latent": [
+          "92:41",
+          0
+        ]
+      },
+      "class_type": "LTXVSeparateAVLatent"
+    },
+    "92:81": {
+      "_meta": {
+        "title": "LTXVCropGuides"
+      },
+      "inputs": {
+        "latent": [
+          "92:80",
+          0
+        ],
+        "negative": [
+          "92:22",
+          1
+        ],
+        "positive": [
+          "92:22",
+          0
+        ]
+      },
+      "class_type": "LTXVCropGuides"
+    },
+    "92:82": {
+      "_meta": {
+        "title": "CFGGuider"
+      },
+      "inputs": {
+        "cfg": 1,
+        "model": [
+          "92:68",
+          0
+        ],
+        "negative": [
+          "92:81",
+          1
+        ],
+        "positive": [
+          "92:81",
+          0
+        ]
+      },
+      "class_type": "CFGGuider"
+    },
+    "92:83": {
+      "_meta": {
+        "title": "LTXVConcatAVLatent"
+      },
+      "inputs": {
+        "audio_latent": [
+          "92:80",
+          1
+        ],
+        "video_latent": [
+          "92:108",
+          0
+        ]
+      },
+      "class_type": "LTXVConcatAVLatent"
+    },
+    "92:84": {
+      "_meta": {
+        "title": "spatial"
+      },
+      "inputs": {
+        "vae": [
+          "92:1",
+          2
+        ],
+        "samples": [
+          "92:81",
+          2
+        ],
+        "upscale_model": [
+          "92:76",
+          0
+        ]
+      },
+      "class_type": "LTXVLatentUpsampler"
+    },
+    "92:89": {
+      "_meta": {
+        "title": "EmptyImage"
+      },
+      "inputs": {
+        "color": 0,
+        "width": [
+          "92:105",
+          0
+        ],
+        "height": [
+          "92:105",
+          1
+        ],
+        "batch_size": 1
+      },
+      "class_type": "EmptyImage"
+    },
+    "92:90": {
+      "_meta": {
+        "title": "Upscale Image By"
+      },
+      "inputs": {
+        "image": [
+          "92:89",
+          0
+        ],
+        "scale_by": 0.5,
+        "upscale_method": "lanczos"
+      },
+      "class_type": "ImageScaleBy"
+    },
+    "92:91": {
+      "_meta": {
+        "title": "Get Image Size"
+      },
+      "inputs": {
+        "image": [
+          "92:90",
+          0
+        ]
+      },
+      "class_type": "GetImageSize"
+    },
+    "92:94": {
+      "_meta": {
+        "title": "LTXVSeparateAVLatent"
+      },
+      "inputs": {
+        "av_latent": [
+          "92:70",
+          1
+        ]
+      },
+      "class_type": "LTXVSeparateAVLatent"
+    },
+    "92:95": {
+      "_meta": {
+        "title": "VAE Decode"
+      },
+      "inputs": {
+        "vae": [
+          "92:1",
+          2
+        ],
+        "samples": [
+          "92:94",
+          0
+        ]
+      },
+      "class_type": "VAEDecode"
+    },
+    "92:96": {
+      "_meta": {
+        "title": "LTXV Audio VAE Decode"
+      },
+      "inputs": {
+        "samples": [
+          "92:94",
+          1
+        ],
+        "audio_vae": [
+          "92:48",
+          0
+        ]
+      },
+      "class_type": "LTXVAudioVAEDecode"
+    },
+    "92:97": {
+      "_meta": {
+        "title": "Create Video"
+      },
+      "inputs": {
+        "fps": 25,
+        "audio": [
+          "92:96",
+          0
+        ],
+        "images": [
+          "92:95",
+          0
+        ]
+      },
+      "class_type": "CreateVideo"
+    },
+    "92:99": {
+      "_meta": {
+        "title": "LTXVPreprocess"
+      },
+      "inputs": {
+        "image": [
+          "92:106",
+          0
+        ],
+        "img_compression": 33
+      },
+      "class_type": "LTXVPreprocess"
+    },
+    "92:105": {
+      "_meta": {
+        "title": "Get Image Size"
+      },
+      "inputs": {
+        "image": [
+          "102",
+          0
+        ]
+      },
+      "class_type": "GetImageSize"
+    },
+    "92:106": {
+      "_meta": {
+        "title": "Resize Images by Longer Edge"
+      },
+      "inputs": {
+        "images": [
+          "102",
+          0
+        ],
+        "longer_edge": 1536
+      },
+      "class_type": "ResizeImagesByLongerEdge"
+    },
+    "92:107": {
+      "_meta": {
+        "title": "LTXVImgToVideoInplace"
+      },
+      "inputs": {
+        "vae": [
+          "92:1",
+          2
+        ],
+        "image": [
+          "92:99",
+          0
+        ],
+        "bypass": false,
+        "latent": [
+          "92:43",
+          0
+        ],
+        "strength": 1
+      },
+      "class_type": "LTXVImgToVideoInplace"
+    },
+    "92:108": {
+      "_meta": {
+        "title": "LTXVImgToVideoInplace"
+      },
+      "inputs": {
+        "vae": [
+          "92:1",
+          2
+        ],
+        "image": [
+          "92:99",
+          0
+        ],
+        "bypass": false,
+        "latent": [
+          "92:84",
+          0
+        ],
+        "strength": 1
+      },
+      "class_type": "LTXVImgToVideoInplace"
+    }
+  },
+  "parameter_schema": {
+    "seed": {
+      "type": "integer",
+      "node_id": "105",
+      "input_key": "value",
+      "description": "Random seed"
+    },
+    "width": {
+      "type": "integer",
+      "node_id": "92:43",
+      "input_key": "width",
+      "description": "Video width in pixels"
+    },
+    "frames": {
+      "type": "integer",
+      "node_id": "92:62",
+      "input_key": "value",
+      "description": "Number of frames (121=4.8s @ 25fps, 201=8s, 301=12s)"
+    },
+    "height": {
+      "type": "integer",
+      "node_id": "92:43",
+      "input_key": "height",
+      "description": "Video height in pixels"
+    },
+    "input_image": {
+      "type": "string",
+      "node_id": "98",
+      "input_key": "image",
+      "description": "Reference image filename"
+    },
+    "longer_edge": {
+      "type": "integer",
+      "node_id": "92:106",
+      "input_key": "longer_edge",
+      "description": "Resize input image longer edge (default 1536)"
+    },
+    "negative_prompt": {
+      "type": "string",
+      "node_id": "92:4",
+      "input_key": "text",
+      "description": "Negative prompt"
+    },
+    "positive_prompt": {
+      "type": "string",
+      "node_id": "92:3",
+      "input_key": "text",
+      "description": "Narrative/dialog prompt"
+    },
+    "frame_rate": {
+      "type": "integer",
+      "node_id": "92:22",
+      "input_key": "frame_rate",
+      "description": "Conditioning frame rate"
+    },
+    "fps": {
+      "type": "integer",
+      "node_id": "92:97",
+      "input_key": "fps",
+      "description": "Output video fps"
+    }
+  }
+}

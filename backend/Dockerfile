@@ -36,6 +36,13 @@ COPY .oac /app/.oac
 # (daily briefing, periodic checks, nudges, meals, ...). Without it the scheduler
 # runs idle ("Schedule file not found") and the bot never messages proactively.
 COPY config /app/config
+# ComfyUI workflow graphs (data/ is otherwise gitignored runtime state). These
+# are static data assets that app.comfyui.workflows.load_workflow() reads at
+# `data/comfyui_workflows/<id>.json` for every image/video render. Unlike v3 —
+# which bind-mounted the whole project — this image is built with COPY, so the
+# workflows must be explicitly copied or image/video rendering fails with
+# FileNotFoundError. They are force-added to git so they survive a clean build.
+COPY data/comfyui_workflows /app/data/comfyui_workflows
 COPY backend/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
