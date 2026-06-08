@@ -40,8 +40,15 @@ def test_all_tool_modules_import():
 
 
 # Helper modules in a tool area that are intentionally NOT ScriptTools
-# (imported by sibling tools, e.g. shared search functions).
-_TOOL_HELPER_MODULES = {"research.web_search"}
+# (imported by sibling tools, e.g. shared search functions) or are background
+# scheduler jobs driven by a thin scripts/ entrypoint rather than an agent
+# (the proactive-signal ingestion jobs: digest / inner-monologue / camera).
+_TOOL_HELPER_MODULES = {
+    "research.web_search",
+    "context.conversation_digest",
+    "system.inner_monologue",
+    "system.activity_observer",
+}
 
 
 def test_each_module_exposes_a_scripttool():

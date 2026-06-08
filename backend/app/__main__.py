@@ -143,8 +143,24 @@ def _run_improve(argv: list[str]) -> None:
     p.add_argument("--substring-tests", action="store_true",
                    help="use the agents' authored (substring) tests instead of the "
                         "generated graded judge test")
+    p.add_argument("--proactive-probes", action="store_true",
+                   help="optimise the PROACTIVE agents against the context-signal "
+                        "probe suite (variety / anti-repetition / grounded / skip). "
+                        "Runs authored tests on nudge_strategist, periodic_checker, "
+                        "winddown. Equivalent to --substring-tests --agent <each>.")
     p.add_argument("--list", action="store_true", help="list improvable agents and exit")
     args = p.parse_args(argv)
+
+    # --proactive-probes: target exactly the proactive agents that carry the
+    # context-signal probe suite, in authored-tests mode so the probes run.
+    if args.proactive_probes:
+        args.substring_tests = True
+        if not args.agent:
+            args.agent = [
+                "goals/nudge_strategist",
+                "goals/periodic_checker",
+                "goals/winddown",
+            ]
 
     # Default mode: generated graded judge test on EVERY agent (137 improvable).
     use_judge_test = not args.substring_tests
