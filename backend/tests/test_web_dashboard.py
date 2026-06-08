@@ -217,6 +217,134 @@ def test_runs_render(client):
     assert "running" in html
 
 
+def test_runs_rows_link_to_detail(client):
+    html = client.get("/partials/runs").text
+    # each runs-panel row links to its /run/{run_id} detail page
+    assert "/run/run_a" in html
+
+
+# ── run detail (view the session) ─────────────────────────────────────────────
+
+
+def _trace_fixture() -> dict[str, Any]:
+    return {
+        "run": {
+            "run_id": "run_a", "owner": "goals/periodic_checker-primary",
+            "status": "completed", "interaction_mode": "cron", "domain": "",
+            "started_at": NOW, "completed_at": NOW, "contract_passed": True,
+        },
+        "trace": {
+            "text": "I checked the schedule and nothing is due right now.",
+            "tool_calls": [
+                {"name": "bash", "command": "python scripts/list_due.py", "error": None},
+                {"name": "bash", "command": "ls /forbidden",
+                 "error": "a rule prevents you from using ls"},
+            ],
+            "tool_call_count": 2, "ok": True, "error": None, "producer": "runner",
+        },
+        "persona": [
+            {"artifact_type": "persona_response", "producer": "persona_prose",
+             "created_at": NOW, "payload": {"delivered_text": "All quiet — sleep well 💜"}},
+        ],
+    }
+
+
+def test_run_detail_renders_header_trace_and_persona(client, monkeypatch):
+    async def _ret(_run_id):
+        return _trace_fixture()
+
+    monkeypatch.setattr(data, "run_detail", _ret)
+    html = client.get("/run/run_a").text
+    # header
+    assert "goals/periodic_checker-primary" in html
+    assert "completed" in html
+    assert "cron" in html
+    # assistant output
+    assert "nothing is due right now" in html
+    # ordered tool calls: names + the bash commands
+    assert "python scripts/list_due.py" in html
+    assert "ls /forbidden" in html
+    # the denied call surfaces its reason
+    assert "prevents you from using ls" in html
+    # persona delivery shown
+    assert "sleep well" in html
+
+
+def test_run_detail_no_trace_degrades(client, monkeypatch):
+    async def _ret(_run_id):
+        return {
+            "run": {
+                "run_id": "run_x", "owner": "goals/winddown-primary",
+                "status": "completed", "interaction_mode": "cron", "domain": "",
+                "started_at": NOW, "completed_at": NOW, "contract_passed": None,
+            },
+            "trace": None,
+            "persona": [],
+        }
+
+    monkeypatch.setattr(data, "run_detail", _ret)
+    html = client.get("/run/run_x").text
+    assert "no trajectory captured" in html.lower()
+
+
+def test_run_detail_missing_run(client, monkeypatch):
+    async def _ret(_run_id):
+        return None
+
+    monkeypatch.setattr(data, "run_detail", _ret)
+    r = client.get("/run/nope")
+    assert r.status_code == 200
+    assert "not found" in r.text.lower()
+
+
+def test_run_detail_data_layer_parses_trace_artifact(monkeypatch):
+    """data.run_detail assembles header + latest run_trace + persona from rows."""
+    run_row = {
+        "run_id": "r1", "owner": "goals/periodic_checker-primary",
+        "status": "completed", "interaction_mode": "cron", "domain": "",
+        "started_at": NOW, "completed_at": NOW, "contract_passed": True,
+    }
+    # rows arrive ordered by (artifact_type, version DESC) per the query, so the
+    # newer run_trace version comes first.
+    art_rows = [
+        {"artifact_type": "persona_response", "version": 1, "producer": "persona_prose",
+         "created_at": NOW, "payload": {"delivered_text": "hi there"}},
+        {"artifact_type": "run_trace", "version": 2, "producer": "runner",
+         "created_at": NOW,
+         "payload": {"text": "newer", "tool_call_count": 1,
+                     "tool_calls": [{"name": "bash", "command": "echo hi"}], "ok": True}},
+        {"artifact_type": "run_trace", "version": 1, "producer": "runner",
+         "created_at": NOW,
+         "payload": {"text": "older", "tool_calls": [], "ok": True}},
+    ]
+
+    async def fake_fetch_one(_s, _q, _p):
+        return run_row
+
+    async def fake_fetch_all(_s, _q, _p):
+        return art_rows
+
+    class _Ctx:
+        async def __aenter__(self):
+            return object()
+
+        async def __aexit__(self, *a):
+            return False
+
+    monkeypatch.setattr(data, "fetch_one", fake_fetch_one)
+    monkeypatch.setattr(data, "fetch_all", fake_fetch_all)
+    monkeypatch.setattr(data, "get_async_session", lambda: _Ctx())
+
+    import asyncio
+
+    detail = asyncio.run(data.run_detail("r1"))
+    assert detail["run"]["owner"] == "goals/periodic_checker-primary"
+    # latest version (version DESC ordering) wins
+    assert detail["trace"]["text"] == "newer"
+    assert detail["trace"]["tool_calls"][0]["command"] == "echo hi"
+    assert detail["persona"][0]["payload"]["delivered_text"] == "hi there"
+
+
 def test_health_strip(client):
     html = client.get("/partials/health").text
     assert "db reachable" in html
