@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     local_llm_model: str = Field(default="qwen3.5-27b", alias="LOCAL_LLM_MODEL")
     local_llm_api_key: str = Field(default="not-needed", alias="LOCAL_LLM_API_KEY")
 
+    # --- external research APIs ---------------------------------------------
+    # SearchAPI.io powers web_search, shopping_tracker and the YouTube fetcher
+    # (channel videos + transcripts + URL ingest). Missing this field made
+    # `get_settings().searchapi_key` raise AttributeError, breaking YouTube links.
+    searchapi_key: str = Field(default="", alias="SEARCHAPI_KEY")
+
     # --- locale -------------------------------------------------------------
     user_timezone: str = Field(default="Europe/Warsaw", alias="USER_TIMEZONE")
 
