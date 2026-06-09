@@ -26,7 +26,7 @@
 
   {% if not missing %}
   <section class="panel panel-wide">
-    <h2>Trajectory <span class="muted">(run_trace)</span></h2>
+    <h2>Trajectory <span class="muted">(run_trace · chronological)</span></h2>
 
     {% if not trace %}
       <p class="empty">No trajectory captured for this run.</p>
@@ -35,32 +35,84 @@
         <p class="trace-error">error: {{ trace.error }}</p>
       {% endif %}
 
-      <h3 class="sub">Assistant output</h3>
-      {% if trace.text %}
-        <pre class="trace-text">{{ trace.text }}</pre>
+      {% if trace.trajectory %}
+        {# ── ordered, interleaved timeline: narration → tool → result → … ── #}
+        <p class="muted timeline-meta">
+          {{ trace.trajectory|length }} step{{ '' if trace.trajectory|length == 1 else 's' }}
+          {%- if trace.trajectory_count and trace.trajectory_count > trace.trajectory|length %}
+            <span> (of {{ trace.trajectory_count }}, capped)</span>
+          {%- endif %}
+        </p>
+        <ol class="timeline">
+          {% for it in trace.trajectory %}
+          {% if it.kind == 'text' %}
+            {% if it.text and it.text.strip() %}
+            <li class="tl-step tl-text">
+              <span class="tl-idx">{{ loop.index }}</span>
+              <div class="tl-body">
+                <div class="tl-kind">narration</div>
+                <div class="tl-narration">{{ it.text }}</div>
+              </div>
+            </li>
+            {% endif %}
+          {% elif it.kind == 'tool' %}
+            <li class="tl-step tl-tool{{ ' tl-err' if it.error }}">
+              <span class="tl-idx">{{ loop.index }}</span>
+              <div class="tl-body">
+                <div class="tl-kind">
+                  tool <span class="tl-name">{{ it.name or '?' }}</span>
+                  {% if it.error %}<span class="tag rep">denied/error</span>{% endif %}
+                </div>
+                {% if it.command %}<pre class="tl-cmd">{{ it.command }}</pre>{% endif %}
+                {% if it.error %}<pre class="tl-errtext">{{ it.error }}</pre>{% endif %}
+              </div>
+            </li>
+          {% elif it.kind == 'result' %}
+            {% if it.output or it.error %}
+            <li class="tl-step tl-result{{ ' tl-err' if it.error }}">
+              <span class="tl-idx">{{ loop.index }}</span>
+              <div class="tl-body">
+                <div class="tl-kind">result
+                  {% if it.name %}<span class="tl-name">{{ it.name }}</span>{% endif %}
+                  {% if it.status %}<span class="muted">· {{ it.status }}</span>{% endif %}
+                </div>
+                {% if it.error %}<pre class="tl-errtext">{{ it.error }}</pre>{% endif %}
+                {% if it.output %}<pre class="tl-out">{{ it.output }}</pre>{% endif %}
+              </div>
+            </li>
+            {% endif %}
+          {% endif %}
+          {% endfor %}
+        </ol>
       {% else %}
-        <p class="empty">(no assistant text)</p>
-      {% endif %}
+        {# ── fallback: old flat trace (no ordered trajectory captured) ── #}
+        <h3 class="sub">Assistant output</h3>
+        {% if trace.text %}
+          <pre class="trace-text">{{ trace.text }}</pre>
+        {% else %}
+          <p class="empty">(no assistant text)</p>
+        {% endif %}
 
-      <h3 class="sub">Tool calls
-        <span class="muted">({{ trace.tool_call_count if trace.tool_call_count is not none else trace.tool_calls|length }})</span>
-      </h3>
-      {% if not trace.tool_calls %}
-        <p class="empty">(no tool calls)</p>
-      {% else %}
-      <ol class="toollist">
-        {% for tc in trace.tool_calls %}
-        <li class="toolcall{{ ' tc-err' if tc.error }}">
-          <div class="tc-head">
-            <span class="tc-idx">{{ loop.index }}</span>
-            <span class="tc-name">{{ tc.name or '?' }}</span>
-            {% if tc.error %}<span class="tag rep">denied/error</span>{% endif %}
-          </div>
-          {% if tc.command %}<pre class="tc-cmd">{{ tc.command }}</pre>{% endif %}
-          {% if tc.error %}<pre class="tc-errtext">{{ tc.error }}</pre>{% endif %}
-        </li>
-        {% endfor %}
-      </ol>
+        <h3 class="sub">Tool calls
+          <span class="muted">({{ trace.tool_call_count if trace.tool_call_count is not none else trace.tool_calls|length }})</span>
+        </h3>
+        {% if not trace.tool_calls %}
+          <p class="empty">(no tool calls)</p>
+        {% else %}
+        <ol class="toollist">
+          {% for tc in trace.tool_calls %}
+          <li class="toolcall{{ ' tc-err' if tc.error }}">
+            <div class="tc-head">
+              <span class="tc-idx">{{ loop.index }}</span>
+              <span class="tc-name">{{ tc.name or '?' }}</span>
+              {% if tc.error %}<span class="tag rep">denied/error</span>{% endif %}
+            </div>
+            {% if tc.command %}<pre class="tc-cmd">{{ tc.command }}</pre>{% endif %}
+            {% if tc.error %}<pre class="tc-errtext">{{ tc.error }}</pre>{% endif %}
+          </li>
+          {% endfor %}
+        </ol>
+        {% endif %}
       {% endif %}
     {% endif %}
   </section>

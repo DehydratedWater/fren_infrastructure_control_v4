@@ -181,6 +181,32 @@ def test_index_has_all_sections(client):
     assert "every 10s" in html
 
 
+def test_index_renders_real_tab_bar(client):
+    html = client.get("/").text
+    # a real tab bar (role=tablist) with the four tabs
+    assert 'class="tabbar"' in html
+    assert 'role="tablist"' in html
+    assert html.count('class="tab"') >= 4
+    for name in ("proactive", "runs", "chat", "context"):
+        assert f'data-tab="{name}"' in html
+    # the tab-mode CSS hook + the default tab the JS selects
+    assert "has-tabs" in html
+    assert 'DEFAULT = "proactive"' in html
+
+
+def test_index_no_js_renders_all_panels_server_side(client):
+    # Without JS, .has-tabs is never set, so every panel is present in the
+    # server-rendered HTML (graceful no-JS fallback shows all panels).
+    html = client.get("/").text
+    for name in ("proactive", "runs", "chat", "context"):
+        assert f'id="panel-{name}"' in html
+    # all four panel bodies + their content are server-rendered on first paint
+    assert "event_extractor-primary" in html  # runs panel body
+    assert "Conversation Digest" in html       # context panel body
+    # health strip stays outside the tab panels, always visible
+    assert 'id="health"' in html
+
+
 def test_proactive_shows_delivered_and_skip(client):
     html = client.get("/partials/proactive").text
     assert "2 delivered" in html
@@ -249,6 +275,54 @@ def _trace_fixture() -> dict[str, Any]:
     }
 
 
+def _timeline_fixture() -> dict[str, Any]:
+    return {
+        "run": {
+            "run_id": "run_t", "owner": "goals/periodic_checker-qwen3527b-primary",
+            "status": "completed", "interaction_mode": "cron", "domain": "",
+            "started_at": NOW, "completed_at": NOW, "contract_passed": True,
+        },
+        "trace": {
+            "text": "checking…",
+            "tool_calls": [],
+            "tool_call_count": 1,
+            "trajectory": [
+                {"kind": "text", "text": "First I narrate my plan."},
+                {"kind": "tool", "name": "bash",
+                 "command": "python scripts/check.py", "error": None},
+                {"kind": "result", "name": "bash", "status": "completed",
+                 "output": "all clear", "error": None},
+                {"kind": "text", "text": "Then I wrap up."},
+            ],
+            "trajectory_count": 4,
+            "ok": True, "error": None, "producer": "runner",
+        },
+        "persona": [],
+    }
+
+
+def test_run_detail_renders_ordered_interleaved_timeline(client, monkeypatch):
+    async def _ret(_run_id):
+        return _timeline_fixture()
+
+    monkeypatch.setattr(data, "run_detail", _ret)
+    html = client.get("/run/run_t").text
+    # all timeline pieces render
+    assert "First I narrate my plan." in html
+    assert "python scripts/check.py" in html
+    assert "all clear" in html
+    assert "Then I wrap up." in html
+    # ORDER: the first narration must appear BEFORE the tool that followed it,
+    # which must appear before the second narration (chronological timeline).
+    i_narr1 = html.index("First I narrate my plan.")
+    i_tool = html.index("python scripts/check.py")
+    i_result = html.index("all clear")
+    i_narr2 = html.index("Then I wrap up.")
+    assert i_narr1 < i_tool < i_result < i_narr2
+    # rendered as a timeline (not the flat "Tool calls" list)
+    assert 'class="timeline"' in html
+
+
 def test_run_detail_renders_header_trace_and_persona(client, monkeypatch):
     async def _ret(_run_id):
         return _trace_fixture()
@@ -268,6 +342,21 @@ def test_run_detail_renders_header_trace_and_persona(client, monkeypatch):
     assert "prevents you from using ls" in html
     # persona delivery shown
     assert "sleep well" in html
+
+
+def test_run_detail_flat_trace_falls_back_to_old_view(client, monkeypatch):
+    # An old run_trace with no `trajectory` key must still render via the flat
+    # assistant-output + tool-calls view (graceful fallback).
+    async def _ret(_run_id):
+        return _trace_fixture()  # no "trajectory" key
+
+    monkeypatch.setattr(data, "run_detail", _ret)
+    html = client.get("/run/run_a").text
+    # falls back: the flat "Tool calls" header + flat list, NOT the timeline
+    assert "Tool calls" in html
+    assert 'class="toollist"' in html
+    assert 'class="timeline"' not in html
+    assert "python scripts/list_due.py" in html
 
 
 def test_run_detail_no_trace_degrades(client, monkeypatch):
