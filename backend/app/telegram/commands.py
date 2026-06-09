@@ -46,6 +46,8 @@ GOAL_AGENT = "goals/twily_goal_interface"  # domains/goals.py
 COUNCIL_AGENT = "workflows/council"  # domains/workflows.py
 ADVENTURE_AGENT = "rp/adventure_generator"  # domains/rp.py (ADVENTURE_GENERATOR — RP entry)
 RALF_AGENT = "workflows/twily_ralf_dispatcher"  # domains/workflows.py (RALF_DISPATCHER — chain entry)
+STUDY_AGENT = "study/question_master"  # domains/study.py — owns the session loop
+STUDY_PLANNER_AGENT = "study/session_planner"
 
 
 # ── Spawn seam ──
@@ -243,6 +245,23 @@ async def cmd_ralf(update: Update, context: ContextTypes.DEFAULT_TYPE, args: str
     await _route_workflow(update, "ralf", RALF_AGENT, prompt)
 
 
+async def cmd_study(update: Update, context: ContextTypes.DEFAULT_TYPE, args: str) -> None:
+    """Start/continue a study session — question_master owns the session loop.
+
+    /study <pasted material or topic> serves the next grounded question;
+    /study plan <material + exam date> routes to the session planner.
+    """
+    if args.lower().startswith("plan"):
+        prompt = args[4:].strip() or "Plan my next study sessions from our recent study material."
+        await _route_workflow(update, "study", STUDY_PLANNER_AGENT, prompt)
+        return
+    prompt = args or (
+        "Continue my study session: serve the next question from the material"
+        " we were working with (check recent chat history)."
+    )
+    await _route_workflow(update, "study", STUDY_AGENT, prompt)
+
+
 # ── Registry ──
 
 
@@ -263,6 +282,10 @@ SLASH_COMMANDS: dict[str, SlashCommand] = {
     "council": SlashCommand("convene the persona council: /council <topic>", cmd_council),
     "adventure": SlashCommand("start a new RP adventure", cmd_adventure),
     "ralf": SlashCommand("run a task through the RALF pipeline: /ralf <task>", cmd_ralf),
+    "study": SlashCommand(
+        "study mode: /study <material|topic> serves a grounded question;"
+        " /study plan <material + exam date> builds a session plan", cmd_study,
+    ),
 }
 
 
