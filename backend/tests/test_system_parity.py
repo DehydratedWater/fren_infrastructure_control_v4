@@ -163,13 +163,6 @@ def test_every_compiled_model_maps_to_a_declared_provider_model():
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PROVIDER PARITY REGRESSION (all-variant view): compiling ALL 7 worker "
-    "variants emits zai-coding-plan/glm-4.7, /glm-5, /glm-5.1 model lines that "
-    "opencode.json does not declare. Same root cause as the config-preset test. "
-    "Fix: add those 3 model entries to opencode.json's zai-coding-plan provider.",
-)
 def test_every_compiled_model_across_all_variants_is_declared(tmp_path):
     """Compile EVERY worker variant and assert each ``model:`` resolves in opencode.json.
 
@@ -195,14 +188,6 @@ def test_every_compiled_model_across_all_variants_is_declared(tmp_path):
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PROVIDER PARITY REGRESSION: opencode.json's zai-coding-plan block "
-    "declares ONLY glm-4.5-air, but config.py compiles the glm-4.7 / glm-5 / glm-5.1 "
-    "worker variants (v3's opencode.json declared all four). Agents in those three "
-    "variants route to undeclared models. Fix: add glm-4.7/glm-5/glm-5.1 model "
-    "entries to opencode.json's zai-coding-plan provider (as v3 had).",
-)
 def test_config_presets_match_opencode_provider_models():
     """The agents/config.py presets must line up with opencode.json provider keys.
 
