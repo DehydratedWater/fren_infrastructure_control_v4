@@ -315,12 +315,6 @@ def test_docker_compose_mounts_the_persistent_data_volume():
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PERSISTENCE BUG: captures write to relative 'data/captures' which "
-    "resolves under WORKDIR /app/backend (ephemeral image layer), NOT the "
-    "/data volume. Lost on container recreate. Fix: anchor to /data.",
-)
 def test_camera_and_screenshot_captures_use_persistent_volume():
     """camera_capture + screenshot must write under the persistent /data mount.
 
@@ -339,12 +333,6 @@ def test_camera_and_screenshot_captures_use_persistent_volume():
         )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PERSISTENCE BUG: render_and_send copies stray renders into "
-    "PROJECT_ROOT/data/rendered (ephemeral /app/backend/data/rendered), not the "
-    "/data volume; and comfyui download_output writes to /tmp. Fix: anchor to /data.",
-)
 def test_render_output_dir_is_under_persistent_volume():
     """render_and_send's self-review copy dir must be under /data."""
     src = (REPO_ROOT / "scripts" / "render_and_send.py").read_text()
@@ -359,16 +347,18 @@ def test_render_output_dir_is_under_persistent_volume():
 
 
 def test_comfyui_download_lands_outside_tmp():
-    """DOCUMENTS that ComfyUI downloads land in /tmp (cleared on reboot/recreate).
+    """ComfyUI downloads must land on the persistent /data volume, not /tmp.
 
-    Not strictly the /data volume, but the same ephemerality class — renders
-    pulled from the remote ComfyUI host are written to /tmp/comfyui_dl_* before
-    send. Asserting the current reality so the report is grounded.
+    Renders pulled from the remote ComfyUI host are written to a download dir
+    before send; that dir is now anchored under /data (DATA_DIR-overridable) so
+    the render survives a container recreate instead of being lost from /tmp.
     """
     src = (REPO_ROOT / "backend" / "app" / "comfyui" / "client.py").read_text()
-    assert "/tmp/comfyui_dl_" in src, (
-        "download_output no longer writes to /tmp — update this parity test if "
-        "the path was moved to /data."
+    assert "/tmp/comfyui_dl_" not in src, (
+        "download_output still writes to /tmp (ephemeral) — anchor it under /data"
+    )
+    assert PERSISTENT_VOLUME_MOUNT in src, (
+        "download_output no longer references the persistent /data volume"
     )
 
 

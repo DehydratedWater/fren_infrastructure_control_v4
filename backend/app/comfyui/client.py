@@ -89,8 +89,24 @@ async def upload_image(base_url: str, local_path: str) -> str | None:
         return None
 
 
+def _download_dir() -> Path:
+    """Persistent dir for ComfyUI downloads (DATA_DIR-overridable for dev).
+
+    Renders pulled from the remote ComfyUI host land on the /data volume
+    (fren_v4_data:/data) so they survive a container recreate, not /tmp.
+    """
+    import os
+
+    d = Path(os.environ.get("DATA_DIR", "/data")) / "comfyui_downloads"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 def download_output(base_url: str, output_file: dict) -> str | None:
-    """Download an output file from ComfyUI to /tmp. Returns local path."""
+    """Download an output file from ComfyUI to the persistent /data volume.
+
+    Returns local path.
+    """
     import urllib.request
 
     fn = output_file.get("filename", "")
@@ -104,7 +120,7 @@ def download_output(base_url: str, output_file: dict) -> str | None:
         }
     )
     url = f"{base_url}/view?{params}"
-    local_path = f"/tmp/comfyui_dl_{fn}"
+    local_path = str(_download_dir() / f"comfyui_dl_{fn}")
     try:
         urllib.request.urlretrieve(url, local_path)
         if Path(local_path).exists() and Path(local_path).stat().st_size > 0:

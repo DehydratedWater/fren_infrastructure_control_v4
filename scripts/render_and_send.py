@@ -129,12 +129,15 @@ def _trigger_self_review(file_path: str, media_type: str, caption: str) -> None:
     try:
         rel = str(p.relative_to(PROJECT_ROOT))
     except ValueError:
-        # File is outside project root (e.g. /tmp/) — copy into data/rendered/.
-        dest_dir = PROJECT_ROOT / "data" / "rendered"
+        # File is outside project root (e.g. /tmp/) — copy into the persistent
+        # /data volume (DATA_DIR-overridable for dev) so the render survives a
+        # container recreate. opencode resolves an absolute @path fine, so we
+        # hand it the absolute dest rather than one relative to PROJECT_ROOT.
+        dest_dir = Path(os.environ.get("DATA_DIR", "/data")) / "rendered"
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest = dest_dir / p.name
         shutil.copy2(file_path, dest)
-        rel = str(dest.relative_to(PROJECT_ROOT))
+        rel = str(dest)
         print(f"[render_and_send] Copied {file_path} -> {rel} for self-review")
 
     postfix = os.environ.get("FREN_MODEL_POSTFIX", "")
