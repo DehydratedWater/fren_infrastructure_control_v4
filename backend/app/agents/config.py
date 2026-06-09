@@ -30,7 +30,7 @@ _ZAI = {"api_key_env": "ZAI_API_KEY"}
 _VLLM_REMOTE = {"base_url": "http://192.168.0.42:8082/v1", "api_key_env": "VLLM_API_KEY"}
 _VLLM_ANALYTICAL = {"base_url": "http://192.168.0.42:8083/v1", "api_key_env": "VLLM_API_KEY"}
 _VLLM_LOCAL = {"base_url": "http://192.168.0.42:5502/v1", "api_key_env": "VLLM_API_KEY"}
-_VLLM_VISION = {"base_url": "http://192.168.0.42:5504/v1", "api_key_env": "VLLM_API_KEY"}
+_VLLM_VISION = {"base_url": "http://192.168.0.95:5504/v1", "api_key_env": "VLLM_API_KEY"}
 
 
 def _preset(name, provider, model_id, *, temperature=0.3, options=None) -> ModelPreset:

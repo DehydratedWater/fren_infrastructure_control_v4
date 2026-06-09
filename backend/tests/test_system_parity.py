@@ -204,14 +204,6 @@ def test_config_presets_match_opencode_provider_models():
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="VISION ENDPOINT MISMATCH: config.py _VLLM_VISION pins 192.168.0.42:5504 "
-    "while opencode.json local-vllm-image (the A4000) is 192.168.0.95:5504. The "
-    "compiled fleet routes vision agents via opencode.json (.95, correct), but the "
-    "config.py constant is wrong and would misroute any tool-side use. Fix: set "
-    "_VLLM_VISION base_url to http://192.168.0.95:5504/v1.",
-)
 def test_vision_config_base_url_matches_opencode_image_provider():
     """agents/config._VLLM_VISION base_url must match opencode.json local-vllm-image.
 
