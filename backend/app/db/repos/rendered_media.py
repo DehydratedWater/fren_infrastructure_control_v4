@@ -115,3 +115,16 @@ class RenderedMediaRepo:
         sql = "UPDATE rendered_media SET notes = :notes WHERE media_id = :media_id"
         async with get_async_session() as s:
             await execute_sql(s, sql, {"media_id": media_id, "notes": notes})
+
+    async def list_older_than(self, cutoff: datetime) -> list[dict[str, Any]]:
+        """Rows created before *cutoff* — retention-cleanup candidates."""
+        sql = "SELECT * FROM rendered_media WHERE created_at < :cutoff ORDER BY created_at"
+        async with get_async_session() as s:
+            rows = await fetch_all(s, sql, {"cutoff": cutoff})
+            return [dict(r) for r in rows]
+
+    async def delete(self, media_id: str) -> bool:
+        sql = "DELETE FROM rendered_media WHERE media_id = :media_id"
+        async with get_async_session() as s:
+            result = await execute_sql(s, sql, {"media_id": media_id})
+            return bool(getattr(result, "rowcount", 0))

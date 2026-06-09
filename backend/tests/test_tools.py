@@ -48,6 +48,12 @@ _TOOL_HELPER_MODULES = {
     "context.conversation_digest",
     "system.inner_monologue",
     "system.activity_observer",
+    # 2026-06 cron-port batch: background scheduler jobs driven by thin
+    # scripts/ entrypoints (ralf housekeeping, persona-memory pruning, the
+    # hourly goal-progress wrapper) — plumbing, not agent-facing ScriptTools.
+    "system.ralf_cleanup",
+    "persona.topic_synthesizer",
+    "goals.goal_progress_cron",
 }
 
 

@@ -54,13 +54,32 @@ UP_ENDPOINT = "http://192.168.0.42:8082/v1"
 # ═══════════════════════════════════════════════════════════════════════════
 
 
+# The script jobs still DISABLED after the 2026-06 priority-batch port. Five
+# reference v3 cron scripts not yet ported; topic_synthesizer's script exists
+# but only its --expire-only mode is ported (the full nightly MemTree rebuild
+# is not), so the full-rebuild job stays off. ralf_ping is additionally
+# SUPERSEDED by the framework workflow DAG executor (the ralf state-machine
+# tick is subsumed by src workflow primitives) — if it is ever re-enabled it
+# should be re-thought, not just re-ported.
+REMAINING_DISABLED_SCRIPT_JOBS = {
+    "night_analysis",            # scripts/night_analyst.py not ported
+    "ralf_ping",                 # superseded by the framework workflow DAG
+    "relationship_initiator",    # scripts/relationship_initiator.py not ported
+    "topic_synthesizer",         # full rebuild not ported (only --expire-only is)
+    "thought_forger",            # scripts/thought_forger.py not ported
+    "relationship_reflector",    # scripts/relationship_reflector.py not ported
+}
+
+
 @pytest.mark.xfail(
     strict=True,
-    reason="PORT GAP: 12 disabled schedule jobs reference v3 cron scripts never "
-    "ported to v4/scripts/ (activity_summarizer, night_analyst, lesson_extractor, "
-    "event_habit_bridge, goal_progress_auto_updater_cron, ralf_ping, ralf_cleanup, "
-    "relationship_initiator, topic_synthesizer, thought_forger, relationship_reflector, "
-    "pending_thoughts_expire). Re-enabling any of them 404s. Fix: port the scripts.",
+    reason="PORT GAP: 5 disabled schedule jobs still reference v3 cron scripts "
+    "never ported to v4/scripts/ (night_analyst, ralf_ping, relationship_initiator, "
+    "thought_forger, relationship_reflector). ralf_ping is superseded by the "
+    "framework workflow DAG; the others await porting. The 2026-06 priority batch "
+    "ported activity_summarizer, lesson_extractor, event_habit_bridge, "
+    "goal_progress_auto_updater_cron, ralf_cleanup and topic_synthesizer "
+    "(--expire-only) — those jobs are enabled and their scripts exist.",
 )
 def test_every_schedule_script_job_targets_an_existing_script():
     """Every ``agent: script:scripts/X.py`` in schedule.yml must exist on disk.
@@ -76,6 +95,46 @@ def test_every_schedule_script_job_targets_an_existing_script():
         "schedule.yml references script jobs with no file on disk "
         f"(re-enabling these 404s): {missing}"
     )
+
+
+def test_disabled_script_jobs_are_exactly_the_unported_set():
+    """The disabled script-job set must equal REMAINING_DISABLED_SCRIPT_JOBS.
+
+    Two-way truthfulness: a job from the ported priority batch flipping back
+    to disabled fails this (regression), and porting one of the remaining six
+    without updating the expectation (and the xfail above) also fails it.
+    """
+    from tests._parity_helpers import schedule_jobs
+
+    disabled = {
+        name
+        for name, job in schedule_jobs().items()
+        if str(job.get("agent", "")).startswith("script:") and not job.get("enabled")
+    }
+    assert disabled == REMAINING_DISABLED_SCRIPT_JOBS, (
+        f"disabled script jobs drifted: extra={sorted(disabled - REMAINING_DISABLED_SCRIPT_JOBS)} "
+        f"missing={sorted(REMAINING_DISABLED_SCRIPT_JOBS - disabled)}"
+    )
+
+
+def test_ported_cron_batch_jobs_are_enabled_with_v3_schedules():
+    """The six ported jobs are enabled and keep their v3 cron expressions."""
+    from tests._parity_helpers import schedule_jobs
+
+    expected_crons = {
+        "activity_daily_summary": "*/5 5-23,0-2 * * *",
+        "lesson_extraction": "*/30 6-23,0-2 * * *",
+        "event_habit_bridge": "*/10 5-23,0-4 * * *",
+        "goal_progress_update": "0 */1 * * *",
+        "ralf_cleanup": "0 4 * * *",
+        "pending_thoughts_expire": "0 5 * * *",
+    }
+    jobs = schedule_jobs()
+    for name, cron in expected_crons.items():
+        job = jobs.get(name)
+        assert job is not None, f"job {name} vanished from schedule.yml"
+        assert job.get("enabled") is True, f"job {name} is not enabled"
+        assert job.get("cron") == cron, f"job {name} cron drifted: {job.get('cron')!r} != {cron!r}"
 
 
 def test_enabled_schedule_script_jobs_exist():

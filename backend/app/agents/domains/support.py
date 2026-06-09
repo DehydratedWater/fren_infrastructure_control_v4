@@ -36,6 +36,7 @@ from app.agents._tools import (
     goal_manager_tool,
     goal_progress_auto_updater_tool,
     habit_manager_tool,
+    lesson_manager_tool,
     lock_manager_tool,
     night_analysis_tool,
     priority_manager_tool,
@@ -68,6 +69,7 @@ from src import (
     AgentTest,
     BranchTest,
     CapabilityTest,
+    LLMJudgeEvaluator,
     StepContract,
     SubstringEvaluator,
 )
@@ -619,6 +621,316 @@ ON — actionable, not informational.
    ~2000 chars. If nothing is actionable, say "Nothing actionable today — your
    topics are quiet."
 """
+
+
+_ACTIVITY_SUMMARIZER_PROMPT = """\
+# Activity Summarizer — Rolling Daily Timeline
+
+You consolidate the day's raw activity observations into ONE rolling daily
+summary used as persona context by every proactive agent. You run every few
+minutes; updates must be INCREMENTAL and cheap.
+
+Context: the user lives in Wrocław, Poland. The webcam shows their room. The
+screen capture is from a remote GPU server (the user works remotely on it).
+
+## Flow
+1. Determine the target date (given in the prompt; default today).
+2. Read the existing summary: context-cache get `ctx_daily_<date>`
+   (artifact type `activity_daily_summary`). If it exists, run INCREMENTALLY:
+   only integrate observations newer than its last update.
+3. Fetch the raw material: context-cache list-by-type `activity_observation`
+   for the date; Garmin health data (garmin-health: sleep, body battery,
+   stress, heart rate); the user's journal (telegram-log) and chat history
+   (chat-history) for the date. If there are NO new observations, exit
+   without writing anything.
+4. Compose the summary:
+   - A timeline of time ranges ("09:10-12:30 — coding on X in VS Code").
+     Merge consecutive similar activities into one range; note transitions,
+     lights on/off, and what the journal/chat show the user was thinking about.
+   - A **Health & Energy** section interpreting the body-battery trajectory,
+     correlating stress spikes with activities, assessing sleep impact, and
+     giving a brief wellness verdict.
+5. Store it back: replace `ctx_daily_<date>` in the context cache (delete +
+   create, artifact type `activity_daily_summary`, source_agent
+   activity_summarizer, never expires).
+6. Refresh the structured activity blocks for the date via activity-blocks
+   (non-overlapping time-ranged blocks; never overlap frozen blocks).
+
+## Rules — graded by probes
+- FAITHFUL: every timeline entry must be supported by an observation, journal
+  entry, or chat message. NEVER invent activities, applications, or times.
+- NO INVENTED HEALTH: if Garmin data is absent, the Health & Energy section
+  says so — never fabricate body battery / sleep / stress numbers.
+- COMPACT: merge aggressively; the summary is context for other agents, not a
+  raw log. Keep specific names (apps, files, repos, URLs) when observed.
+- INCREMENTAL: extend/adjust the existing timeline; do not rewrite history
+  that earlier observations already fixed.
+"""
+
+_LESSON_EXTRACTOR_PROMPT = """\
+# Lesson Extractor — Learn From Agent Mistakes
+
+You analyze recent chat between the user and Twily to extract behavioral
+lessons from mistakes, corrections, and failures. You run every 30 minutes
+and must never re-process already-seen messages.
+
+## Flow
+1. Cursor: read agent_notes key `lesson_extractor_cursor` (JSON
+   {"last_id": N}). Fetch chat messages with id greater than the cursor
+   (chat-history get-since-id); on a first run fall back to the lookback
+   window given in the prompt. If there are no new USER messages, just
+   advance the cursor and exit.
+2. Housekeeping: via lesson-manager, list active lessons (for dedup).
+3. Analyze the new messages for:
+   - user corrections ("I already did that", "that's wrong", "stop asking",
+     "we already talked about this");
+   - failed lookups (agent couldn't find something, user clarifies where);
+   - duplicate actions (same nudge/reminder sent twice);
+   - task management errors (completed items listed as pending, stale data);
+   - communication missteps (bad timing, pushing deferred topics).
+4. Store each NEW lesson via lesson-manager add (skip any duplicating an
+   active lesson). Then write the cursor back with the highest message id.
+
+## Lesson rules — graded by probes
+- Only extract CLEAR lessons grounded in the transcript — a lesson about
+  something the transcript does not show scores ZERO. Never speculate.
+- Concrete and actionable, imperative voice, under 100 characters: it gets
+  prepended to every agent prompt.
+- systemic = teaches HOW to behave ("Always verify task status before
+  listing"); situational = captures WHAT happened, with expiry 24-168h
+  ("User already resolved X — do not re-remind").
+- When the user says they already did/resolved something, ALWAYS capture the
+  situational lesson "user already resolved X — do not re-remind about it".
+- Confidence 0.9+ for explicit corrections, ~0.7 for inferred patterns.
+- An uneventful conversation yields NO lessons — never force one.
+"""
+
+
+# ── Probe helpers: inline-context replay probes for the cron agents ──────────
+# (No tools/DB needed: the probe inlines the data the live agent would fetch.)
+
+_PROBE_PASS_THRESHOLD = 0.7
+_PROBE_TIMEOUT_S = 120.0
+
+
+def _summarizer_probe_prompt(observations: list[tuple[str, str]], *, garmin: str = "",
+                             existing_summary: str = "") -> str:
+    """Self-contained probe prompt: inline activity blocks, no tool calls."""
+    lines = [
+        "PROBE MODE — the observations are inlined below; do NOT call any "
+        "tools. Output the (updated) daily summary directly: the time-range "
+        "timeline followed by the Health & Energy section.",
+        "",
+        "## Activity observations (today)",
+    ]
+    lines += [f"[{ts}] {text}" for ts, text in observations]
+    if garmin:
+        lines += ["", "## Garmin health data", garmin]
+    else:
+        lines += ["", "## Garmin health data", "(none available today)"]
+    if existing_summary:
+        lines += ["", "## Existing summary (update incrementally)", existing_summary]
+    return "\n".join(lines)
+
+
+_SUMMARIZER_OBS_CODING = [
+    ("09:04", "User at desk, VS Code open with repo 'fren_v4', terminal running pytest."),
+    ("09:21", "Still in VS Code, same repo, editing scheduler.py. Lights on."),
+    ("10:05", "VS Code, fren_v4 repo, reviewing a diff. Coffee mug on desk."),
+    ("12:32", "User away from desk. Screen locked."),
+    ("12:55", "Kitchen visible through door, user eating lunch."),
+    ("13:40", "User back at desk, browser open on Grafana dashboards."),
+]
+
+_SUMMARIZER_GARMIN = (
+    "Sleep: score 82/100, 7.3h total. Body battery 78 → 51 (draining moderate). "
+    "Avg stress 31/100. Heart rate avg 64 bpm."
+)
+
+_SUMMARIZER_OBS_NO_HEALTH = [
+    ("20:10", "User on couch reading on a tablet."),
+    ("20:45", "Still reading, lights dimmed."),
+]
+
+_SUMMARIZER_EXISTING = (
+    "09:00-12:30 — coding on fren_v4 in VS Code (scheduler work)\n"
+    "12:30-13:00 — lunch break\n\n"
+    "**Health & Energy**: slept 7.3h (score 82); body battery draining "
+    "moderately through the morning; calm focus (stress ~31)."
+)
+
+_SUMMARIZER_OBS_NEW_AFTERNOON = [
+    ("13:40", "User back at desk, browser open on Grafana dashboards."),
+    ("14:25", "Terminal open, tailing logs; Grafana still on second screen."),
+]
+
+
+def _activity_summarizer_probes() -> list[AgentTest]:
+    faithful_judge = LLMJudgeEvaluator(
+        name="faithful-compact-timeline",
+        criteria=(
+            "FAITHFULNESS + COMPACTNESS GATE. The inlined observations show "
+            "exactly: coding in VS Code on the fren_v4 repo ~09:04-10:05+, away/"
+            "lunch ~12:32-12:55, back at desk on Grafana from 13:40. Score 0 if "
+            "the summary invents ANY activity, application, or time range not "
+            "supported by those observations (e.g. meetings, gaming, walks). "
+            "Score HIGH if the three consecutive VS Code observations are MERGED "
+            "into one coding time range (not listed as 3 separate entries), the "
+            "lunch break appears, and the Grafana return appears. Mentioning the "
+            "provided Garmin numbers is fine."
+        ),
+        pass_threshold=_PROBE_PASS_THRESHOLD,
+    )
+    no_invented_health = LLMJudgeEvaluator(
+        name="no-invented-health-data",
+        criteria=(
+            "GROUNDED-ABSENCE GATE. The probe provides NO Garmin data ('none "
+            "available today') and the observations contain no health signals. "
+            "Score 0 if the summary asserts ANY concrete health metric — body "
+            "battery values, sleep score/hours, stress numbers, heart rate, "
+            "steps. Score HIGH if the Health & Energy section explicitly notes "
+            "that no health data is available today (and the timeline sticks to "
+            "the two reading observations)."
+        ),
+        pass_threshold=_PROBE_PASS_THRESHOLD,
+    )
+    incremental_judge = LLMJudgeEvaluator(
+        name="incremental-update-preserves-morning",
+        criteria=(
+            "INCREMENTAL-UPDATE GATE. An existing summary (morning coding + "
+            "lunch) is provided along with two NEW afternoon observations "
+            "(Grafana dashboards from 13:40, log tailing at 14:25). Score 0 if "
+            "the updated summary drops or contradicts the existing morning "
+            "ranges, or invents activities beyond the new observations. Score "
+            "HIGH if it keeps the morning timeline intact and extends it with "
+            "ONE compact afternoon range covering the Grafana/log-monitoring "
+            "work."
+        ),
+        pass_threshold=_PROBE_PASS_THRESHOLD,
+    )
+    return [
+        AgentTest(
+            name="probe-summarizer-faithful-compact",
+            prompt=_summarizer_probe_prompt(_SUMMARIZER_OBS_CODING, garmin=_SUMMARIZER_GARMIN),
+            evaluators=(faithful_judge,),
+            timeout_s=_PROBE_TIMEOUT_S,
+        ),
+        AgentTest(
+            name="probe-summarizer-no-invented-health",
+            prompt=_summarizer_probe_prompt(_SUMMARIZER_OBS_NO_HEALTH),
+            evaluators=(no_invented_health,),
+            timeout_s=_PROBE_TIMEOUT_S,
+        ),
+        AgentTest(
+            name="probe-summarizer-incremental",
+            prompt=_summarizer_probe_prompt(
+                _SUMMARIZER_OBS_NEW_AFTERNOON,
+                garmin=_SUMMARIZER_GARMIN,
+                existing_summary=_SUMMARIZER_EXISTING,
+            ),
+            evaluators=(incremental_judge,),
+            timeout_s=_PROBE_TIMEOUT_S,
+        ),
+    ]
+
+
+def _lesson_probe_prompt(messages: list[tuple[str, str, str]]) -> str:
+    """Self-contained probe prompt: inline transcript, no tool calls."""
+    lines = [
+        "PROBE MODE — the transcript is inlined below; do NOT call any tools. "
+        "Output the JSON array of lessons you would store (fields: lesson, "
+        "lesson_type, category, confidence). Output [] if there are none.",
+        "",
+        "## Recent conversation",
+    ]
+    lines += [f"[{ts}] {sender}: {text}" for ts, sender, text in messages]
+    return "\n".join(lines)
+
+
+_LESSON_CORRECTION_TRANSCRIPT = [
+    ("Tue 10:02", "twily", "Reminder: you still have 'file the VAT declaration' pending — due Friday!"),
+    ("Tue 10:05", "user", "I filed the VAT thing on Monday, why is it still showing as pending?"),
+    ("Tue 10:06", "twily", "You're right, sorry — marking it done now."),
+    ("Tue 10:07", "user", "please check the todo status before reminding me next time"),
+]
+
+_LESSON_BENIGN_TRANSCRIPT = [
+    ("Wed 14:10", "user", "what's a good movie for tonight?"),
+    ("Wed 14:11", "twily", "How about Arrival? You liked Dune and it has the same thoughtful sci-fi vibe."),
+    ("Wed 14:12", "user", "nice, thanks! adding it to the list"),
+]
+
+_LESSON_STALE_STATE_TRANSCRIPT = [
+    ("Thu 18:30", "twily", "Nudge: the electricity bill is due tomorrow — want me to add a reminder for the morning?"),
+    ("Thu 18:32", "user", "I already paid the electricity bill this afternoon. Stop reminding me about it."),
+    ("Thu 18:33", "twily", "Got it — dropping that one."),
+]
+
+
+def _lesson_extractor_probes() -> list[AgentTest]:
+    grounded_correction_judge = LLMJudgeEvaluator(
+        name="concrete-grounded-correction-lesson",
+        criteria=(
+            "GROUNDING GATE. The transcript shows exactly one failure: Twily "
+            "reminded about a VAT declaration the user had ALREADY filed, and "
+            "the user asked that todo status be checked before reminding. Score "
+            "0 if ANY extracted lesson is about something the transcript does "
+            "not show (invented tool errors, meal timing, sleep, etc.) — "
+            "invented lessons are the exact failure being gated. Score HIGH for "
+            "a concrete, actionable lesson like 'Verify task completion status "
+            "before sending reminders' (systemic), optionally plus a situational "
+            "'VAT declaration already filed — do not re-remind'. Vague lessons "
+            "('be more careful') score low."
+        ),
+        pass_threshold=_PROBE_PASS_THRESHOLD,
+    )
+    no_forced_lessons_judge = LLMJudgeEvaluator(
+        name="no-forced-lessons-from-benign-chat",
+        criteria=(
+            "NO-FORCING GATE. The transcript is a perfectly normal exchange — a "
+            "movie recommendation the user thanked Twily for. There are NO "
+            "mistakes, corrections, or failures. Score HIGH only if the output "
+            "is an empty array [] (or explicitly states no lessons). ANY "
+            "fabricated lesson — about movies, preferences, conversation flow — "
+            "scores 0: lessons must never be forced from uneventful chat."
+        ),
+        pass_threshold=_PROBE_PASS_THRESHOLD,
+    )
+    stale_state_judge = LLMJudgeEvaluator(
+        name="captures-already-resolved-do-not-re-remind",
+        criteria=(
+            "STALE-STATE GATE. The user PLAINLY states he already paid the "
+            "electricity bill and asks not to be reminded again. Score HIGH "
+            "only if a lesson captures exactly that resolved state — e.g. a "
+            "situational lesson 'User already paid the electricity bill — do "
+            "not re-remind' (ideally with a short expiry). Score 0 if no such "
+            "lesson is extracted, or if lessons are invented about anything the "
+            "transcript does not show. A complementary systemic lesson about "
+            "checking payment/task state before nudging is a bonus, not a "
+            "substitute."
+        ),
+        pass_threshold=_PROBE_PASS_THRESHOLD,
+    )
+    return [
+        AgentTest(
+            name="probe-lessons-grounded-correction",
+            prompt=_lesson_probe_prompt(_LESSON_CORRECTION_TRANSCRIPT),
+            evaluators=(grounded_correction_judge,),
+            timeout_s=_PROBE_TIMEOUT_S,
+        ),
+        AgentTest(
+            name="probe-lessons-none-from-benign-chat",
+            prompt=_lesson_probe_prompt(_LESSON_BENIGN_TRANSCRIPT),
+            evaluators=(no_forced_lessons_judge,),
+            timeout_s=_PROBE_TIMEOUT_S,
+        ),
+        AgentTest(
+            name="probe-lessons-stale-state-resolved",
+            prompt=_lesson_probe_prompt(_LESSON_STALE_STATE_TRANSCRIPT),
+            evaluators=(stale_state_judge,),
+            timeout_s=_PROBE_TIMEOUT_S,
+        ),
+    ]
 
 
 # ─────────────────────────── agents ───────────────────────────
@@ -1471,6 +1783,73 @@ def agents() -> list[AgentDefinition]:
                         SubstringEvaluator(needle="actionable", case_sensitive=False),
                     ),
                 ),
+            ],
+        ),
+        # ── Cron workers (fired by scripts/, every-N-minutes jobs) ──
+        define_agent(
+            "support/activity_summarizer",
+            model_class="fast",
+            short="consolidate activity observations into the rolling daily summary",
+            long=(
+                "Periodic consolidator (job activity_daily_summary): merges the"
+                " day's raw activity observations with Garmin health, journal"
+                " and chat into one incremental daily timeline + Health & Energy"
+                " summary in the context cache, and refreshes the structured"
+                " activity blocks. Faithful + compact + never invents health."
+            ),
+            prompt=_ACTIVITY_SUMMARIZER_PROMPT,
+            tools=[
+                context_cache_tool(),
+                activity_blocks_tool(),
+                garmin_health_tool(),
+                telegram_log_tool(),
+                chat_history_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="summarizer-no-file-writes",
+                    description="The summarizer writes via context-cache/activity-blocks only.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("context-cache",),
+                ),
+            ],
+            agent_tests=[
+                # LLM-judge replay probes with inline activity blocks: faithful
+                # + compact, grounded-absence (no invented health), incremental.
+                *_activity_summarizer_probes(),
+            ],
+        ),
+        define_agent(
+            "support/lesson_extractor",
+            model_class="fast",
+            short="extract behavioral lessons from recent chat mistakes",
+            long=(
+                "Periodic extractor (job lesson_extraction): tracks a cursor in"
+                " agent_notes, scans only new chat messages for corrections,"
+                " failed lookups, duplicate actions and task-management errors,"
+                " and stores concrete deduplicated lessons via lesson-manager."
+                " Never invents lessons; captures 'already resolved — do not"
+                " re-remind' states."
+            ),
+            prompt=_LESSON_EXTRACTOR_PROMPT,
+            tools=[
+                chat_history_tool(),
+                agent_notes_tool(),
+                lesson_manager_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="lesson-extractor-no-file-writes",
+                    description="The extractor writes via lesson-manager/agent-notes only.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("lesson-manager",),
+                ),
+            ],
+            agent_tests=[
+                # LLM-judge replay probes with inline transcripts: invented
+                # lessons score 0; benign chat yields none; stale-state probe
+                # ('user already resolved X — do not re-remind') is captured.
+                *_lesson_extractor_probes(),
             ],
         ),
     ]

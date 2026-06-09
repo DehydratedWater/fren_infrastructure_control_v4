@@ -521,6 +521,22 @@ class RalfKVRepo:
             await execute_sql(s, sql, {"ralf_id": ralf_id, "key": key})
             return True
 
+    async def winner_media_ids(self) -> set[str]:
+        """media_ids marked as winners (keys 'winner_*'/'final_*'/'best_*') in
+        ANY ralf's KV — these renders are kept forever by the cleanup cron."""
+        sql = """
+            SELECT value FROM ralf_kv
+            WHERE key LIKE 'winner_%' OR key LIKE 'final_%' OR key LIKE 'best_%'
+        """
+        async with get_async_session() as s:
+            rows = await fetch_all(s, sql, {})
+        ids: set[str] = set()
+        for r in rows:
+            v = (r.get("value") or "").strip()
+            if v.startswith(("img_", "vid_", "media_")):
+                ids.add(v)
+        return ids
+
 
 class RalfAmendmentsRepo:
     """User refinements folded into a running ralf.
@@ -681,3 +697,17 @@ class RalfLocksRepo:
         sql = "DELETE FROM ralf_locks WHERE expires_at < NOW()"
         async with get_async_session() as s:
             await execute_sql(s, sql, {})
+
+    async def list_expired(self) -> list[dict[str, Any]]:
+        """Expired-but-not-yet-released locks (housekeeping/dry-run view)."""
+        sql = "SELECT * FROM ralf_locks WHERE expires_at < NOW()"
+        async with get_async_session() as s:
+            rows = await fetch_all(s, sql, {})
+            return [dict(r) for r in rows]
+
+    async def release_expired(self) -> int:
+        """Delete every expired lock; returns the number released."""
+        sql = "DELETE FROM ralf_locks WHERE expires_at < NOW()"
+        async with get_async_session() as s:
+            result = await execute_sql(s, sql, {})
+            return int(getattr(result, "rowcount", 0) or 0)

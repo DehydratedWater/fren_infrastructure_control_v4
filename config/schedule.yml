@@ -1,6 +1,7 @@
 # Ported from fren_v3 config/schedule.yml. Agent jobs validated against v4's
-# compiled fleet. The 16 script:scripts/*.py jobs are DISABLED — those v3
-# cron scripts are not yet ported to v4/scripts/ (TODO: port to re-enable).
+# compiled fleet. script:scripts/*.py jobs whose v3 cron scripts are not yet
+# ported to v4/scripts/ stay DISABLED (see backend/tests/test_system_parity.py
+# for the authoritative remaining-disabled list).
 jobs:
   morning:
     cron: 0 8 * * *
@@ -146,7 +147,7 @@ jobs:
     agent: script:scripts/activity_summarizer.py
     prompt: ''
     description: Activity summary consolidation (every 5 min)
-    enabled: false
+    enabled: true
     timeout: 300
   night_analysis:
     cron: 0 2 * * *
@@ -188,7 +189,7 @@ jobs:
     agent: script:scripts/lesson_extractor.py
     prompt: ''
     description: Extract behavioral lessons from recent chat patterns
-    enabled: false
+    enabled: true
     timeout: 600
   conversation_digest:
     cron: '*/10 5-23,0-4 * * *'
@@ -210,7 +211,7 @@ jobs:
     prompt: ''
     description: Bridge events to habit completions — auto-complete habits from detected
       events
-    enabled: false
+    enabled: true
     timeout: 120
   goal_progress_update:
     cron: 0 */1 * * *
@@ -218,7 +219,7 @@ jobs:
     prompt: ''
     description: Hourly goal progress auto-update from activities, events, habits,
       todos
-    enabled: false
+    enabled: true
     timeout: 300
   research_digest:
     cron: 0 9 * * *
@@ -285,7 +286,7 @@ jobs:
     prompt: --keep-days 7
     description: Ralf housekeeping — delete old rendered media + expired locks (daily
       4am)
-    enabled: false
+    enabled: true
     timeout: 300
   relationship_initiator:
     cron: 0 9,13,18,22 * * *
@@ -324,7 +325,7 @@ jobs:
     agent: script:scripts/topic_synthesizer.py
     prompt: --expire-only
     description: Prune stale pending_thoughts + persona_interests (daily 07:00 Warsaw)
-    enabled: false
+    enabled: true
     timeout: 120
   relationship_reflector:
     cron: 0 20 * * 0

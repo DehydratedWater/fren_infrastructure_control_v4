@@ -140,6 +140,23 @@ class EventsRepo:
                 params,
             )
 
+    async def list_since_id(self, since_id: int, *, limit: int = 200) -> list[dict[str, Any]]:
+        """Events with DB row id greater than *since_id*, oldest-first.
+
+        Cursor-style read used by periodic consumers (event→habit bridge) so
+        each event is processed exactly once across cron ticks.
+        """
+        async with get_async_session() as s:
+            return await fetch_all(
+                s,
+                """
+                SELECT * FROM events
+                WHERE id > :since_id
+                ORDER BY id ASC LIMIT :limit
+            """,
+                {"since_id": since_id, "limit": limit},
+            )
+
     async def list_recent(self, limit: int = 20) -> list[dict[str, Any]]:
         async with get_async_session() as s:
             return await fetch_all(
