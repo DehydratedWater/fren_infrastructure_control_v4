@@ -337,22 +337,30 @@ async def _evaluate_personality_core(user_msg: str) -> None:
     message so the `emotional_state` snapshot is fresh for the next persona_prose
     render. The PersonalityCoreTool 'evaluate' command calls the personality-core
     LLM with the message as stimuli, parses the emotions, and writes the
-    emotional_state table (+ aggregates) — with a built-in ~10s cooldown. Run in
-    a worker thread because the tool's execute() is sync (manages its own loop).
+    emotional_state table (+ aggregates) — with a built-in ~10s cooldown.
     """
     try:
         if not (user_msg or "").strip():
             return
-        import asyncio
+        import subprocess
 
-        from app.tools.personality.personality_core import Input, PersonalityCoreTool
+        from app.settings import get_settings
 
-        await asyncio.to_thread(
-            PersonalityCoreTool().execute,
-            Input(command="evaluate", stimuli=user_msg),
+        # Run as an ISOLATED subprocess — NOT to_thread(execute). The tool's sync
+        # execute() calls asyncio.run()+close_engine(), which closed the bot's
+        # SHARED async DB engine and cascaded "Future attached to a different loop"
+        # errors into every other DB op. A subprocess gets its own engine/loop.
+        # scripts/ is symlinked into AGENTS_DIR, so run from there.
+        subprocess.Popen(
+            ["python", "scripts/personality_core.py", "--command", "evaluate",
+             "--stimuli", user_msg[:2000]],
+            cwd=str(get_settings().agents_dir),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
         )
     except Exception:
-        logger.exception("personality_core evaluate failed")
+        logger.exception("personality_core evaluate kickoff failed")
 
 
 async def _save_user_message(message: str, update: Update, *, content_class: str = "public") -> None:
