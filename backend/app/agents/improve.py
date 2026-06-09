@@ -602,6 +602,19 @@ def make_judge_test(agent: AgentDefinition) -> AgentTest:
     )
 
 
+def _judge_test_suite(agent: AgentDefinition) -> list[AgentTest]:
+    """The graded role-fulfilment judge test PLUS any corpus-grounded pack tests.
+
+    Probe packs (app/agents/probe_packs.py) are generated offline from the real
+    v3 chat corpus (`python -m app probe-packs`); when an agent has one, its
+    probes ADD graded judge tests so optimisation targets what the user actually
+    asks. A missing pack degrades to exactly the old single-test behaviour.
+    """
+    from app.agents.probe_packs import pack_tests  # local: avoid import cycle
+
+    return [make_judge_test(agent)] + pack_tests(agent.header.agent_id)
+
+
 def _test_expectations(agent: AgentDefinition) -> list[dict[str, Any]]:
     """A human-readable description of what each agent_test expects, fed to the
     LLM rewriter as `context.failures` so it knows the target to satisfy."""
@@ -777,7 +790,7 @@ def build_agent_units(
         # When using the generated judge test, every agent is improvable;
         # otherwise only those that authored agent_tests.
         if use_judge_test:
-            agent = agent.model_copy(update={"agent_tests": [make_judge_test(agent)]})
+            agent = agent.model_copy(update={"agent_tests": _judge_test_suite(agent)})
         elif not agent.agent_tests:
             continue
         baseline = ComponentVersion.of(

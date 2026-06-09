@@ -6,6 +6,7 @@ compose):
   scheduler — the long-lived cron Scheduler (start → wait → stop, signal-aware)
   checker   — periodic intervention checker (one-shot tick on an interval loop)
   compile   — build the fleet into AGENTS_DIR (run once at boot before the bot)
+  probe-packs — generate corpus-grounded autoloop probe packs (offline, one-shot)
 """
 
 from __future__ import annotations
@@ -234,6 +235,79 @@ def _run_improve(argv: list[str]) -> None:
         print(f"\n{len(result.failed())} unit(s) errored (see above).")
 
 
+def _run_probe_packs(argv: list[str]) -> None:
+    """Generate corpus-grounded probe packs (one teacher call per agent).
+
+    Usage:
+      python -m app probe-packs [--agents id ...] [--domains prefix ...]
+                                [--per-agent K] [--refresh] [--workers N]
+                                [--corpus-limit N]
+
+    Samples REAL user messages from the read-only v3 DB (docker-fren-db-1) and
+    asks the GLM teacher (via opencode) for K self-contained probes + judge
+    criteria per agent, persisted under app/agents/probe_packs/. The autoloop's
+    judge-test mode picks them up automatically. Re-run with --refresh after a
+    model switch or usage drift (packs are regenerable, not sacred).
+    """
+    import argparse
+
+    from app.agents.probe_packs import generate_packs
+    from app.agents.registry import all_agents
+
+    p = argparse.ArgumentParser(prog="app probe-packs")
+    p.add_argument("--agents", nargs="+", default=None,
+                   help="restrict to these agent id(s)")
+    p.add_argument("--domains", nargs="+", default=None,
+                   help="restrict to these domain prefixes (e.g. goals food)")
+    p.add_argument("--per-agent", type=int, default=5,
+                   help="probes per agent (default 5)")
+    p.add_argument("--refresh", action="store_true",
+                   help="regenerate packs that already exist")
+    p.add_argument("--workers", type=int, default=6)
+    p.add_argument("--corpus-limit", type=int, default=40,
+                   help="corpus messages sampled per agent (default 40)")
+    args = p.parse_args(argv)
+
+    all_ids = [a.header.agent_id for a in all_agents()]
+    ids: list[str] | None = None
+    if args.agents or args.domains:
+        picked: set[str] = set()
+        if args.agents:
+            known = set(all_ids)
+            for aid in args.agents:
+                if aid in known:
+                    picked.add(aid)
+                else:
+                    print(f"[probe-packs] WARNING: unknown agent id {aid!r}",
+                          file=sys.stderr)
+        if args.domains:
+            prefixes = set(args.domains)
+            picked.update(i for i in all_ids if i.split("/", 1)[0] in prefixes)
+        ids = sorted(picked)
+        if not ids:
+            print("[probe-packs] no agents matched the filters", file=sys.stderr)
+            sys.exit(2)
+
+    results = generate_packs(
+        ids,
+        per_agent=args.per_agent,
+        refresh=args.refresh,
+        workers=args.workers,
+        corpus_limit=args.corpus_limit,
+    )
+    counts = {"ok": 0, "skipped": 0, "error": 0}
+    print("\n========== PROBE-PACK SUMMARY ==========")
+    for aid in sorted(results):
+        status = results[aid]
+        counts["error" if status.startswith("error") else status] += 1
+        print(f"  [{status.split(':')[0]:7}] {aid:42} "
+              + (status if status.startswith("error") else ""))
+    print(f"\nok={counts['ok']} skipped={counts['skipped']} "
+          f"error={counts['error']} (of {len(results)})")
+    if results and counts["ok"] == 0 and counts["skipped"] == 0:
+        sys.exit(1)
+
+
 def _dispatch(service: str, argv: list[str]) -> None:
     if service == "bot":
         _run_bot()
@@ -247,9 +321,12 @@ def _dispatch(service: str, argv: list[str]) -> None:
         _run_compile()
     elif service == "improve":
         _run_improve(argv)
+    elif service == "probe-packs":
+        _run_probe_packs(argv)
     else:
         print(
-            f"unknown service: {service!r} (use bot|scheduler|checker|web|compile|improve)",
+            f"unknown service: {service!r} "
+            "(use bot|scheduler|checker|web|compile|improve|probe-packs)",
             file=sys.stderr,
         )
         sys.exit(2)
