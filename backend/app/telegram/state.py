@@ -15,34 +15,18 @@ logger = logging.getLogger(__name__)
 
 _STATE_PATH: Path | None = None
 
-# Tag → model key mapping
+# Tag → model key mapping. Only the THREE selectable worker models remain:
+# qwen3.5-27b (local DEFAULT) + glm-4.7 + glm-5.1.
 _TAG_MAP: dict[str, str] = {
-    "#glm": "glm",
-    "#glm45": "glm",
-    "#glm47": "glm47",
-    "#glm5": "glm5",
-    "#local": "local",
-    "#localglm45air": "localglm45air",
-    "#localgptoss120b": "localgptoss120b",
-    "#locallfm24b": "locallfm24b",
-    "#localminimax25": "localminimax25",
-    "#localgptoss20b": "localgptoss20b",
-    "#localqwencoder": "localqwencoder",
-    "#localglm47flash": "localglm47flash",
-    "#localqwen3coderream": "localqwen3coderream",
-    "#localqwen35": "localqwen35",
-    "#localqwen380bthink": "localqwen380bthink",
-    "#localqwen380binst": "localqwen380binst",
-    "#locallingflash": "locallingflash",
     "#localqwen3527b": "localqwen3527b",
+    "#qwen": "localqwen3527b",
+    "#glm47": "glm47",
+    "#glm51": "glm51",
 }
 
 _TAG_RE = re.compile(
     r"(?:^|\s)(#(?:"
-    r"localqwen3coderream|localqwen380bthink|localqwen380binst|"
-    r"localqwen3527b|locallingflash|localglm47flash|localminimax25|localgptoss120b|"
-    r"localgptoss20b|localqwencoder|localglm45air|locallfm24b|localqwen35|"
-    r"glm45|glm47|glm5|glm|local"
+    r"localqwen3527b|qwen|glm47|glm51"
     r"))\b",
     re.IGNORECASE,
 )
@@ -214,11 +198,7 @@ def get_postfix(model: str | None = None) -> str:
     # the local ones so the selected model actually routes to its variant.
     _STATE_TO_VARIANT = {
         "localqwen3527b": "qwen35-27b",
-        "localglm45air": "glm-4.5-air-local",
-        "splitqwen35": "splitqwen35",
-        "glm45air": "glm-4.5-air",
         "glm47": "glm-4.7",
-        "glm5": "glm-5",
         "glm51": "glm-5.1",
     }
     name = _STATE_TO_VARIANT.get((model or "").lower().lstrip("#"), model)

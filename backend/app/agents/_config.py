@@ -12,37 +12,35 @@ preset data.
 from __future__ import annotations
 
 from app.agents.config import (
-    GLM_45_AIR,
     GLM_47,
-    GLM_5,
     GLM_51,
-    GLM_LOCAL,
     QWEN35_27B,
     WORKER_VARIANTS,
 )
 
-# variant name → ModelPreset (None for the split profile, handled separately).
+# variant name → ModelPreset. Only the three live variants:
+# qwen35-27b (the local DEFAULT) + the two alt cloud passes glm-4.7 / glm-5.1.
 VARIANT_PRESETS = {
-    "glm-4.5-air": GLM_45_AIR,
-    "glm-4.7": GLM_47,
-    "glm-5": GLM_5,
-    "glm-5.1": GLM_51,
-    "glm-4.5-air-local": GLM_LOCAL,
     "qwen35-27b": QWEN35_27B,
-    "splitqwen35": None,
+    "glm-4.7": GLM_47,
+    "glm-5.1": GLM_51,
 }
 
 MODEL_DISPLAY = {
-    "glm-4.5-air": "GLM-4.5-Air ☁️",
-    "glm-4.7": "GLM-4.7 ☁️",
-    "glm-5": "GLM-5 ☁️",
-    "glm-5.1": "GLM-5.1 ☁️",
-    "glm-4.5-air-local": "GLM-4.5-Air (local) 🏠",
+    # compiled variant names
     "qwen35-27b": "Qwen3.5-27B 🏠",
-    "splitqwen35": "Split Qwen3.5 (fast+deep) 🏠",
+    "glm-4.7": "GLM-4.7 ☁️",
+    "glm-5.1": "GLM-5.1 ☁️",
+    # telegram state/chat model keys (so the header renders on the chat surface)
+    "localqwen3527b": "Qwen3.5-27B 🏠",
+    "glm47": "GLM-4.7 ☁️",
+    "glm51": "GLM-5.1 ☁️",
 }
 
-LOCAL_MODEL_KEYS = {"glm-4.5-air-local", "qwen35-27b", "splitqwen35"}
+# qwen is the only LOCAL (NSFW-capable) worker now. Includes BOTH the compiled
+# variant name ("qwen35-27b") AND the telegram state/chat model key
+# ("localqwen3527b") so is_local_model() resolves correctly on the chat surface.
+LOCAL_MODEL_KEYS = {"qwen35-27b", "localqwen3527b"}
 
 _MODEL_PRESET_MAP = {**VARIANT_PRESETS}
 

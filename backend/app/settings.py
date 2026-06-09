@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # --- worker provider (z.ai coding plan, drives opencode) ----------------
     zai_api_key: str = Field(default="", alias="ZAI_API_KEY")
     worker_model: str = Field(
-        default="zai-coding-plan/glm-4.5-air", alias="WORKER_MODEL",
+        default="local-vllm-remote/qwen35-27b", alias="WORKER_MODEL",
     )
     execution_backend: str = Field(default="direct", alias="EXECUTION_BACKEND")
 

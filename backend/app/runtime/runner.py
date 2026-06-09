@@ -389,7 +389,7 @@ async def run_agent_direct(
     if not md_path.exists():
         return AgentRunResult(error=f"compiled agent not found: {md_path}")
     agent = load_compiled_agent(md_path)
-    model = agent.model or os.environ.get("WORKER_MODEL", "zai-coding-plan/glm-4.5-air")
+    model = agent.model or os.environ.get("WORKER_MODEL", "zai-coding-plan/glm-4.7")
 
     url = (base_url or os.environ.get("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4"))
     key = api_key or os.environ.get("ZAI_API_KEY", "")

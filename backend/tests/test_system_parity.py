@@ -189,9 +189,11 @@ def test_config_presets_match_opencode_provider_models():
     from app.agents import config as cfg
 
     declared = declared_provider_models()
+    # Only the three live worker presets remain (default qwen + the two alt
+    # cloud passes); QWEN_VL aliases QWEN35_27B (multimodal vision routes here).
     presets = [
-        cfg.GLM_45_AIR, cfg.GLM_47, cfg.GLM_5, cfg.GLM_51,
-        cfg.GLM_LOCAL, cfg.QWEN35_27B, cfg.QWEN_VL,
+        cfg.GLM_47, cfg.GLM_51,
+        cfg.QWEN35_27B, cfg.QWEN_VL,
     ]
     offenders = {
         p.name: p.qualified_model_name
@@ -204,21 +206,12 @@ def test_config_presets_match_opencode_provider_models():
     )
 
 
-def test_vision_config_base_url_matches_opencode_image_provider():
-    """agents/config._VLLM_VISION base_url must match opencode.json local-vllm-image.
-
-    KNOWN BUG (parity gap): config.py pins vision to 192.168.0.42:5504 while
-    opencode.json's local-vllm-image (the A4000) is 192.168.0.95:5504. The two
-    must agree on where the vision model actually lives.
-    """
-    from app.agents import config as cfg
-
-    config_vision_url = cfg._VLLM_VISION["base_url"]
-    opencode_image_url = provider_base_urls().get("local-vllm-image", "")
-    assert config_vision_url == opencode_image_url, (
-        f"vision endpoint mismatch: config.py={config_vision_url} "
-        f"vs opencode.json local-vllm-image={opencode_image_url}"
-    )
+# NOTE: the former test_vision_config_base_url_matches_opencode_image_provider
+# was dropped: the separate A4000 vision model (local-vllm-image, :5504) and the
+# config._VLLM_VISION endpoint no longer exist — vision/video route to the
+# multimodal local qwen-27B (QWEN_VL = QWEN35_27B on :8082). The "vision is on
+# qwen, nothing pins the dead A4000 model" invariant is now covered by
+# test_vision_agents_route_to_the_multimodal_qwen_not_the_dead_a4000 below.
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -421,10 +414,13 @@ def test_all_config_provider_keys_declared_in_opencode():
     from app.agents import config as cfg
 
     declared_providers = set((opencode_config().get("provider") or {}).keys())
+    # The three live WORKER presets must resolve to declared providers. The
+    # split-profile presets (SPLIT_*) belong to the interactive `live_profile`,
+    # not the opencode worker fleet, and resolve via vllm_resolve's own probed
+    # endpoints — they are intentionally NOT in opencode.json.
     presets = [
-        cfg.GLM_45_AIR, cfg.GLM_47, cfg.GLM_5, cfg.GLM_51,
-        cfg.GLM_LOCAL, cfg.QWEN35_27B, cfg.QWEN_VL,
-        cfg.SPLIT_FAST, cfg.SPLIT_ANALYTICAL,
+        cfg.GLM_47, cfg.GLM_51,
+        cfg.QWEN35_27B, cfg.QWEN_VL,
     ]
     offenders = {p.name: p.provider for p in presets if p.provider not in declared_providers}
     assert not offenders, f"config presets reference undeclared providers: {offenders}"

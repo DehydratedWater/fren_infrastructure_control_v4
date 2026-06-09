@@ -543,7 +543,7 @@ You check agent status and pass messages between agents.
 
 ## Response
 Be concise: how many agents run and their names, their model variant (from the
-name suffix: -local, -gptoss, -glm47, -glm5, or default glm-4.5-air), a brief
+name suffix: -glm47, -glm51, or default qwen35-27b), a brief
 snippet of what they're doing, recent completions if asked, and confirmation of
 any message delivery / launch. If nothing is running, say so clearly.
 """

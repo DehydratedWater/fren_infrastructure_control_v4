@@ -24,13 +24,16 @@ from src.model.core.split_profile import SplitProfile
 from src.model.core.variant_spec import VariantSpec
 
 # --- provider option blocks -------------------------------------------------
-# z.ai coding plan (the worker provider — drives opencode).
+# z.ai coding plan (the worker provider — drives opencode) — used by the two
+# ALTERNATIVE (non-default) variants glm-4.7 / glm-5.1 only.
 _ZAI = {"api_key_env": "ZAI_API_KEY"}
-# Local OpenAI-compatible vLLM servers on the LAN (no key needed).
+# Local OpenAI-compatible vLLM server on the LAN (no key needed). The local
+# qwen-27B on :8082 is the DEFAULT/primary worker model for the whole fleet.
 _VLLM_REMOTE = {"base_url": "http://192.168.0.42:8082/v1", "api_key_env": "VLLM_API_KEY"}
+# The split/analytical endpoint is still used by the interactive live_profile
+# (vllm_resolve); the local-glm (:5502) and A4000-vision (:5504) endpoints were
+# dropped along with their worker variants.
 _VLLM_ANALYTICAL = {"base_url": "http://192.168.0.42:8083/v1", "api_key_env": "VLLM_API_KEY"}
-_VLLM_LOCAL = {"base_url": "http://192.168.0.42:5502/v1", "api_key_env": "VLLM_API_KEY"}
-_VLLM_VISION = {"base_url": "http://192.168.0.95:5504/v1", "api_key_env": "VLLM_API_KEY"}
 
 
 def _preset(name, provider, model_id, *, temperature=0.3, options=None) -> ModelPreset:
@@ -49,16 +52,14 @@ def _preset(name, provider, model_id, *, temperature=0.3, options=None) -> Model
 # the provider KEY and model KEY declared in opencode.json — opencode then maps
 # that model KEY to the real served `id` (e.g. cyankiwi/Qwen3.5-27B-AWQ-...)
 # internally. So `model_id` here is the opencode model KEY, NOT the served id.
-GLM_45_AIR = _preset("glm-4.5-air", "zai-coding-plan", "glm-4.5-air", options=_ZAI)
+# Only the two ALTERNATIVE cloud variants remain (glm-4.5-air / glm-5 dropped).
 GLM_47 = _preset("glm-4.7", "zai-coding-plan", "glm-4.7", options=_ZAI)
-GLM_5 = _preset("glm-5", "zai-coding-plan", "glm-5", options=_ZAI)
 GLM_51 = _preset("glm-5.1", "zai-coding-plan", "glm-5.1", options=_ZAI)
 
-# --- local presets ----------------------------------------------------------
-# provider/model KEYS below mirror opencode.json: local-vllm/glm-4.5-air-local
-# (served id cyankiwi/GLM-4.5-Air-Derestricted-AWQ-4bit) and
-# local-vllm-remote/qwen35-27b (served id cyankiwi/Qwen3.5-27B-AWQ-BF16-INT8).
-GLM_LOCAL = _preset("glm-4.5-air-local", "local-vllm", "glm-4.5-air-local", options=_VLLM_LOCAL)
+# --- local preset (the DEFAULT/primary worker) ------------------------------
+# provider/model KEY mirrors opencode.json: local-vllm-remote/qwen35-27b
+# (served id cyankiwi/Qwen3.5-27B-AWQ-BF16-INT8). This is the fleet DEFAULT —
+# the empty-postfix variant — so the primary fleet runs on the local qwen.
 QWEN35_27B = _preset("qwen35-27b", "local-vllm-remote", "qwen35-27b", options=_VLLM_REMOTE)
 
 # --- split-profile presets (simultaneous multi-model serving) ---------------
@@ -86,11 +87,11 @@ def _worker(name: str, postfix: str, preset: ModelPreset) -> SplitProfile:
 
     We route `vision` -> QWEN_VL in the class_map (rather than using
     `passthrough_classes`) on purpose: passthrough makes apply_variant return the
-    agent unchanged, which DROPS the postfix and collapses all 7 variant files
-    into one. Routing keeps the postfix, so `<vision_agent><postfix>.md` is still
+    agent unchanged, which DROPS the postfix and collapses the variant files into
+    one. Routing keeps the postfix, so `<vision_agent><postfix>.md` is still
     emitted per variant (so a -glm47 orchestrator can dispatch the vision
-    subagent), exactly matching v3's 7-file-per-vision-agent output — while still
-    binding the model to local-vllm-image/qwen3-8b-vl.
+    subagent). QWEN_VL == QWEN35_27B (the local qwen-27B is multimodal), so vision
+    binds to local-vllm-remote/qwen35-27b in every variant.
     """
     return SplitProfile(
         name=name,
@@ -107,33 +108,18 @@ def _worker(name: str, postfix: str, preset: ModelPreset) -> SplitProfile:
     )
 
 
-# --- the seven worker variants (one compile pass each) ----------------------
+# --- the three worker variants (one compile pass each) ----------------------
+# DEFAULT (empty postfix) = the local qwen-27B, so the primary fleet
+# (`<agent>.md` + `<agent>-primary.md`) runs locally. glm-4.7 / glm-5.1 are the
+# two alternative cloud compilations (`-glm47` / `-glm51`).
 WORKER_VARIANTS: list[VariantSpec] = [
-    _worker("glm-4.5-air", "", GLM_45_AIR),
+    _worker("qwen35-27b", "", QWEN35_27B),  # default/primary (postfix "")
     _worker("glm-4.7", "-glm47", GLM_47),
-    _worker("glm-5", "-glm5", GLM_5),
     _worker("glm-5.1", "-glm51", GLM_51),
-    _worker("glm-4.5-air-local", "-local", GLM_LOCAL),
-    _worker("qwen35-27b", "-qwen3527b", QWEN35_27B),
-    SplitProfile(
-        name="splitqwen35",
-        postfix="-splitqwen35",
-        preset=SPLIT_ANALYTICAL,  # fallback
-        # vision -> QWEN_VL (route, don't passthrough) so the
-        # `<agent>-splitqwen35.md` file is still emitted (passthrough would drop
-        # the postfix and collapse it into the default). v3 parity: vision agents
-        # bind to local-vllm-image/qwen3-8b-vl in this variant too.
-        class_map={
-            "fast": SPLIT_FAST,
-            "analytical": SPLIT_ANALYTICAL,
-            "vision": QWEN_VL,
-        },
-        default_class="analytical",
-        passthrough_classes=(),
-    ),
 ]
 
-# The default worker variant (what compiles to the unsuffixed primary.md).
+# The default worker variant (what compiles to the unsuffixed primary.md) —
+# the local qwen-27B.
 DEFAULT_WORKER = WORKER_VARIANTS[0]
 
 

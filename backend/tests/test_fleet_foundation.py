@@ -43,11 +43,23 @@ def test_compile_default_variant_writes_md(tmp_path):
     assert ".opencode/agents/persona/quick_ack.md" in md
 
 
-def test_split_variant_compiles_with_postfix(tmp_path):
-    split = next(v for v in WORKER_VARIANTS if v.name == "splitqwen35")
-    compile_fleet(target=tmp_path / "b", project_root=tmp_path, variants=[split])
+def test_worker_variants_are_exactly_the_three(tmp_path):
+    """Only the three live variants remain: qwen (default, empty postfix) +
+    glm-4.7 (-glm47) + glm-5.1 (-glm51)."""
+    names = [v.name for v in WORKER_VARIANTS]
+    assert names == ["qwen35-27b", "glm-4.7", "glm-5.1"], names
+    postfixes = {v.name: v.postfix for v in WORKER_VARIANTS}
+    assert postfixes == {"qwen35-27b": "", "glm-4.7": "-glm47", "glm-5.1": "-glm51"}
+    # the default (empty-postfix) variant is qwen
+    assert DEFAULT_WORKER.name == "qwen35-27b" and DEFAULT_WORKER.postfix == ""
+
+
+def test_alt_variants_compile_with_their_postfixes(tmp_path):
+    alts = [v for v in WORKER_VARIANTS if v.postfix]
+    compile_fleet(target=tmp_path / "b", project_root=tmp_path, variants=alts)
     names = {p.name for p in (tmp_path / "b").rglob("*.md")}
-    assert any(n.endswith("-splitqwen35.md") for n in names)
+    assert any(n.endswith("-glm47.md") for n in names)
+    assert any(n.endswith("-glm51.md") for n in names)
 
 
 # --- deterministic runners for the improvement pipeline --------------------
