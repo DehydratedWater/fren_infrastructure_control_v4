@@ -200,12 +200,29 @@ def strip_content_tags(text: str) -> str:
 
 
 def get_postfix(model: str | None = None) -> str:
-    from app.agents._config import VARIANT_PRESETS
+    # _POSTFIX maps a variant NAME (e.g. "qwen35-27b") to the compiled file
+    # postfix (e.g. "-qwen3527b"), derived from WORKER_VARIANTS so it never drifts.
+    # (The old code unpacked VARIANT_PRESETS values — ModelPresets, not tuples —
+    # which raised on every valid key and silently fell back to the z.ai default,
+    # so the whole fleet ran on glm-4.5-air instead of the selected model.)
+    from app.agents._config import _POSTFIX
 
     if model is None:
         model = get_model()
-    postfix, _model_name = VARIANT_PRESETS.get(model, ("", "glm-4.5-air"))
-    return postfix
+    # The state/chat model keys (#hashtag names like "localqwen3527b") use a
+    # different naming than the compiled variant names ("qwen35-27b"); normalise
+    # the local ones so the selected model actually routes to its variant.
+    _STATE_TO_VARIANT = {
+        "localqwen3527b": "qwen35-27b",
+        "localglm45air": "glm-4.5-air-local",
+        "splitqwen35": "splitqwen35",
+        "glm45air": "glm-4.5-air",
+        "glm47": "glm-4.7",
+        "glm5": "glm-5",
+        "glm51": "glm-5.1",
+    }
+    name = _STATE_TO_VARIANT.get((model or "").lower().lstrip("#"), model)
+    return _POSTFIX.get(name, "")
 
 
 def get_model_display(model: str | None = None) -> str:
