@@ -15,6 +15,7 @@ unit (see app/agents/branches.py).
 from __future__ import annotations
 
 from app.agents._authoring import define_agent
+from app.agents.stale_probes import event_extractor_probes
 from app.agents._tools import (
     activity_blocks_tool,
     agent_notes_tool,
@@ -1208,6 +1209,11 @@ def agents() -> list[AgentDefinition]:
                         ),
                     ),
                 ),
+                # Stale-state replay probes (real v3 failures): one dose
+                # referenced twice is ONE event; 'last Tuesday' is not today;
+                # no invented health claims when the batch has none. Run via
+                # `app improve --proactive-probes --agent support/event_extractor`.
+                *event_extractor_probes(),
             ],
         ),
         # ── Media analysts (vision) ──

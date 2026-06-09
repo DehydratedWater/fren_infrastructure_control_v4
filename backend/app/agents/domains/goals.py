@@ -55,6 +55,7 @@ from app.agents._tools import (
     visual_report_tool,
 )
 from app.agents.proactive_probes import proactive_probes
+from app.agents.stale_probes import stale_state_probes
 from src import (
     AgentDefinition,
     AgentTest,
@@ -1051,6 +1052,9 @@ def agents() -> list[AgentDefinition]:
                 # Autoloop probes: variety / anti-repetition / grounded / skip,
                 # built from realistic assembled contexts across evolving ticks.
                 *proactive_probes(),
+                # Stale-state replay probes (real v3 failures): never re-remind
+                # an item the chat history shows resolved.
+                *stale_state_probes(),
             ],
         ),
         define_agent(
@@ -1110,6 +1114,9 @@ def agents() -> list[AgentDefinition]:
                 ),
                 # Autoloop probes: variety / anti-repetition / grounded / skip.
                 *proactive_probes(),
+                # Stale-state replay probes (real v3 failures): never re-remind
+                # an item the chat history shows resolved.
+                *stale_state_probes(),
             ],
         ),
         define_agent(

@@ -174,6 +174,9 @@ def _run_improve(argv: list[str]) -> None:
                 "goals/nudge_strategist",
                 "goals/periodic_checker",
                 "goals/winddown",
+                # Carries the stale-state replay suite (single-dose dedup,
+                # date drift, grounded absence) from app/agents/stale_probes.py.
+                "support/event_extractor",
             ]
 
     # Default mode: generated graded judge test on EVERY agent (137 improvable).
