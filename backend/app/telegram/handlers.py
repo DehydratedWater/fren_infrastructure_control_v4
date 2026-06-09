@@ -732,15 +732,15 @@ async def handle_work_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def handle_glm_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /glm command — switch to default GLM model."""
+    """Handle /glm command — switch to the default GLM model (glm-4.7)."""
     if not _is_allowed(update):
         return
     from app.telegram.state import format_header, set_model
 
-    set_model("glm")
+    set_model("glm47")
     header = format_header()
     await update.effective_message.reply_text(  # type: ignore[union-attr]
-        f"Model: glm-4.5-air {header} ~Twily"
+        f"Model: GLM-4.7 {header} ~Twily"
     )
 
 
@@ -862,11 +862,13 @@ async def handle_models(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.effective_message.reply_text("\n".join(lines))  # type: ignore[union-attr]
 
 
+# vLLM serving-mode (:8082 dense/moe/split) → selected worker model key. All
+# modes serve the local qwen, which is the only selectable local worker now.
 _VLLM_MODEL_MAP: dict[str, str] = {
     "dense": "localqwen3527b",
     "moe": "localqwen3527b",
     "small": "localqwen3527b",
-    "split": "splitqwen35b",
+    "split": "localqwen3527b",
 }
 
 
