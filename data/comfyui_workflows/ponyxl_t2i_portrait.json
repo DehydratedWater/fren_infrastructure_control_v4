@@ -4,7 +4,7 @@
   "workflow_json": {
     "1": {
       "inputs": {
-        "ckpt_name": "waiANINSFWPONYXL_v90.safetensors"
+        "ckpt_name": "ponyDiffusionV6XL_v6StartWithThisOne.safetensors"
       },
       "class_type": "CheckpointLoaderSimple"
     },
