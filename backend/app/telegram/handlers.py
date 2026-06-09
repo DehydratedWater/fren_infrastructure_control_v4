@@ -1071,17 +1071,36 @@ async def handle_vibe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 
 async def handle_unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle unrecognized /commands — show error and list available commands."""
+    """Handle unrecognized /commands — show error and list available commands.
+
+    This is bot.py's catch-all `MessageHandler(filters.COMMAND, …)`, so it is
+    also the registration point for the explicit slash-command entry points
+    (v3 parity: /brief, /memory, /analyse, /invoice, /techtree, /goal,
+    /council, /adventure, /ralf, /help) — v4 agents have no `trigger_command`
+    field, so these never get a CommandHandler and land here instead. Route
+    them through the registry BEFORE the unknown-command reply.
+    """
     if not _is_allowed(update):
         return
+
+    try:
+        from app.telegram.commands import dispatch_slash_command
+
+        if await dispatch_slash_command(update, context):
+            return
+    except Exception:
+        # The dispatcher logs per-command failures itself; this guards the
+        # import/dispatch machinery. Never raise into PTB.
+        logger.exception("Slash-command dispatch failed")
 
     message_text = update.effective_message.text or ""  # type: ignore[union-attr]
     cmd = message_text.split()[0] if message_text.strip() else "?"
 
     from app.telegram.bot import _get_trigger_commands
+    from app.telegram.commands import command_names
 
     trigger_commands = _get_trigger_commands()
-    available = "\n".join(f"  /{c}" for c in sorted(trigger_commands))
+    available = "\n".join(f"  /{c}" for c in sorted({*trigger_commands, *command_names()}))
 
     await update.effective_message.reply_text(  # type: ignore[union-attr]
         f"Unknown command: {cmd}\n\nAvailable commands:\n{available}"
@@ -1568,6 +1587,17 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 )
             )
             return
+
+        # Explicit slash-command entry points (photo captions never reach the
+        # COMMAND catch-all, so route them here — e.g. photo + caption /invoice
+        # goes straight into the invoice parsing path).
+        try:
+            from app.telegram.commands import dispatch_photo_command
+
+            if await dispatch_photo_command(update, context, cmd, args, image_path):
+                return
+        except Exception:
+            logger.exception("Photo slash-command dispatch failed")
 
     # Debounced dispatch — photos participate in message batching
     global _debounce_timer
