@@ -69,9 +69,11 @@ SPLIT_ANALYTICAL = _preset("qwen35-27b-heretic", "local-vllm-analytical", "qwen3
                            options=_VLLM_ANALYTICAL, temperature=0.2)
 
 # --- vision preset (used by passthrough agents under any variant) -----------
-# local-vllm-image/qwen3-8b-vl. Vision-class agents are bound to this in the
-# registry and kept here across every variant via passthrough_classes.
-QWEN_VL = _preset("qwen3-8b-vl", "local-vllm-image", "qwen3-8b-vl", options=_VLLM_VISION)
+# The local qwen-27B (:8082) is multimodal — it HAS vision — so vision-class
+# agents run on it directly; no separate vision LLM. The dead A4000 vision model
+# (local-vllm-image/qwen3-8b-vl on :5504) is dropped per requirements: only the
+# one local qwen-27B + the small emotional-core model (:5506) are needed.
+QWEN_VL = QWEN35_27B
 
 
 def _worker(name: str, postfix: str, preset: ModelPreset) -> SplitProfile:

@@ -264,26 +264,29 @@ def test_vllm_resolve_never_hard_fails_when_everything_is_down(monkeypatch):
     vllm_resolve._MODEL_CACHE.clear()
 
 
-def test_vision_agents_have_no_fallback_when_a4000_down():
-    """DOCUMENTS the hard-fail: vision-class agents compile a single hard-pinned
-    ``model: local-vllm-image/qwen3-8b-vl`` (the DOWN A4000) with NO fallback in
-    the frontmatter. When the A4000 is down these agents get "model not found".
-
-    This is an INFRA dependency (bring the A4000 up) AND a resilience gap (no
-    graceful degradation in the compiled agent). The test asserts the current
-    reality so the report is grounded; it flips to a real assertion target once
-    a fallback strategy exists.
+def test_vision_agents_route_to_the_multimodal_qwen_not_the_dead_a4000():
+    """Vision-class agents must run on the local qwen-27B (:8082), which is
+    multimodal — NOT the separate A4000 vision model (local-vllm-image, :5504),
+    which is dropped per requirements (only the one qwen-27B + the small
+    emotional-core model are needed). So NO compiled agent may pin the dead
+    local-vllm-image model, and the vision agents' model must resolve to a
+    declared, on-:8082 provider.
     """
-    vision_models = {
-        agent_model(md.read_text())
-        for md in compiled_agent_files()
+    # No agent should reference the dropped A4000 vision model anymore.
+    image_pinned = [
+        md.name for md in compiled_agent_files()
         if "local-vllm-image" in md.read_text()
-    }
-    assert vision_models == {"local-vllm-image/qwen3-8b-vl"}, (
-        f"vision agents no longer all pin the qwen3-8b-vl model: {vision_models}"
+    ]
+    assert not image_pinned, (
+        f"agents still pin the dropped A4000 vision model: {image_pinned}"
     )
-    # The model's endpoint is one of the confirmed-DOWN endpoints.
-    assert provider_base_urls().get("local-vllm-image") in DOWN_ENDPOINTS
+    # Vision-class agents route to the multimodal qwen on :8082.
+    from app.agents.config import QWEN_VL
+    vision_model = f"{QWEN_VL.provider}/{QWEN_VL.model_id}"
+    assert vision_model == "local-vllm-remote/qwen35-27b", vision_model
+    assert provider_base_urls().get("local-vllm-remote", "").startswith(
+        "http://192.168.0.42:8082"
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
