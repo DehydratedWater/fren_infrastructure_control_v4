@@ -7,6 +7,7 @@ compose):
   checker   — periodic intervention checker (one-shot tick on an interval loop)
   compile   — build the fleet into AGENTS_DIR (run once at boot before the bot)
   probe-packs — generate corpus-grounded autoloop probe packs (offline, one-shot)
+  improve-gate — autoresearch the delivery-quality gate policy (offline, one-shot)
 """
 
 from __future__ import annotations
@@ -308,6 +309,28 @@ def _run_probe_packs(argv: list[str]) -> None:
         sys.exit(1)
 
 
+def _run_improve_gate(argv: list[str]) -> None:
+    """Autoresearch the delivery-quality gate policy against the frozen
+    real-corpus probes and promote the winner into .oac/promoted/.
+
+    Fully deterministic + offline (no teacher, no judge, no DB).
+
+    Usage:
+      python -m app improve-gate [--rounds N] [--no-promote]
+    """
+    import argparse
+
+    from app.delivery.gate_probes import improve_gate
+
+    p = argparse.ArgumentParser(prog="app improve-gate")
+    p.add_argument("--rounds", type=int, default=4)
+    p.add_argument("--no-promote", action="store_true",
+                   help="report metrics only; do not write .oac/promoted/")
+    args = p.parse_args(argv)
+
+    improve_gate(max_rounds=args.rounds, promote_winner=not args.no_promote)
+
+
 def _dispatch(service: str, argv: list[str]) -> None:
     if service == "bot":
         _run_bot()
@@ -323,10 +346,13 @@ def _dispatch(service: str, argv: list[str]) -> None:
         _run_improve(argv)
     elif service == "probe-packs":
         _run_probe_packs(argv)
+    elif service == "improve-gate":
+        _run_improve_gate(argv)
     else:
         print(
             f"unknown service: {service!r} "
-            "(use bot|scheduler|checker|web|compile|improve|probe-packs)",
+            "(use bot|scheduler|checker|web|compile|improve|probe-packs"
+            "|improve-gate)",
             file=sys.stderr,
         )
         sys.exit(2)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import sys
 
 from src import ScriptTool, StreamFormat
 from pydantic import BaseModel, Field
@@ -17,6 +18,50 @@ class Output(BaseModel):
     success: bool = True
     parts_sent: int = 0
     error: str = ""
+    suppressed: bool = False
+    reason: str = ""
+
+
+def _gate_message(
+    message: str, recent_twily_texts: list[str], policy: dict | None,
+) -> Output | None:
+    """The thin delivery-gate seam: None → deliver; Output → suppressed.
+
+    Pure (no I/O) so it is unit-testable in isolation; the verdict comes
+    from app.delivery.gate.evaluate_message — the autoloop-optimised
+    policy (component_id "policy:delivery_gate"). A suppressed message
+    reports success=True + suppressed=True so agents treat the task as
+    complete instead of retry-spamming. Any gate error → deliver (the
+    gate must never block real messages).
+    """
+    try:
+        from app.delivery.gate import evaluate_message
+
+        decision = evaluate_message(message, recent_twily_texts, policy)
+    except Exception as exc:  # noqa: BLE001 — gate failure must not block delivery
+        print(f"[send_message] delivery gate skipped: {exc}", file=sys.stderr)
+        return None
+    if decision.deliver:
+        return None
+    # Keep the historical duplicate marker (agents' output_note contract);
+    # noop/leak/too_short get explicit SUPPRESSED_* markers.
+    error = (
+        "DUPLICATE_DETECTED"
+        if decision.reason == "duplicate"
+        else f"SUPPRESSED_{decision.reason.upper()}"
+    )
+    print(
+        f"[send_message] suppressed ({decision.reason}):"
+        f" matched={decision.matched[:120]!r}",
+        file=sys.stderr,
+    )
+    return Output(
+        success=True,
+        parts_sent=0,
+        error=error,
+        suppressed=True,
+        reason=decision.reason,
+    )
 
 
 def _strip_formatting(text: str) -> str:
@@ -59,7 +104,11 @@ class SendMessageTool(ScriptTool[Input, Output]):
     description = "Send a text message to Telegram"
     stream_format = StreamFormat.TEXT
     stream_field = "message"
-    output_note = "If DUPLICATE_DETECTED: message was already sent. STOP. Do NOT retry. Your task is complete."
+    output_note = (
+        "If DUPLICATE_DETECTED or SUPPRESSED_*: the message was gated "
+        "(already sent / no-op / internal leak). STOP. Do NOT retry. "
+        "Your task is complete."
+    )
 
     def execute(self, inp: Input) -> Output:
         return asyncio.run(self._send(inp.message))
@@ -82,30 +131,37 @@ class SendMessageTool(ScriptTool[Input, Output]):
         except ImportError:
             has_tgmd = False
 
-        # Check for duplicates + capture recent Twily msgs for the rule scorer.
+        # ── Delivery-quality gate (autoloop-optimised "policy:delivery_gate") ──
+        # Replaces the old hardcoded dedup (exact + SequenceMatcher>=0.75 vs last
+        # 3-5) with the pure policy gate: leak → noop → too_short → dedup. The
+        # recent Twily messages are captured once — the gate dedups against them
+        # and the rule-based style scorer reuses them below.
+        policy: dict | None = None
+        try:
+            from app.delivery.gate import active_policy
+
+            policy = active_policy()
+        except Exception as exc:  # noqa: BLE001 — policy load must not block sends
+            print(f"[send_message] active_policy unavailable: {exc}", file=sys.stderr)
         recent_twily_texts: list[str] = []
         try:
-            from difflib import SequenceMatcher
-
             from app.db.repos.chat import ChatMessagesRepo
 
+            lookback = int((policy or {}).get("dedup_lookback", 8))
             repo = ChatMessagesRepo()
-            recent = await repo.get_recent(limit=5)
-            twily_msgs = [m for m in recent if m.get("sender") == "twily"]
-            recent_twily_texts = [str(m.get("message") or "") for m in twily_msgs]
-            if twily_msgs and str(twily_msgs[0].get("message", "")).strip() == message.strip():
-                return Output(success=True, parts_sent=0, error="DUPLICATE_DETECTED")
-            # Fuzzy near-duplicate: catches vibe-clone messages that survive exact-match
-            # dedup (e.g. 3 overlapping cron fires producing ~paraphrased text).
-            # 0.75 ratio on lower-cased text; unrelated Twily msgs score <0.5 in practice.
-            msg_norm = message.strip().lower()
-            if msg_norm:
-                for prev in twily_msgs[:3]:
-                    prev_norm = str(prev.get("message", "")).strip().lower()
-                    if prev_norm and SequenceMatcher(None, prev_norm, msg_norm).ratio() >= 0.75:
-                        return Output(success=True, parts_sent=0, error="NEAR_DUPLICATE_DETECTED")
+            # get_recent returns ALL senders; over-fetch so `lookback` Twily
+            # messages survive the filter even in a chatty mixed window.
+            recent = await repo.get_recent(limit=max(2 * lookback, 10))
+            recent_twily_texts = [
+                str(m.get("message") or "")
+                for m in recent
+                if m.get("sender") == "twily"
+            ]
         except Exception:
             pass
+        gated = _gate_message(message, recent_twily_texts, policy)
+        if gated is not None:
+            return gated
 
         message = message.replace("\\n", "\n")
 
@@ -151,8 +207,6 @@ class SendMessageTool(ScriptTool[Input, Output]):
                 await events_repo.log_many(chat_id_int, events)
         except Exception as scorer_exc:
             # Never let the scorer break message delivery.
-            import sys
-
             print(f"[send_message] style_scorer skipped: {scorer_exc}", file=sys.stderr)
 
         # Prepend header from env var (mode/model indicator) — excluded from TTS and chat history
