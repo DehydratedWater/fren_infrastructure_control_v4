@@ -441,13 +441,6 @@ def test_user_mood_freshness_helper_is_available():
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="LEDGER BUG: spawn_agent() calls ensure_run() (status defaults to "
-    "'running') but NEVER complete_run(). Every scheduler/bot-spawned run stays "
-    "status=running forever -> dashboard + supersede logic break. Fix: call "
-    "complete_run() at the end of spawn_agent.",
-)
 def test_spawn_agent_completes_the_run():
     """spawn.py must call complete_run() so runs don't stay 'running' forever."""
     src = (REPO_ROOT / "backend" / "app" / "telegram" / "spawn.py").read_text()
