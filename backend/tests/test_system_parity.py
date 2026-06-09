@@ -98,14 +98,6 @@ def test_enabled_schedule_script_jobs_exist():
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PORT GAP: several agents allow scripts with no CLI wrapper on disk — "
-    "scripts/strategy_tracker.py, scripts/routine_manager.py, scripts/nudge_strategist.py "
-    "(tool MODULES exist under backend/app/tools/goals/ but no scripts/*.py wrapper), "
-    "and scripts/night_analysis_query.py (no module at all). Compiled agents can "
-    "'use' tools that 404 at runtime. Fix: add the scripts/ CLI wrappers.",
-)
 def test_every_allowed_script_in_compiled_fleet_exists_on_disk():
     """Every ``python scripts/X.py`` an agent may run must exist on disk.
 
