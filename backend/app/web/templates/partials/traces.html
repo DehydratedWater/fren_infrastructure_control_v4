@@ -1,0 +1,35 @@
+{# persona_prose_trace list (LLM audit log) + stats strip. Newest first.
+   Polled by the wrapper on /traces; each row links to /traces/{run_id}. #}
+{% set t = traces %}
+<div class="counts">
+  <span class="badge delivered">{{ t.stats.count_24h }} in 24h</span>
+  <span class="pill">p50 {{ (t.stats.p50_ms|int ~ ' ms') if t.stats.p50_ms is not none else '—' }}</span>
+  <span class="pill">p95 {{ (t.stats.p95_ms|int ~ ' ms') if t.stats.p95_ms is not none else '—' }}</span>
+  <span class="pill {{ 'warn' if t.stats.fallback_rate > 0 else '' }}">fallback {{ '%.1f'|format(t.stats.fallback_rate * 100) }}%</span>
+  <span class="muted">stats over last {{ t.stats.total }} traces (window {{ t.window }})</span>
+</div>
+
+{% if not t.traces %}
+  <p class="empty">No persona_prose_trace artifacts yet.</p>
+{% else %}
+<table class="tbl">
+  <tr>
+    <th>when</th><th>kind</th><th>model</th>
+    <th class="num">duration</th><th class="num">tok in</th><th class="num">tok out</th>
+    <th>fallback</th><th>run</th>
+  </tr>
+  {% for tr in t.traces %}
+  <tr class="run-row">
+    <td>{{ tr.created_at.strftime('%m-%d %H:%M:%S') if tr.created_at else '—' }}</td>
+    <td><span class="tag kind">{{ tr.kind or '?' }}</span></td>
+    <td class="trace-model" title="{{ tr.model }}">{{ tr.model }}</td>
+    <td class="num">{{ (tr.duration_ms ~ ' ms') if tr.duration_ms is not none else '—' }}</td>
+    <td class="num">{{ tr.input_tokens if tr.input_tokens is not none else '—' }}</td>
+    <td class="num">{{ tr.output_tokens if tr.output_tokens is not none else '—' }}</td>
+    <td>{% if tr.fallback %}<span class="tag rep">FALLBACK</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+    <td><a class="run-link" href="/traces/{{ tr.run_id }}">view</a></td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="muted">showing newest {{ t.traces|length }} (cap {{ t.cap }})</p>
+{% endif %}

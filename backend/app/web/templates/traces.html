@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block topnav %}
+<nav class="tabbar">
+  <a class="tab" href="/">← dashboard</a>
+  <a class="tab active-page" href="/traces">Traces</a>
+</nav>
+{% endblock %}
+
+{% block body %}
+<main class="grid">
+  <section class="panel panel-wide">
+    <h2>LLM traces <span class="muted">(persona_prose_trace · every prose call, audited)</span></h2>
+    <div id="traces-body" hx-get="/partials/traces" hx-trigger="every 45s" hx-swap="innerHTML">
+      {% include "partials/traces.html" %}
+    </div>
+  </section>
+</main>
+{% endblock %}

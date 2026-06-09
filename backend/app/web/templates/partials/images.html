@@ -1,21 +1,55 @@
-{% set imgs = images.images if images else [] %}
-{% if not imgs %}
-  <p class="empty">No images yet — nothing in /data/rendered or /data/captures.</p>
-{% else %}
-<p class="muted">Showing newest {{ imgs|length }}{% if images.truncated %} of more (capped at {{ images.cap }}){% else %} (cap {{ images.cap }}){% endif %} · rendered = ComfyUI selfies/renders · captures = camera.</p>
-<div class="gallery">
-  {% for im in imgs %}
-  <figure class="thumb">
-    <a href="/media/{{ im.kind }}/{{ im.name }}" target="_blank" rel="noopener" title="{{ im.name }}">
-      <img loading="lazy" src="/media/{{ im.kind }}/{{ im.name }}" alt="{{ im.name }}">
-    </a>
-    <figcaption>
-      <span class="thumb-kind {{ im.kind }}">{{ im.kind }}</span>
-      <span class="thumb-name" title="{{ im.name }}">{{ im.name }}</span>
-      <span class="muted thumb-time">{{ im.mtime.strftime('%m-%d %H:%M') if im.mtime else '—' }}</span>
-      {% if im.prompt %}<span class="thumb-prompt" title="{{ im.prompt }}">{{ im.prompt[:140] }}</span>{% endif %}
-    </figcaption>
-  </figure>
-  {% endfor %}
+{# Image gallery — self-polling root so the active kind filter survives the
+   refresh (the poll URL carries the current filter; outerHTML swap replaces
+   this whole div, filter buttons included). #}
+{% set kind = images.kind if images and images.kind else 'all' %}
+<div id="images-body"
+     hx-get="/partials/images{% if kind != 'all' %}?kind={{ kind }}{% endif %}"
+     hx-trigger="every 30s" hx-swap="outerHTML">
+
+  <div class="imgfilters">
+    <a class="imgfilter {{ 'active' if kind == 'all' else '' }}"
+       href="#images" hx-get="/partials/images" hx-target="#images-body" hx-swap="outerHTML">all</a>
+    <a class="imgfilter {{ 'active' if kind == 'rendered' else '' }}"
+       href="#images" hx-get="/partials/images?kind=rendered" hx-target="#images-body" hx-swap="outerHTML">rendered</a>
+    <a class="imgfilter {{ 'active' if kind == 'captures' else '' }}"
+       href="#images" hx-get="/partials/images?kind=captures" hx-target="#images-body" hx-swap="outerHTML">captures</a>
+  </div>
+
+  {% set imgs = images.images if images else [] %}
+  {% if not imgs %}
+    <p class="empty">No images yet — nothing in /data/rendered or /data/captures{% if kind != 'all' %} (filter: {{ kind }}){% endif %}.</p>
+  {% else %}
+  <p class="muted">Showing newest {{ imgs|length }}{% if images.truncated %} of more (capped at {{ images.cap }}){% else %} (cap {{ images.cap }}){% endif %} · rendered = ComfyUI selfies/renders · captures = camera.</p>
+  <div class="gallery">
+    {% for im in imgs %}
+    <figure class="thumb">
+      <a class="lb-open" href="#lb-{{ loop.index }}" title="{{ im.name }} — click to enlarge">
+        <img loading="lazy" src="/media/{{ im.kind }}/{{ im.name }}" alt="{{ im.name }}">
+      </a>
+      <figcaption>
+        <span class="thumb-kind {{ im.kind }}">{{ im.kind }}</span>
+        <span class="thumb-name" title="{{ im.name }}">{{ im.name }}</span>
+        <span class="muted thumb-time">{{ im.mtime.strftime('%m-%d %H:%M') if im.mtime else '—' }}{% if im.size_h %} · {{ im.size_h }}{% endif %}</span>
+        {% if im.prompt %}<span class="thumb-prompt" title="{{ im.prompt }}">{{ im.prompt[:140] }}</span>{% endif %}
+      </figcaption>
+    </figure>
+    {# pure-CSS lightbox: :target shows the overlay; close = href back to #images #}
+    <div class="lightbox" id="lb-{{ loop.index }}" role="dialog" aria-label="{{ im.name }}">
+      <a class="lb-bg" href="#images" aria-label="close"></a>
+      <figure class="lb-figure">
+        <a href="/media/{{ im.kind }}/{{ im.name }}" target="_blank" rel="noopener">
+          <img src="/media/{{ im.kind }}/{{ im.name }}" alt="{{ im.name }}">
+        </a>
+        <figcaption>
+          <span class="thumb-kind {{ im.kind }}">{{ im.kind }}</span>
+          <span>{{ im.name }}</span>
+          {% if im.size_h %}<span class="muted">{{ im.size_h }}</span>{% endif %}
+          {% if im.prompt %}<span class="muted">{{ im.prompt[:200] }}</span>{% endif %}
+          <a class="lb-close run-link" href="#images">close ✕</a>
+        </figcaption>
+      </figure>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>
-{% endif %}

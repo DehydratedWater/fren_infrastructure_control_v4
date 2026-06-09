@@ -55,6 +55,19 @@ def _clamp_moods(moods: dict[str, float]) -> dict[str, float]:
 
 
 class UserMoodRepo:
+    async def latest(self) -> dict[str, Any] | None:
+        """READ-ONLY: the most recently updated mood state row, or ``None``.
+
+        Unlike ``get`` this never auto-seeds a row — safe for the dashboard,
+        which must never write.
+        """
+        async with get_async_session() as s:
+            return await fetch_one(
+                s,
+                "SELECT * FROM user_mood_state ORDER BY updated_at DESC LIMIT 1",
+                {},
+            )
+
     async def get(self, chat_id: int) -> dict[str, Any]:
         """Fetch mood state for chat_id. Creates a default row if missing."""
         async with get_async_session() as s:

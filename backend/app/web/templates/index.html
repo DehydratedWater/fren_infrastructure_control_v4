@@ -9,7 +9,10 @@
   <a class="tab" role="tab" href="#runs" data-tab="runs">Runs</a>
   <a class="tab" role="tab" href="#chat" data-tab="chat">Chat</a>
   <a class="tab" role="tab" href="#context" data-tab="context">Context</a>
+  <a class="tab" role="tab" href="#mind" data-tab="mind">Mind</a>
   <a class="tab" role="tab" href="#images" data-tab="images">Images</a>
+  {# plain page link (no data-tab) — the tab JS leaves it alone #}
+  <a class="tab" href="/traces">Traces</a>
 </nav>
 {% endblock %}
 
@@ -50,11 +53,17 @@
     </div>
   </section>
 
+  <section class="panel panel-wide tabpanel" id="panel-mind" data-tab="mind" role="tabpanel" aria-labelledby="mind">
+    <h2 id="mind">Mind <span class="muted">(mood · vibe · interests · pending thoughts)</span></h2>
+    <div id="mind-body" hx-get="/partials/mind" hx-trigger="every 30s" hx-swap="innerHTML">
+      {% include "partials/mind.html" %}
+    </div>
+  </section>
+
   <section class="panel panel-wide tabpanel" id="panel-images" data-tab="images" role="tabpanel" aria-labelledby="images">
     <h2 id="images">Images <span class="muted">(rendered + captures · newest first)</span></h2>
-    <div id="images-body" hx-get="/partials/images" hx-trigger="every 30s" hx-swap="innerHTML">
-      {% include "partials/images.html" %}
-    </div>
+    {# the partial's root div self-polls (and carries the active kind filter) #}
+    {% include "partials/images.html" %}
   </section>
 
 </main>

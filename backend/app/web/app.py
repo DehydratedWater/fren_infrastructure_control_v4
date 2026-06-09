@@ -47,8 +47,22 @@ def create_app() -> FastAPI:
             "blocks": await data.recent_activity_blocks(),
             "chat": await data.recent_chat(),
             "images": await data.recent_images(),
+            "mind": await data.mind(),
         }
         return _render(request, "index.html", ctx)
+
+    # ── traces (LLM audit log: persona_prose_trace artifacts) ────────────────
+    @app.get("/traces", response_class=HTMLResponse)
+    async def traces_page(request: Request) -> HTMLResponse:
+        return _render(request, "traces.html", {"traces": await data.prose_traces()})
+
+    @app.get("/traces/{run_id}", response_class=HTMLResponse)
+    async def trace_detail(request: Request, run_id: str) -> HTMLResponse:
+        detail = await data.prose_trace_detail(run_id)
+        return _render(
+            request, "trace_detail.html",
+            {"run_id": run_id, "trace": detail, "missing": detail is None},
+        )
 
     # ── run detail (view the session) ────────────────────────────────────────
     @app.get("/run/{run_id}", response_class=HTMLResponse)
@@ -91,8 +105,21 @@ def create_app() -> FastAPI:
         return _render(request, "partials/chat.html", {"chat": await data.recent_chat()})
 
     @app.get("/partials/images", response_class=HTMLResponse)
-    async def partial_images(request: Request) -> HTMLResponse:
-        return _render(request, "partials/images.html", {"images": await data.recent_images()})
+    async def partial_images(request: Request, kind: str = "all") -> HTMLResponse:
+        # `kind` is validated server-side: anything unknown collapses to "all".
+        kind = data.normalize_image_filter(kind)
+        return _render(
+            request, "partials/images.html",
+            {"images": await data.recent_images(kind=kind)},
+        )
+
+    @app.get("/partials/mind", response_class=HTMLResponse)
+    async def partial_mind(request: Request) -> HTMLResponse:
+        return _render(request, "partials/mind.html", {"mind": await data.mind()})
+
+    @app.get("/partials/traces", response_class=HTMLResponse)
+    async def partial_traces(request: Request) -> HTMLResponse:
+        return _render(request, "partials/traces.html", {"traces": await data.prose_traces()})
 
     # ── media bytes (read-only, path-traversal-safe) ─────────────────────────
     @app.get("/media/{kind}/{name}")

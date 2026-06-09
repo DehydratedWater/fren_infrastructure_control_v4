@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block topnav %}
+<nav class="tabbar">
+  <a class="tab" href="/">← dashboard</a>
+  <a class="tab" href="/traces">← traces</a>
+</nav>
+{% endblock %}
+
+{% block body %}
+<main class="grid">
+  <section class="panel panel-wide">
+    {% if missing or not trace %}
+      <h2>trace <span class="muted">{{ run_id }}</span></h2>
+      <p class="empty">Trace not found — no persona_prose_trace artifact for this run.</p>
+    {% else %}
+      <h2>trace <span class="muted">{{ trace.run_id }}</span></h2>
+
+      <div class="run-header">
+        <span class="rh"><span class="rh-k">when</span>{{ trace.created_at.strftime('%Y-%m-%d %H:%M:%S') if trace.created_at else '—' }}</span>
+        <span class="rh"><span class="rh-k">kind</span>{{ trace.kind or '—' }}</span>
+        <span class="rh"><span class="rh-k">model</span>{{ trace.model or '—' }}</span>
+        <span class="rh"><span class="rh-k">provider</span>{{ trace.provider or '—' }}</span>
+        <span class="rh"><span class="rh-k">duration</span>{{ (trace.duration_ms ~ ' ms') if trace.duration_ms is not none else '—' }}</span>
+        <span class="rh"><span class="rh-k">tokens</span>{{ trace.input_tokens if trace.input_tokens is not none else '?' }} in / {{ trace.output_tokens if trace.output_tokens is not none else '?' }} out</span>
+        <span class="rh"><span class="rh-k">temp</span>{{ trace.temperature if trace.temperature is not none else '—' }}</span>
+        <span class="rh"><span class="rh-k">max_tokens</span>{{ trace.max_tokens if trace.max_tokens is not none else '—' }}</span>
+        {% if trace.fallback %}<span class="tag rep">FALLBACK TRIGGERED</span>{% endif %}
+      </div>
+
+      <h3 class="sub">delivered text <span class="muted">(what actually reached the chat)</span></h3>
+      {% if trace.delivered_text %}
+        <pre class="trace-text">{{ trace.delivered_text }}</pre>
+      {% else %}
+        <p class="empty">Nothing delivered (empty output or skipped).</p>
+      {% endif %}
+
+      {% if trace.stripped_output and trace.stripped_output != trace.delivered_text %}
+      <h3 class="sub">stripped output <span class="muted">(before delivery-time fallback rewrites)</span></h3>
+      <pre class="trace-text">{{ trace.stripped_output }}</pre>
+      {% endif %}
+
+      {% if trace.thinking %}
+      <h3 class="sub">thinking</h3>
+      <pre class="trace-text">{{ trace.thinking }}</pre>
+      {% endif %}
+
+      <h3 class="sub">raw output</h3>
+      {% if trace.raw_output %}
+        <pre class="trace-text">{{ trace.raw_output }}</pre>
+      {% else %}
+        <p class="empty">No raw output captured.</p>
+      {% endif %}
+
+      <h3 class="sub">system prompt</h3>
+      {% if trace.system_prompt %}
+        <pre class="trace-text">{{ trace.system_prompt }}</pre>
+      {% else %}
+        <p class="empty">No system prompt captured.</p>
+      {% endif %}
+
+      <h3 class="sub">messages <span class="muted">({{ trace.messages|length }})</span></h3>
+      {% if trace.messages %}
+        {% for m in trace.messages %}
+          {% if m is mapping %}
+            <h4 class="mind-sub">{{ loop.index }}. {{ m.get('role') or '?' }}</h4>
+            {% set c = m.get('content') %}
+            {% if c is string %}
+              <pre class="trace-text">{{ c }}</pre>
+            {% elif c is none %}
+              <pre class="trace-text"></pre>
+            {% else %}
+              <pre class="trace-text">{{ c | tojson(indent=2) }}</pre>
+            {% endif %}
+          {% else %}
+            <h4 class="mind-sub">{{ loop.index }}.</h4>
+            <pre class="trace-text">{{ m }}</pre>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <p class="empty">No messages captured.</p>
+      {% endif %}
+
+      <h3 class="sub">context summary <span class="muted">(what was packed into the prompt)</span></h3>
+      {% if trace.context_summary %}
+        <div class="counts">
+          {% for k, v in trace.context_summary.items() %}
+          <span class="pill">{{ k }}: {{ v }}</span>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty">No context summary captured.</p>
+      {% endif %}
+
+      <h3 class="sub">guidance payload</h3>
+      {% if trace.guidance %}
+        <pre class="trace-text">{{ trace.guidance | tojson(indent=2) }}</pre>
+      {% else %}
+        <p class="empty">No guidance payload captured.</p>
+      {% endif %}
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

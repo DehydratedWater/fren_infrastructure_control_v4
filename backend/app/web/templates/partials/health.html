@@ -14,4 +14,14 @@
   <span class="pill">last chat
     {{ health.last_chat_at.strftime('%m-%d %H:%M') if health.last_chat_at else '—' }}
   </span>
+  {# internal-state freshness chips: green <6h / amber <24h / red older #}
+  <span class="pill {{ health.mood_fresh or '' }}">mood
+    {{ health.mood_updated_at.strftime('%m-%d %H:%M') if health.mood_updated_at else '—' }}
+  </span>
+  <span class="pill {{ health.vibe_fresh or '' }}">vibe
+    {{ health.vibe_updated_at.strftime('%m-%d %H:%M') if health.vibe_updated_at else '—' }}
+  </span>
+  <span class="pill {{ health.interests_fresh or '' }}">interests
+    {{ health.interests_updated_at.strftime('%m-%d %H:%M') if health.interests_updated_at else '—' }}
+  </span>
 </div>

@@ -1,0 +1,153 @@
+{# Mind tab — the agent's internal state. All read-only; every box degrades to
+   an .empty message on a fresh DB. Polled at 30s by the wrapper in index.html. #}
+<div class="ctxgrid">
+
+  <div class="ctxbox">
+    <h3>user mood <span class="muted">(user_mood_state · 5D estimate)</span></h3>
+    {% if mind.mood %}
+      <div class="mind-meta">
+        {% if mind.mood.dominant_mood %}<span class="pill">dominant: {{ mind.mood.dominant_mood }}</span>{% endif %}
+        <span class="pill {{ mind.mood.freshness }}">
+          updated {{ mind.mood.updated_at.strftime('%m-%d %H:%M') if mind.mood.updated_at else '—' }}
+        </span>
+        {% if mind.mood.drift_count is not none %}<span class="pill">drifts {{ mind.mood.drift_count }}</span>{% endif %}
+      </div>
+      <div class="meters">
+        {% for m in mind.mood.meters %}
+        <div class="meter">
+          <span class="meter-label">{{ m.label }}</span>
+          <span class="meter-track"><span class="meter-fill" style="width: {{ m.pct }}%"></span></span>
+          <span class="meter-val">{{ '%.2f'|format(m.value) }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% if mind.mood.last_trigger %}
+      <p class="muted mind-trigger">last trigger: {{ mind.mood.last_trigger }}</p>
+      {% endif %}
+    {% else %}
+      <p class="empty">No user_mood_state yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="ctxbox">
+    <h3>persona vibe <span class="muted">(persona_vibe_state · palette blend)</span></h3>
+    {% if mind.vibe %}
+      <div class="mind-meta">
+        <span class="pill {{ mind.vibe.freshness }}">
+          updated {{ mind.vibe.updated_at.strftime('%m-%d %H:%M') if mind.vibe.updated_at else '—' }}
+        </span>
+        {% if mind.vibe.last_user_tone %}<span class="pill">tone: {{ mind.vibe.last_user_tone }}</span>{% endif %}
+        {% if mind.vibe.drift_count is not none %}<span class="pill">drifts {{ mind.vibe.drift_count }}</span>{% endif %}
+      </div>
+      <div class="meters">
+        {% for b in mind.vibe.bars %}
+        <div class="meter">
+          <span class="meter-label">{{ b.label }}</span>
+          <span class="meter-track"><span class="meter-fill vibe" style="width: {{ b.pct }}%"></span></span>
+          <span class="meter-val">{{ '%.2f'|format(b.value) }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="meters axes">
+        {% for a in mind.vibe.axes %}
+        <div class="meter">
+          <span class="meter-label">{{ a.label }}</span>
+          <span class="meter-track centered"><span class="meter-dot" style="left: {{ a.pct }}%"></span></span>
+          <span class="meter-val">{{ '%+.2f'|format(a.value) }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% if mind.vibe.last_trigger %}
+      <p class="muted mind-trigger">last trigger: {{ mind.vibe.last_trigger }}</p>
+      {% endif %}
+
+      <h4 class="mind-sub">style violations <span class="muted">(persona_style_events · last 24h)</span></h4>
+      {% if mind.violations %}
+        <div class="mind-meta">
+          {% for v in mind.violations %}
+          <span class="pill warn">{{ v.violation_type }} × {{ v.n }}</span>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="empty">No vibe violations in the last 24h.</p>
+      {% endif %}
+
+      <h4 class="mind-sub">drift history <span class="muted">(last {{ mind.vibe_history|length }} snapshots)</span></h4>
+      {% if mind.vibe_history %}
+      <table class="tbl vibe-history">
+        <tr>
+          <th>when</th>
+          {% for b in mind.vibe.bars %}<th title="{{ b.label }}">{{ b.label[:4] }}</th>{% endfor %}
+          <th>trigger</th>
+        </tr>
+        {% for h in mind.vibe_history %}
+        <tr>
+          <td class="muted">{{ h.recorded_at.strftime('%m-%d %H:%M') if h.recorded_at else '—' }}</td>
+          {% for w in h.weights %}
+          <td class="num spark-cell"><span class="spark" style="height: {{ 4 + (w.pct * 0.12)|int }}px" title="{{ w.label }} {{ '%.2f'|format(w.value) }}"></span></td>
+          {% endfor %}
+          <td class="muted vh-trigger" title="{{ h.trigger }}">{{ h.trigger[:32] }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}
+        <p class="empty">No vibe drift history yet.</p>
+      {% endif %}
+    {% else %}
+      <p class="empty">No persona_vibe_state yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="ctxbox">
+    <h3>persona interests <span class="muted">(persona_interests · by novelty)</span></h3>
+    {% if mind.interests %}
+      <ul class="mindlist">
+      {% for it in mind.interests %}
+        <li>
+          <div class="meter">
+            <span class="meter-label interest-topic" title="{{ it.topic }}">{{ it.topic }}</span>
+            <span class="meter-track"><span class="meter-fill novelty" style="width: {{ it.novelty.pct }}%"></span></span>
+            <span class="meter-val">{{ '%.2f'|format(it.novelty.value) }}</span>
+          </div>
+          <div class="mind-row muted">
+            {% if it.source %}<span>src: {{ it.source }}</span>{% endif %}
+            <span>surfaced × {{ it.surface_count }}</span>
+            <span>last: {{ it.last_surfaced_at.strftime('%m-%d %H:%M') if it.last_surfaced_at else 'never' }}</span>
+          </div>
+          {% if it.stance %}<div class="mind-stance">{{ it.stance }}</div>{% endif %}
+        </li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">No persona_interests yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="ctxbox">
+    <h3>pending thoughts <span class="muted">(pending_thoughts · motivation queue)</span></h3>
+    {% if mind.thoughts %}
+      <ul class="mindlist">
+      {% for t in mind.thoughts %}
+        <li class="{{ 'thought-consumed' if t.consumed_at else '' }}">
+          <div class="mind-row">
+            <span class="tag kind">{{ t.kind }}</span>
+            <span class="pill">motivation {{ '%.2f'|format(t.motivation.value) }}</span>
+            {% if t.consumed_at %}<span class="tag skip">consumed by {{ t.consumed_by or '?' }}</span>{% endif %}
+            <span class="when">{{ t.created_at.strftime('%m-%d %H:%M') if t.created_at else '' }}</span>
+          </div>
+          <div class="mind-thought">{{ t.content }}</div>
+          {% if t.breakdown %}
+          <div class="mind-row muted">
+            {% for p in t.breakdown %}<span>{{ p.key }}: {{ p.value }}</span>{% endfor %}
+          </div>
+          {% endif %}
+        </li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">No pending_thoughts yet.</p>
+    {% endif %}
+  </div>
+
+</div>
+<p class="muted">emotional_state (the :5506 core) lives in the <a class="run-link" href="#context">Context tab</a> — not duplicated here.</p>

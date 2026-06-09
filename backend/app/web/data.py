@@ -12,7 +12,8 @@ counts) so the dashboard renders even on a fresh DB.
 from __future__ import annotations
 
 import contextlib
-from datetime import date, datetime
+import json
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +22,73 @@ from app.db.repos.agent_notes import AgentNotesRepo
 from app.db.repos.chat import ChatMessagesRepo
 from app.db.repos.emotional_state import EmotionalStateRepo
 from app.db.repos.memories import MemoriesRepo
+from app.db.repos.persona_memory import PendingThoughtsRepo, PersonaInterestsRepo
+from app.db.repos.persona_vibe import StyleEventsRepo, VibeStateRepo
+from app.db.repos.user_mood import UserMoodRepo
 from app.db.session import fetch_all, fetch_one, get_async_session
+
+
+# ── shared helpers ────────────────────────────────────────────────────────────
+
+
+def _now_utc() -> datetime:
+    return datetime.now(UTC)
+
+
+def _age_hours(ts: Any, now: datetime | None = None) -> float | None:
+    """Hours elapsed since ``ts`` (datetime), or ``None`` if absent/invalid.
+
+    Naive datetimes are assumed UTC (the DB stores TIMESTAMPTZ; naive values
+    only appear in tests/fixtures).
+    """
+    if not isinstance(ts, datetime):
+        return None
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=UTC)
+    now = now or _now_utc()
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    return max(0.0, (now - ts).total_seconds() / 3600.0)
+
+
+def freshness_class(ts: Any, now: datetime | None = None) -> str:
+    """Health-chip freshness: green (<6h) → ``ok``, amber (<24h) → ``warn``,
+    older → ``bad``, missing → ``""`` (neutral pill)."""
+    age = _age_hours(ts, now)
+    if age is None:
+        return ""
+    if age < 6:
+        return "ok"
+    if age < 24:
+        return "warn"
+    return "bad"
+
+
+def _human_size(size: Any) -> str:
+    """1234 → '1.2 KB'. Tolerates None/garbage → ''."""
+    try:
+        n = float(size)
+    except (TypeError, ValueError):
+        return ""
+    if n < 0:
+        return ""
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024 or unit == "GB":
+            return f"{n:.0f} {unit}" if unit == "B" else f"{n:.1f} {unit}"
+        n /= 1024
+    return ""
+
+
+def _as_dict(value: Any) -> dict[str, Any]:
+    """JSONB column → dict (handles dict, JSON string, None)."""
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str) and value.strip():
+        with contextlib.suppress(Exception):
+            parsed = json.loads(value)
+            if isinstance(parsed, dict):
+                return parsed
+    return {}
 
 # ── persona_response classification ───────────────────────────────────────────
 
@@ -266,6 +333,312 @@ async def recent_chat(limit: int = 30) -> list[dict[str, Any]]:
     return list(reversed(rows))
 
 
+# ── Mind tab (agent internal state: mood, vibe, interests, thoughts) ──────────
+
+# (key, human label) pairs — column names confirmed against user_mood_state /
+# persona_vibe_state in migrations/versions/001_initial_schema.py.
+MOOD_DIMS: tuple[tuple[str, str], ...] = (
+    ("energy", "energy"),
+    ("valence", "valence"),
+    ("stress", "stress"),
+    ("engagement", "engagement"),
+    ("openness", "openness"),
+)
+
+VIBE_DIMS: tuple[tuple[str, str], ...] = (
+    ("w_warm_snarky", "warm-snarky"),
+    ("w_dry_ironic", "dry-ironic"),
+    ("w_caring_edge", "caring-edge"),
+    ("w_playful_flirt", "playful-flirt"),
+    ("w_debate_socratic", "debate-socratic"),
+)
+
+VIBE_AXES: tuple[tuple[str, str], ...] = (
+    ("ironic_genuine_axis", "ironic ↔ genuine"),
+    ("arousal_axis", "arousal"),
+)
+
+
+def _meter(value: Any) -> dict[str, Any]:
+    """0..1 float → {value, pct} for a horizontal meter bar. Bad input → 0."""
+    try:
+        v = max(0.0, min(1.0, float(value)))
+    except (TypeError, ValueError):
+        v = 0.0
+    return {"value": round(v, 3), "pct": int(round(v * 100))}
+
+
+def shape_mood(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    """user_mood_state row → template dict (meters + dominant + freshness)."""
+    if not row:
+        return None
+    return {
+        "meters": [
+            {"key": key, "label": label, **_meter(row.get(key))} for key, label in MOOD_DIMS
+        ],
+        "dominant_mood": row.get("dominant_mood") or "",
+        "last_trigger": row.get("last_trigger") or "",
+        "drift_count": row.get("drift_count"),
+        "updated_at": row.get("updated_at"),
+        "freshness": freshness_class(row.get("updated_at")),
+    }
+
+
+def shape_vibe(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    """persona_vibe_state row → template dict (palette bars + axes).
+
+    Axes are -1..+1 → rendered as a centred pct (0..100, 50 = neutral).
+    Note: the vibe table stores no directives string — directives are composed
+    at prompt-build time, so the panel shows weights/axes/trigger only.
+    """
+    if not row:
+        return None
+    bars = [
+        {"key": key, "label": label, **_meter(row.get(key))} for key, label in VIBE_DIMS
+    ]
+    axes = []
+    for key, label in VIBE_AXES:
+        try:
+            v = max(-1.0, min(1.0, float(row.get(key) or 0.0)))
+        except (TypeError, ValueError):
+            v = 0.0
+        axes.append({"key": key, "label": label, "value": round(v, 3), "pct": int(round((v + 1.0) * 50))})
+    return {
+        "chat_id": row.get("chat_id"),
+        "bars": bars,
+        "axes": axes,
+        "last_trigger": row.get("last_trigger") or "",
+        "last_user_tone": row.get("last_user_tone") or "",
+        "drift_count": row.get("drift_count"),
+        "updated_at": row.get("updated_at"),
+        "freshness": freshness_class(row.get("updated_at")),
+    }
+
+
+def shape_vibe_history(rows: list[dict[str, Any]], keep: int = 10) -> list[dict[str, Any]]:
+    """Last ``keep`` vibe drift snapshots (newest last) → compact table rows."""
+    shaped = []
+    for r in rows[-keep:]:
+        shaped.append(
+            {
+                "recorded_at": r.get("recorded_at"),
+                "trigger": r.get("trigger") or "",
+                "user_tone": r.get("user_tone") or "",
+                "weights": [
+                    {"key": key, "label": label, **_meter(r.get(key))} for key, label in VIBE_DIMS
+                ],
+            }
+        )
+    return shaped
+
+
+def shape_interest(row: dict[str, Any]) -> dict[str, Any]:
+    """persona_interests row → template dict."""
+    return {
+        "topic": row.get("topic") or "",
+        "stance": row.get("stance") or "",
+        "source": row.get("source") or "",
+        "novelty": _meter(row.get("novelty_score")),
+        "surface_count": row.get("surface_count") or 0,
+        "last_surfaced_at": row.get("last_surfaced_at"),
+        "created_at": row.get("created_at"),
+    }
+
+
+def shape_thought(row: dict[str, Any]) -> dict[str, Any]:
+    """pending_thoughts row → template dict with parsed motivation breakdown."""
+    breakdown = _as_dict(row.get("motivation_breakdown"))
+    parts = []
+    for k, v in breakdown.items():
+        with contextlib.suppress(TypeError, ValueError):
+            parts.append({"key": str(k), "value": round(float(v), 2)})
+    parts.sort(key=lambda p: p["value"], reverse=True)
+    return {
+        "content": row.get("content") or "",
+        "kind": row.get("kind") or "",
+        "motivation": _meter(row.get("motivation_score")),
+        "breakdown": parts,
+        "created_at": row.get("created_at"),
+        "consumed_at": row.get("consumed_at"),
+        "consumed_by": row.get("consumed_by") or "",
+    }
+
+
+async def mind() -> dict[str, Any]:
+    """Everything the Mind tab shows. Read-only; every sub-panel degrades to
+    ``None``/``[]`` on an empty table so a fresh DB still renders."""
+    mood_row = await UserMoodRepo().latest()
+    vibe_row = await VibeStateRepo().latest()
+
+    vibe_history: list[dict[str, Any]] = []
+    violations: list[dict[str, Any]] = []
+    if vibe_row and vibe_row.get("chat_id") is not None:
+        cid = int(vibe_row["chat_id"])
+        with contextlib.suppress(Exception):
+            vibe_history = shape_vibe_history(await VibeStateRepo().history(cid, limit=10))
+        with contextlib.suppress(Exception):
+            violations = await StyleEventsRepo().count_by_type(cid, since_hours=24)
+
+    interests_rows = await PersonaInterestsRepo().list_active(limit=12)
+    thoughts_rows = await PendingThoughtsRepo().list_recent(limit=10)
+
+    return {
+        "mood": shape_mood(mood_row),
+        "vibe": shape_vibe(vibe_row),
+        "vibe_history": vibe_history,
+        "violations": violations,
+        "interests": [shape_interest(r) for r in interests_rows],
+        "thoughts": [shape_thought(r) for r in thoughts_rows],
+    }
+
+
+# ── persona prose traces (LLM audit log) ─────────────────────────────────────
+
+
+def _percentile(sorted_vals: list[float], q: float) -> float | None:
+    """Nearest-rank percentile over an ascending list. Empty → None."""
+    if not sorted_vals:
+        return None
+    idx = int(round(q * (len(sorted_vals) - 1)))
+    return sorted_vals[max(0, min(idx, len(sorted_vals) - 1))]
+
+
+def shape_trace_row(row: dict[str, Any]) -> dict[str, Any]:
+    """One traces-list SQL row (JSON fields extracted as text) → template dict."""
+
+    def _int(v: Any) -> int | None:
+        with contextlib.suppress(TypeError, ValueError):
+            return int(float(v))
+        return None
+
+    fallback_raw = row.get("fallback")
+    fallback = (
+        fallback_raw if isinstance(fallback_raw, bool)
+        else str(fallback_raw or "").strip().lower() == "true"
+    )
+    return {
+        "run_id": row.get("run_id") or "",
+        "created_at": row.get("created_at"),
+        "kind": row.get("kind") or "",
+        "model": row.get("model") or "",
+        "duration_ms": _int(row.get("duration_ms")),
+        "input_tokens": _int(row.get("input_tokens")),
+        "output_tokens": _int(row.get("output_tokens")),
+        "fallback": fallback,
+    }
+
+
+def trace_stats(traces: list[dict[str, Any]], now: datetime | None = None) -> dict[str, Any]:
+    """Stats strip over shaped trace rows: count_24h, p50/p95 duration, fallback rate."""
+    now = now or _now_utc()
+    count_24h = 0
+    for t in traces:
+        age = _age_hours(t.get("created_at"), now)
+        if age is not None and age < 24:
+            count_24h += 1
+    durations = sorted(float(t["duration_ms"]) for t in traces if t.get("duration_ms") is not None)
+    fallbacks = sum(1 for t in traces if t.get("fallback"))
+    return {
+        "total": len(traces),
+        "count_24h": count_24h,
+        "p50_ms": _percentile(durations, 0.50),
+        "p95_ms": _percentile(durations, 0.95),
+        "fallback_rate": round(fallbacks / len(traces), 3) if traces else 0.0,
+    }
+
+
+TRACE_STATS_WINDOW = 200
+
+
+async def prose_traces(limit: int = 50) -> dict[str, Any]:
+    """Newest-first persona_prose_trace list + a stats strip.
+
+    Traces live in ``execution_artifacts`` (artifact_type='persona_prose_trace',
+    written by app.telegram.persona_prose). The list query extracts only the
+    cheap JSON scalars — full payloads (system prompts, raw output) are fetched
+    one-at-a-time on the detail page. Stats are computed in Python over the last
+    ``TRACE_STATS_WINDOW`` rows.
+    """
+    sql = """
+        SELECT * FROM (
+            SELECT DISTINCT ON (a.run_id)
+                a.run_id, a.created_at,
+                a.payload->>'kind' AS kind,
+                a.payload->>'model' AS model,
+                a.payload->>'duration_ms' AS duration_ms,
+                a.payload->>'input_tokens' AS input_tokens,
+                a.payload->>'output_tokens' AS output_tokens,
+                a.payload->>'fallback_triggered' AS fallback
+            FROM execution_artifacts a
+            WHERE a.artifact_type = 'persona_prose_trace'
+            ORDER BY a.run_id, a.version DESC
+        ) sub
+        ORDER BY created_at DESC
+        LIMIT :window
+    """
+    async with get_async_session() as s:
+        rows = await fetch_all(s, sql, {"window": TRACE_STATS_WINDOW})
+    traces = [shape_trace_row(r) for r in rows]
+    return {
+        "traces": traces[:limit],
+        "stats": trace_stats(traces),
+        "window": TRACE_STATS_WINDOW,
+        "cap": limit,
+    }
+
+
+def shape_trace_detail(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Full persona_prose_trace artifact row → detail-page dict.
+
+    Everything renders inside escaped ``<pre>`` blocks in the template, so this
+    only normalises shapes (payload may arrive as a JSON string).
+    """
+    if not row:
+        return None
+    payload = _as_dict(row.get("payload"))
+    messages = payload.get("messages")
+    if not isinstance(messages, list):
+        messages = []
+    context_summary = _as_dict(payload.get("context_summary"))
+    guidance = _as_dict(payload.get("guidance"))
+    return {
+        "run_id": row.get("run_id") or "",
+        "created_at": row.get("created_at"),
+        "producer": row.get("producer") or "",
+        "kind": payload.get("kind") or "",
+        "model": payload.get("model") or "",
+        "provider": payload.get("provider") or "",
+        "duration_ms": payload.get("duration_ms"),
+        "input_tokens": payload.get("input_tokens"),
+        "output_tokens": payload.get("output_tokens"),
+        "temperature": payload.get("temperature"),
+        "max_tokens": payload.get("max_tokens"),
+        "fallback": bool(payload.get("fallback_triggered")),
+        "system_prompt": payload.get("system_prompt") or "",
+        "messages": messages,
+        "raw_output": payload.get("raw_output") or "",
+        "thinking": payload.get("thinking") or "",
+        "stripped_output": payload.get("stripped_output") or "",
+        "delivered_text": payload.get("delivered_text") or "",
+        "context_summary": context_summary,
+        "guidance": guidance,
+    }
+
+
+async def prose_trace_detail(run_id: str) -> dict[str, Any] | None:
+    """Latest persona_prose_trace artifact for one run, or ``None``."""
+    sql = """
+        SELECT run_id, producer, payload, created_at
+        FROM execution_artifacts
+        WHERE artifact_type = 'persona_prose_trace' AND run_id = :run_id
+        ORDER BY version DESC
+        LIMIT 1
+    """
+    async with get_async_session() as s:
+        row = await fetch_one(s, sql, {"run_id": run_id})
+    return shape_trace_detail(row)
+
+
 # ── image gallery (rendered selfies/renders + camera captures) ────────────────
 
 # The media kinds the gallery serves, mapped to their sub-dir under data_dir.
@@ -385,20 +758,39 @@ def _list_dir_images(root: Path, kind: str) -> list[dict[str, Any]]:
     return items
 
 
-async def recent_images(limit: int = 60) -> dict[str, Any]:
-    """Newest-first gallery listing across all media kinds, capped at ``limit``.
+# Valid gallery filter values: every media kind, plus "all" (no filter).
+IMAGE_FILTERS: tuple[str, ...] = ("all", *MEDIA_KINDS)
+
+
+def normalize_image_filter(value: Any) -> str:
+    """Server-side validation of the gallery ``kind`` query param.
+
+    Anything that isn't exactly a known media kind falls back to ``"all"`` —
+    the filter never reaches the filesystem as raw user input.
+    """
+    if isinstance(value, str) and value in MEDIA_KINDS:
+        return value
+    return "all"
+
+
+async def recent_images(limit: int = 60, kind: str = "all") -> dict[str, Any]:
+    """Newest-first gallery listing, optionally filtered to one media kind.
 
     Lists images on the filesystem (rendered + captures), sorts by mtime newest
     first, caps at ``limit``, then enriches each with a matching context_cache
-    prompt/summary by filename when available. Degrades to a pure-filesystem
+    prompt/summary by filename when available. ``kind`` is normalised via
+    ``normalize_image_filter`` (unknown → "all"). Degrades to a pure-filesystem
     listing (no prompts) if the DB is unreachable, and to an empty list if no
     media dirs exist yet. Read-only throughout.
     """
+    kind = normalize_image_filter(kind)
+    kinds = list(MEDIA_KINDS) if kind == "all" else [kind]
+
     all_items: list[dict[str, Any]] = []
-    for kind in MEDIA_KINDS:
-        root = media_root(kind)
+    for k in kinds:
+        root = media_root(k)
         if root is not None:
-            all_items.extend(_list_dir_images(root, kind))
+            all_items.extend(_list_dir_images(root, k))
 
     all_items.sort(key=lambda i: i["mtime"], reverse=True)
     truncated = len(all_items) > limit
@@ -408,8 +800,9 @@ async def recent_images(limit: int = 60) -> dict[str, Any]:
     for item in all_items:
         m = meta.get(item["name"])
         item["prompt"] = m["summary"] if m else ""
+        item["size_h"] = _human_size(item.get("size"))
 
-    return {"images": all_items, "cap": limit, "truncated": truncated}
+    return {"images": all_items, "cap": limit, "truncated": truncated, "kind": kind}
 
 
 # ── health strip ──────────────────────────────────────────────────────────────
@@ -425,7 +818,9 @@ async def db_ok() -> bool:
 
 
 async def health() -> dict[str, Any]:
-    """Top-strip health summary: db reachability, counts, last scheduler fire."""
+    """Top-strip health summary: db reachability, counts, last scheduler fire,
+    plus freshness chips (green <6h / amber <24h / red older) for the agent's
+    internal-state tables (mood / vibe / interests)."""
     info: dict[str, Any] = {
         "db_ok": False,
         "chat_count": 0,
@@ -434,6 +829,12 @@ async def health() -> dict[str, Any]:
         "last_run_at": None,
         "last_chat_at": None,
         "qwen_url": "",
+        "mood_updated_at": None,
+        "mood_fresh": "",
+        "vibe_updated_at": None,
+        "vibe_fresh": "",
+        "interests_updated_at": None,
+        "interests_fresh": "",
     }
     from app.settings import get_settings
 
@@ -453,7 +854,11 @@ async def health() -> dict[str, Any]:
                     (SELECT COUNT(*) FROM execution_artifacts
                        WHERE artifact_type = 'persona_response') AS persona_count,
                     (SELECT MAX(started_at) FROM execution_runs) AS last_run_at,
-                    (SELECT MAX(timestamp) FROM chat_messages) AS last_chat_at
+                    (SELECT MAX(timestamp) FROM chat_messages) AS last_chat_at,
+                    (SELECT MAX(updated_at) FROM user_mood_state) AS mood_updated_at,
+                    (SELECT MAX(updated_at) FROM persona_vibe_state) AS vibe_updated_at,
+                    (SELECT MAX(GREATEST(created_at, COALESCE(last_surfaced_at, created_at)))
+                       FROM persona_interests) AS interests_updated_at
                 """,
                 {},
             )
@@ -462,4 +867,7 @@ async def health() -> dict[str, Any]:
     except Exception:
         # DB unreachable — leave defaults, db_ok stays False.
         pass
+    info["mood_fresh"] = freshness_class(info.get("mood_updated_at"))
+    info["vibe_fresh"] = freshness_class(info.get("vibe_updated_at"))
+    info["interests_fresh"] = freshness_class(info.get("interests_updated_at"))
     return info

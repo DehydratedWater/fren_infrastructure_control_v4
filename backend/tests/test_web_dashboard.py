@@ -132,6 +132,10 @@ def _patch_all(monkeypatch, *, empty: bool = False) -> None:
             "cap": 60, "truncated": False,
         }
     )
+    # Mind tab (mood/vibe/interests/thoughts) — empty shape is enough here; the
+    # populated rendering is covered by test_web_mind_traces.py.
+    mind = {"mood": None, "vibe": None, "vibe_history": [], "violations": [],
+            "interests": [], "thoughts": []}
     digest = None if empty else "## Conversation Digest\nUser is awake at 01:08."
     health = {
         "db_ok": not empty, "chat_count": 0 if empty else 42, "run_count": 0 if empty else 7,
@@ -150,6 +154,7 @@ def _patch_all(monkeypatch, *, empty: bool = False) -> None:
     monkeypatch.setattr(data, "recent_activity_blocks", lambda *a, **k: _ret(blocks))
     monkeypatch.setattr(data, "recent_chat", lambda *a, **k: _ret(chat))
     monkeypatch.setattr(data, "recent_images", lambda *a, **k: _ret(images))
+    monkeypatch.setattr(data, "mind", lambda *a, **k: _ret(mind))
     monkeypatch.setattr(data, "health", lambda *a, **k: _ret(health))
     monkeypatch.setattr(data, "db_ok", lambda *a, **k: _ret(not empty))
 
