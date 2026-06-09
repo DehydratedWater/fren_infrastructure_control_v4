@@ -14,6 +14,11 @@ x-backend: &backend
     - fren_v4_data:/data
     - ../OpenCodeCompilerV2:/srv/oac:ro   # framework as a sibling, importable
   restart: unless-stopped
+  # Run tini as PID 1 so detached fire-and-forget subprocesses (the persona
+  # drift hooks: personality_core / vibe_drift / user_mood) are REAPED instead
+  # of piling up as zombies. Without a reaper, PID-1 python leaks zombies until
+  # fork() stalls and the event loop freezes (bot hung silent ~2h on 2026-06-09).
+  init: true
 
 services:
   db:
