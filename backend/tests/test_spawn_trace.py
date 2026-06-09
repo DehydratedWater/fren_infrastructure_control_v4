@@ -79,6 +79,56 @@ def test_write_run_trace_builds_capped_payload(monkeypatch):
     assert captured["pruned"] == ("run_trace", spawn._TRACE_KEEP)
 
 
+def test_trajectory_item_payload_per_kind():
+    text = spawn._trajectory_item_payload({"kind": "text", "text": "hi there"})
+    assert text == {"kind": "text", "text": "hi there"}
+    tool = spawn._trajectory_item_payload(
+        {"kind": "tool", "name": "bash", "command": "ls", "error": None}
+    )
+    assert tool == {"kind": "tool", "name": "bash", "command": "ls", "error": None}
+    res = spawn._trajectory_item_payload(
+        {"kind": "result", "name": "bash", "output": "ok", "status": "completed",
+         "error": None}
+    )
+    assert res["kind"] == "result" and res["output"] == "ok"
+    assert res["status"] == "completed"
+
+
+def test_write_run_trace_persists_ordered_trajectory_capped(monkeypatch):
+    captured: dict = {}
+
+    class _Repo:
+        async def write_artifact(self, run_id, artifact_type, payload, *, producer):
+            captured["payload"] = payload
+
+        async def prune_artifacts_by_type(self, *a, **k):
+            return 0
+
+    monkeypatch.setattr(
+        "app.db.repos.execution_ledger.ExecutionLedgerRepo", lambda: _Repo()
+    )
+
+    traj = [{"kind": "text", "text": "x" * 5000}]
+    traj += [{"kind": "tool", "name": "bash", "command": "echo hi", "error": None},
+             {"kind": "result", "name": "bash", "output": "hi", "status": "completed",
+              "error": None}] * 300
+    result = AgentRunResult(text="t", tool_calls=[], trajectory=traj)
+    asyncio.run(spawn._write_run_trace("run_tr", result))
+
+    p = captured["payload"]
+    # ordered trajectory is persisted, capped in length, with a true count
+    assert "trajectory" in p
+    assert len(p["trajectory"]) == spawn._TRACE_MAX_TRAJECTORY
+    assert p["trajectory_count"] == len(traj)
+    # order preserved: first item is the (truncated) narration text
+    assert p["trajectory"][0]["kind"] == "text"
+    assert len(p["trajectory"][0]["text"]) <= spawn._TRACE_TEXT_CAP + 40
+    assert "truncated" in p["trajectory"][0]["text"]
+    # kinds preserved in order
+    assert p["trajectory"][1]["kind"] == "tool"
+    assert p["trajectory"][2]["kind"] == "result"
+
+
 def test_spawn_trace_write_is_best_effort(monkeypatch):
     """A failing ledger write must NOT bubble out of spawn_agent."""
 

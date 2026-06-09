@@ -104,6 +104,10 @@ async def spawn_agent(
 # calls is also capped (long flailing loops are summarised, not stored whole).
 _TRACE_TEXT_CAP = 4000
 _TRACE_MAX_CALLS = 200
+# Ordered trajectory caps: each text/command/output field is truncated to the
+# text cap, and the timeline itself is capped at this many items (a true count
+# is kept). Long flailing loops are summarised, not stored whole.
+_TRACE_MAX_TRAJECTORY = 400
 # Retention: keep only the newest N run_trace artifacts. The dashboard only ever
 # shows recent runs, and traces are written once per agent run (the
 # periodic_checker alone fires every 5 min ≈ 288/day), so an unbounded table
@@ -143,14 +147,50 @@ def _tool_call_payload(tc: object) -> dict[str, str | None]:
     }
 
 
+def _trajectory_item_payload(item: dict) -> dict[str, object]:
+    """Flatten + truncate one ordered-trajectory item for the trace payload.
+
+    Preserves ``kind`` and the load-bearing fields per kind (text → text; tool →
+    name/command; result → output/error/status). All free text is capped so a
+    chatty run can't bloat the DB.
+    """
+    kind = str(item.get("kind") or "")
+    if kind == "text":
+        return {"kind": "text", "text": _truncate(str(item.get("text") or ""))}
+    if kind == "tool":
+        return {
+            "kind": "tool",
+            "name": str(item.get("name") or ""),
+            "command": _truncate(str(item.get("command") or "")),
+            "error": (_truncate(str(item.get("error")), 200) if item.get("error") else None),
+        }
+    if kind == "result":
+        return {
+            "kind": "result",
+            "name": str(item.get("name") or ""),
+            "output": _truncate(str(item.get("output") or "")),
+            "error": (_truncate(str(item.get("error")), 200) if item.get("error") else None),
+            "status": str(item.get("status") or ""),
+        }
+    # unknown kind: keep it minimal but don't drop it
+    return {"kind": kind or "unknown"}
+
+
 async def _write_run_trace(run_id: str, result: AgentRunResult) -> None:
     from app.db.repos.execution_ledger import ExecutionLedgerRepo
 
     calls = list(getattr(result, "tool_calls", []) or [])
+    traj = list(getattr(result, "trajectory", []) or [])
     payload = {
         "text": _truncate(result.text or ""),
         "tool_calls": [_tool_call_payload(tc) for tc in calls[:_TRACE_MAX_CALLS]],
         "tool_call_count": len(calls),
+        # Ordered, interleaved timeline (narration → tool → result → …) in stream
+        # order. Capped in length with a true count preserved.
+        "trajectory": [
+            _trajectory_item_payload(it) for it in traj[:_TRACE_MAX_TRAJECTORY]
+        ],
+        "trajectory_count": len(traj),
         "ok": result.ok,
         "error": _truncate(str(result.error), 200) if result.error else None,
     }

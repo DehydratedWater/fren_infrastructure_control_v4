@@ -13,6 +13,7 @@ import pytest
 from app.runtime.runner import (
     AgentRunResult,
     parse_opencode_events,
+    parse_opencode_trajectory,
     run_agent_direct,
 )
 
@@ -67,6 +68,74 @@ def test_parse_json_stream_with_no_text_returns_empty_not_raw_json():
     )
     text, calls = parse_opencode_events(stdout)
     assert text == ""  # no assistant text → empty, not raw JSON
+    assert [c.name for c in calls] == ["bash"]
+
+
+# ── ordered, interleaved trajectory ──────────────────────────────────────────
+
+
+def test_trajectory_preserves_stream_order():
+    # narration → tool(+result) → narration → tool(+result), as real opencode
+    # emits it. The trajectory must be IN ORDER with each kind tagged.
+    stdout = _events(
+        {"part": {"type": "text", "text": "Let me check the todos."}},
+        {"part": {"type": "tool", "tool": "bash", "callID": "c1",
+                  "state": {"status": "completed",
+                            "input": {"command": "python scripts/todo.py"},
+                            "output": "no todos"}}},
+        {"part": {"type": "text", "text": "Nothing pending — done."}},
+        {"part": {"type": "tool", "tool": "bash", "callID": "c2",
+                  "state": {"status": "error",
+                            "input": {"command": "ls /forbidden"},
+                            "error": "a rule prevents you from using ls"}}},
+    )
+    text, calls, traj = parse_opencode_trajectory(stdout)
+    kinds = [it["kind"] for it in traj]
+    # text, tool, result, text, tool, result — strictly ordered
+    assert kinds == ["text", "tool", "result", "text", "tool", "result"]
+    # the FIRST narration appears before the FIRST tool, which appears before
+    # the SECOND narration (chronological).
+    assert traj[0]["text"].startswith("Let me check")
+    assert traj[1]["command"] == "python scripts/todo.py"
+    assert traj[2]["output"] == "no todos"
+    assert traj[3]["text"].startswith("Nothing pending")
+    assert traj[4]["command"] == "ls /forbidden"
+    assert traj[5]["error"] and "prevents you from using ls" in traj[5]["error"]
+    # back-compat flat outputs still correct
+    assert [c.name for c in calls] == ["bash", "bash"]
+    assert "Let me check the todos." in text and "Nothing pending" in text
+
+
+def test_trajectory_dedupes_streamed_callid_keeping_position():
+    # A tool part streams twice under one callID (pending → completed). The tool
+    # item must appear ONCE, at its first-seen position, with the final command.
+    stdout = _events(
+        {"part": {"type": "text", "text": "thinking"}},
+        {"part": {"type": "tool", "tool": "bash", "callID": "c1",
+                  "state": {"status": "pending", "input": {"command": "echo hi"}}}},
+        {"part": {"type": "tool", "tool": "bash", "callID": "c1",
+                  "state": {"status": "completed",
+                            "input": {"command": "echo hi"}, "output": "hi"}}},
+    )
+    _text, calls, traj = parse_opencode_trajectory(stdout)
+    kinds = [it["kind"] for it in traj]
+    # exactly one tool + one result for the single call
+    assert kinds.count("tool") == 1
+    assert kinds.count("result") == 1
+    assert kinds == ["text", "tool", "result"]
+    # flat list also de-duped to one call
+    assert len(calls) == 1
+
+
+def test_parse_events_backcompat_unchanged():
+    # the old (text, calls) wrapper still returns the same shape
+    stdout = _events(
+        {"part": {"type": "text", "text": "hi"}},
+        {"part": {"type": "tool", "tool": "bash", "callID": "c1",
+                  "state": {"input": {"command": "ls"}}}},
+    )
+    text, calls = parse_opencode_events(stdout)
+    assert text == "hi"
     assert [c.name for c in calls] == ["bash"]
 
 

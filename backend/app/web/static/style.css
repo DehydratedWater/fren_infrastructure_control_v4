@@ -119,13 +119,66 @@ h3.sub { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
 }
 .tc-errtext { color: #f3938f; }
 
+/* ordered, interleaved trajectory timeline */
+.timeline-meta { margin: 0 0 10px; }
+.timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+.timeline::before {
+  content: ""; position: absolute; left: 11px; top: 4px; bottom: 4px;
+  width: 2px; background: var(--line);
+}
+.tl-step {
+  position: relative; display: flex; gap: 10px;
+  padding: 0 0 12px 0; align-items: flex-start;
+}
+.tl-idx {
+  flex: none; z-index: 1; width: 24px; height: 24px; line-height: 24px;
+  text-align: center; border-radius: 50%; font-size: 11px;
+  background: var(--box); border: 1px solid var(--line); color: var(--muted);
+}
+.tl-tool > .tl-idx { border-color: var(--accent); color: var(--accent); }
+.tl-result > .tl-idx { border-color: var(--ok); color: #76e0a8; }
+.tl-err > .tl-idx { border-color: var(--bad); color: #f3938f; }
+.tl-body {
+  flex: 1; min-width: 0; background: var(--box);
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+}
+.tl-tool > .tl-body { border-left: 3px solid var(--accent); }
+.tl-result > .tl-body { border-left: 3px solid var(--ok); }
+.tl-err > .tl-body { border-left: 3px solid var(--bad); }
+.tl-kind {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--muted); margin-bottom: 4px;
+}
+.tl-name { color: var(--accent); font-weight: 700; text-transform: none; letter-spacing: 0; }
+.tl-narration { white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+.tl-cmd, .tl-out, .tl-errtext {
+  white-space: pre-wrap; word-break: break-word; margin: 4px 0 0;
+  font-size: 12px; color: #c8ccd8; max-height: 320px; overflow: auto;
+  background: #14171f; border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px;
+}
+.tl-out { color: #aab0c0; }
+.tl-errtext { color: #f3938f; }
+
 @media (max-width: 880px) {
   .grid, .ctxgrid { grid-template-columns: 1fr; }
 }
 
-/* top nav (section jump links) */
+/* real tabs (tab bar in the top bar) */
 .topbar .brand { text-decoration: none; color: var(--fg); }
-.topnav { display: flex; gap: 14px; margin-right: auto; }
-.topnav a { color: var(--muted); text-decoration: none; font-size: 14px; }
-.topnav a:hover { color: var(--accent); text-decoration: underline; }
+.tabbar { display: flex; gap: 6px; margin-right: auto; }
+.tab {
+  color: var(--muted); text-decoration: none; font-size: 14px;
+  padding: 5px 12px; border-radius: 6px 6px 0 0;
+  border: 1px solid transparent; border-bottom: none;
+}
+.tab:hover { color: var(--fg); background: rgba(255,255,255,.04); }
+/* active tab — only meaningful once JS enables tab mode (.has-tabs) */
+.has-tabs .tab.active {
+  color: var(--accent); background: var(--panel);
+  border-color: var(--line); font-weight: 700;
+}
+/* When tab mode is ON, show only the active panel; with JS off (.has-tabs
+   absent) every .tabpanel stays visible — the graceful no-JS fallback. */
+.has-tabs .tabpanel { display: none; }
+.has-tabs .tabpanel.active { display: block; }
 #proactive, #runs, #chat, #context, .panel { scroll-margin-top: 64px; }
