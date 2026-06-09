@@ -194,6 +194,11 @@ async def run_detail(run_id: str) -> dict[str, Any] | None:
                 "text": payload.get("text") or "",
                 "tool_calls": payload.get("tool_calls") or [],
                 "tool_call_count": payload.get("tool_call_count"),
+                # Ordered, interleaved timeline (narration/tool/result in stream
+                # order). Absent for older traces → template falls back to the
+                # flat text + tool_calls view.
+                "trajectory": payload.get("trajectory") or [],
+                "trajectory_count": payload.get("trajectory_count"),
                 "ok": payload.get("ok"),
                 "error": payload.get("error"),
                 "producer": a.get("producer") or "",

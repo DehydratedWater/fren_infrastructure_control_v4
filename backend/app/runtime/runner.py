@@ -37,6 +37,12 @@ class AgentRunResult:
     raw_stdout: str = ""
     error: str | None = None
     run_id: str = ""
+    # The ORDERED, interleaved trajectory of the run as it streamed: narration
+    # text, tool invocations, and tool results in chronological (stream) order.
+    # Each item is `{"kind": "text"|"tool"|"result", ...}`. Used by the dashboard
+    # to replay the agent's actions IN ORDER; the flat `text`/`tool_calls` above
+    # stay for back-compat (autoloop scoring consumes those).
+    trajectory: list[dict[str, Any]] = field(default_factory=list)
     # The DENIED/blocked tool attempts in this run as (tool_name, reason) pairs —
     # the tool-discipline signal forwarded to the judge + rewriter so the loop
     # learns to stop flailing on forbidden tools. Empty on a clean run.
@@ -63,16 +69,63 @@ def _tool_name(part: dict) -> str:
     return ""
 
 
-def parse_opencode_events(stdout: str) -> tuple[str, list[ToolCallRecord]]:
-    """Extract (assistant_text, tool_calls) from opencode's `--format json`.
+def _tool_call_from_part(part: dict) -> ToolCallRecord | None:
+    """Build a ToolCallRecord from a tool/subagent part, or None if unnamed.
+
+    The bash command an agent ran lives in `state.input.command` (not
+    `part.args`); we merge it in so the DELIVERY CONTRACT check can see e.g. the
+    `python scripts/emit_guidance.py …` call (the only delivery mechanism) and
+    parse its payload. `.error` carries the DENIED/blocked or error reason so the
+    tool-discipline signal is preserved at the call level.
+    """
+    name = _tool_name(part)
+    if not name:
+        return None
+    args = part.get("args") or part.get("input") or {}
+    state = part.get("state") if isinstance(part.get("state"), dict) else {}
+    state_input = state.get("input") if isinstance(state.get("input"), dict) else {}
+    if not isinstance(args, dict) or not args:
+        args = dict(state_input) if state_input else (args if isinstance(args, dict) else {})
+    elif state_input and "command" not in args:
+        args = {**args, **state_input}
+    reason = str(state.get("error") or "")
+    out = str(state.get("output") or "")
+    err = None
+    if "prevents you from using" in reason or "prevents you from using" in out:
+        err = (reason or out)[:200]
+    elif reason:
+        err = reason[:200]
+    return ToolCallRecord(name=name, args=args if isinstance(args, dict) else {}, error=err)
+
+
+def parse_opencode_trajectory(
+    stdout: str,
+) -> tuple[str, list[ToolCallRecord], list[dict[str, Any]]]:
+    """Parse opencode's `--format json` stream into text + calls + an ORDERED trajectory.
 
     Each line is a JSON event with a `part` object. Text parts carry
-    `part.text`; tool/subagent parts carry a type marker + a tool/agent name.
-    Tolerant of shape drift: unknown lines are skipped, and several plausible
-    tool-part shapes are accepted (best-effort on the chain; text is exact).
+    `part.text`; tool/subagent parts carry a type marker, a tool/agent name and a
+    streaming `state` (input, output, status, error). Returns:
+
+      * ``text`` — the joined assistant narration (exact),
+      * ``calls`` — the flat ordered list of tool calls (back-compat),
+      * ``trajectory`` — the interleaved chronological timeline as a list of
+        ``{"kind": "text"|"tool"|"result", ...}`` items in stream order.
+
+    A tool part streams multiple times under one stable ``callID`` (pending →
+    completed). We emit a ``tool`` item the FIRST time a callID is seen (to fix
+    its position in the timeline) and a ``result`` item once the part finishes
+    (carrying output/error/status). Both are refreshed with the latest state, so
+    the final command/output/error are what render. Tolerant of shape drift:
+    unknown lines are skipped and several tool-part shapes are accepted.
     """
     text_parts: list[str] = []
     calls: list[ToolCallRecord] = []
+    trajectory: list[dict[str, Any]] = []
+    # callID → (tool_item, result_item|None) so streamed updates patch in place
+    seen: dict[str, dict[str, Any]] = {}
+    anon = 0  # synthetic key for tool parts without a callID
+
     for line in stdout.splitlines():
         line = line.strip()
         if not line.startswith("{"):
@@ -85,43 +138,71 @@ def parse_opencode_events(stdout: str) -> tuple[str, list[ToolCallRecord]]:
         if not isinstance(part, dict):
             continue
         ptype = str(part.get("type", ""))
+
         if isinstance(part.get("text"), str) and "tool" not in ptype:
-            text_parts.append(part["text"])
+            txt = part["text"]
+            text_parts.append(txt)
+            trajectory.append({"kind": "text", "text": txt})
             continue
+
         # tool / subagent dispatch part — accept a few shapes
         if "tool" in ptype or ptype in ("subagent", "agent", "step"):
-            name = _tool_name(part)
-            if name:
-                args = part.get("args") or part.get("input") or {}
-                # Populate .error for a DENIED/blocked or errored tool part so the
-                # tool-discipline signal is carried at the call level (the
-                # allow-list denial reason: "a rule prevents you from using ls").
-                state = part.get("state") if isinstance(part.get("state"), dict) else {}
-                # The bash command an agent ran lives in `state.input.command`
-                # (not `part.args`). Capture it so the DELIVERY CONTRACT check can
-                # see whether the agent called `python scripts/emit_guidance.py`
-                # — the only mechanism that delivers a message to the user — and
-                # parse the emitted PAYLOAD out of that command. Without this the
-                # emit_guidance call (and its payload) is invisible in the
-                # trajectory, so the evaluator can't enforce the contract.
-                state_input = state.get("input") if isinstance(state.get("input"), dict) else {}
-                if not isinstance(args, dict) or not args:
-                    args = dict(state_input) if state_input else (args if isinstance(args, dict) else {})
-                elif state_input and "command" not in args:
-                    args = {**args, **state_input}
-                reason = str(state.get("error") or "")
-                out = str(state.get("output") or "")
-                err = None
-                if "prevents you from using" in reason or "prevents you from using" in out:
-                    err = (reason or out)[:200]
-                elif reason:
-                    err = reason[:200]
-                calls.append(
-                    ToolCallRecord(
-                        name=name, args=args if isinstance(args, dict) else {},
-                        error=err,
-                    )
-                )
+            rec = _tool_call_from_part(part)
+            if rec is None:
+                continue
+            state = part.get("state") if isinstance(part.get("state"), dict) else {}
+            status = str(state.get("status") or "")
+            output = state.get("output")
+            cid = part.get("callID")
+            key = cid if isinstance(cid, str) and cid else f"__anon_{anon}"
+            command = ""
+            if isinstance(rec.args, dict):
+                command = str(rec.args.get("command") or "")
+
+            if key not in seen:
+                # First sight: append the tool item in stream order. Flat calls
+                # list is appended ONCE per call (preserves back-compat counts).
+                calls.append(rec)
+                tool_item: dict[str, Any] = {
+                    "kind": "tool", "name": rec.name, "command": command,
+                    "args": dict(rec.args) if isinstance(rec.args, dict) else {},
+                    "error": rec.error,
+                }
+                trajectory.append(tool_item)
+                seen[key] = {"tool": tool_item, "result": None, "call_idx": len(calls) - 1}
+                if key.startswith("__anon_"):
+                    anon += 1
+            else:
+                # Streamed update for a known call: refresh command/error/args in
+                # place and update the flat call record too.
+                ti = seen[key]["tool"]
+                ti["name"] = rec.name
+                if command:
+                    ti["command"] = command
+                ti["args"] = dict(rec.args) if isinstance(rec.args, dict) else ti.get("args", {})
+                if rec.error:
+                    ti["error"] = rec.error
+                calls[seen[key]["call_idx"]] = rec
+
+            # Emit / refresh a result item once the part carries output, an error
+            # or a terminal status.
+            has_result = (
+                (output is not None and str(output) != "")
+                or bool(rec.error) or status in ("completed", "error")
+            )
+            if has_result:
+                res = seen[key]["result"]
+                payload = {
+                    "kind": "result", "name": rec.name,
+                    "output": ("" if output is None else str(output)),
+                    "error": rec.error, "status": status,
+                }
+                if res is None:
+                    trajectory.append(payload)
+                    seen[key]["result"] = payload
+                else:
+                    res.update(payload)
+
     if text_parts:
         text = "\n".join(text_parts)
     elif stdout.lstrip().startswith("{"):
@@ -133,6 +214,17 @@ def parse_opencode_events(stdout: str) -> tuple[str, list[ToolCallRecord]]:
     else:
         # Non-JSON stdout (e.g. a plain error message) — surface it.
         text = stdout
+    return text, calls, trajectory
+
+
+def parse_opencode_events(stdout: str) -> tuple[str, list[ToolCallRecord]]:
+    """Extract (assistant_text, tool_calls) from opencode's `--format json`.
+
+    Back-compat wrapper over :func:`parse_opencode_trajectory` — drops the
+    ordered trajectory and returns the flat ``(text, tool_calls)`` the autoloop
+    scoring still consumes.
+    """
+    text, calls, _trajectory = parse_opencode_trajectory(stdout)
     return text, calls
 
 
@@ -263,7 +355,7 @@ async def run_agent_opencode(
         return AgentRunResult(error="opencode binary not found")
 
     stdout = out_b.decode("utf-8", errors="replace")
-    text, calls = parse_opencode_events(stdout)
+    text, calls, trajectory = parse_opencode_trajectory(stdout)
     err = None
     # surface opencode error events (agent-not-found, provider errors, …) — never
     # let them pass as "empty text" (see opencode_errors docstring).
@@ -277,7 +369,7 @@ async def run_agent_opencode(
     # loop on flailing). Computed once here; consumers read result.blocked.
     return AgentRunResult(
         text=text, tool_calls=calls, raw_stdout=stdout, error=err,
-        blocked=blocked_tool_details(stdout),
+        blocked=blocked_tool_details(stdout), trajectory=trajectory,
     )
 
 
