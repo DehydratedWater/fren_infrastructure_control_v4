@@ -1,0 +1,21 @@
+{% set imgs = images.images if images else [] %}
+{% if not imgs %}
+  <p class="empty">No images yet — nothing in /data/rendered or /data/captures.</p>
+{% else %}
+<p class="muted">Showing newest {{ imgs|length }}{% if images.truncated %} of more (capped at {{ images.cap }}){% else %} (cap {{ images.cap }}){% endif %} · rendered = ComfyUI selfies/renders · captures = camera.</p>
+<div class="gallery">
+  {% for im in imgs %}
+  <figure class="thumb">
+    <a href="/media/{{ im.kind }}/{{ im.name }}" target="_blank" rel="noopener" title="{{ im.name }}">
+      <img loading="lazy" src="/media/{{ im.kind }}/{{ im.name }}" alt="{{ im.name }}">
+    </a>
+    <figcaption>
+      <span class="thumb-kind {{ im.kind }}">{{ im.kind }}</span>
+      <span class="thumb-name" title="{{ im.name }}">{{ im.name }}</span>
+      <span class="muted thumb-time">{{ im.mtime.strftime('%m-%d %H:%M') if im.mtime else '—' }}</span>
+      {% if im.prompt %}<span class="thumb-prompt" title="{{ im.prompt }}">{{ im.prompt[:140] }}</span>{% endif %}
+    </figcaption>
+  </figure>
+  {% endfor %}
+</div>
+{% endif %}

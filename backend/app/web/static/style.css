@@ -181,4 +181,34 @@ h3.sub { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
    absent) every .tabpanel stays visible — the graceful no-JS fallback. */
 .has-tabs .tabpanel { display: none; }
 .has-tabs .tabpanel.active { display: block; }
-#proactive, #runs, #chat, #context, .panel { scroll-margin-top: 64px; }
+#proactive, #runs, #chat, #context, #images, .panel { scroll-margin-top: 64px; }
+
+/* image gallery — responsive thumbnail grid, newest first */
+.gallery {
+  display: grid; gap: 12px; margin-top: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.thumb {
+  margin: 0; background: var(--box); border: 1px solid var(--line);
+  border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;
+}
+.thumb a { display: block; line-height: 0; background: #0c0e14; }
+.thumb img {
+  width: 100%; height: 160px; object-fit: cover; display: block;
+}
+.thumb figcaption {
+  padding: 6px 8px; display: flex; flex-direction: column; gap: 2px;
+  font-size: 11px; line-height: 1.35;
+}
+.thumb-kind {
+  align-self: flex-start; font-size: 10px; text-transform: uppercase;
+  letter-spacing: .04em; padding: 1px 6px; border-radius: 4px;
+  color: var(--bg); background: var(--accent);
+}
+.thumb-kind.captures { background: var(--warn); }
+.thumb-name { color: var(--fg); word-break: break-all; }
+.thumb-time { font-size: 10px; }
+.thumb-prompt {
+  color: var(--muted); overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
