@@ -26,6 +26,7 @@ from src import (
     AgentTest,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -327,8 +328,43 @@ def branches() -> list[BranchTest]:
                 "vis_simulation/character_analyzer",
                 "vis_simulation/quality_scorer",
             ),
+            subagent_mocks={
+                "vis_simulation/scenario_generator": (
+                    "Scenario generated: Vis meets a stranded courier during a"
+                    " city blackout; tension axis — duty vs curiosity."
+                ),
+                "vis_simulation/conversation_simulator": (
+                    "Simulated a 12-turn conversation between Vis and the"
+                    " courier; transcript captured."
+                ),
+                "vis_simulation/character_analyzer": (
+                    "Character depth analysis: Vis shows consistent voice, two"
+                    " emotional pivots, minor lore drift at turn 9."
+                ),
+                "vis_simulation/quality_scorer": (
+                    "Quality score: 8.1/10 — strong voice consistency, minor"
+                    " lore drift; simulation approved for the library."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="score", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the generator must be scoped to a Vis
+                # CHARACTER simulation (the request's subject).
+                StepContract(
+                    step="vis_simulation/scenario_generator",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="character", case_sensitive=False),
+                    ),
+                ),
+                # Output discipline: the scorer must end with an actual score.
+                StepContract(
+                    step="vis_simulation/quality_scorer",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="score", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
     ]

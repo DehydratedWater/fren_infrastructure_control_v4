@@ -38,6 +38,7 @@ from src import (
     AgentTest,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -383,8 +384,28 @@ def branches() -> list[BranchTest]:
             entry_agent=ORCHESTRATOR,
             prompt="Suggest something quick for dinner tonight.",
             path=(FOOD_SUGGESTER,),
+            subagent_mocks={
+                FOOD_SUGGESTER: (
+                    "Suggestion: a quick 15-minute garlic butter shrimp"
+                    " stir-fry — perfect for dinner tonight. I can suggest two"
+                    " backup options if the fridge is missing shrimp."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="suggest", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the meal slot from the user's request must
+                # reach the suggester; its reply must stay on that meal.
+                StepContract(
+                    step=FOOD_SUGGESTER,
+                    input_evaluators=(
+                        SubstringEvaluator(needle="dinner", case_sensitive=False),
+                    ),
+                    output_evaluators=(
+                        SubstringEvaluator(needle="dinner", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
         # add_recipe intent → recipe_parser subagent
@@ -393,5 +414,27 @@ def branches() -> list[BranchTest]:
             entry_agent=ORCHESTRATOR,
             prompt="Save this recipe: garlic pasta, serves 2.",
             path=(RECIPE_PARSER,),
+            subagent_mocks={
+                RECIPE_PARSER: (
+                    "Parsed recipe saved: 'Garlic pasta' (serves 2) —"
+                    " ingredients: garlic, pasta, olive oil, parmesan; added to"
+                    " the recipe book."
+                ),
+            },
+            step_contracts=(
+                # The dish named by the user must reach the parser verbatim;
+                # the parser must confirm a recipe was handled.
+                StepContract(
+                    step=RECIPE_PARSER,
+                    input_evaluators=(
+                        SubstringEvaluator(
+                            needle="garlic pasta", case_sensitive=False,
+                        ),
+                    ),
+                    output_evaluators=(
+                        SubstringEvaluator(needle="recipe", case_sensitive=False),
+                    ),
+                ),
+            ),
         ),
     ]

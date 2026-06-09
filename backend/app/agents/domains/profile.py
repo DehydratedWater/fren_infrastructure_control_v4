@@ -30,6 +30,7 @@ from src import (
     AgentToolPermissions as ToolPermissions,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -386,8 +387,49 @@ def branches() -> list[BranchTest]:
                 "profile/discovery_manager",
                 "profile/knowledge_compiler",
             ),
+            subagent_mocks={
+                "profile/pattern_observer": (
+                    "Observations: 3 new behavioral patterns logged"
+                    " (late-night coding spikes, skipped breakfasts, weekend"
+                    " reading)."
+                ),
+                "profile/hypothesis_generator": (
+                    "Hypotheses: (1) sleep debt drives the skipped breakfasts;"
+                    " (2) weekend reading correlates with calmer Mondays."
+                ),
+                "profile/hypothesis_validator": (
+                    "Validation: hypothesis 1 supported (12/14 days);"
+                    " hypothesis 2 inconclusive — keep observing."
+                ),
+                "profile/discovery_manager": (
+                    "Discovery promoted: 'sleep debt → skipped breakfast'"
+                    " added to validated discoveries."
+                ),
+                "profile/knowledge_compiler": (
+                    "Profile knowledge compiled: 1 new validated discovery and"
+                    " 3 supporting observations merged into the user profile."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="observation", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the observer must be scoped to the
+                # user's PROFILE analysis cycle.
+                StepContract(
+                    step="profile/pattern_observer",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="profile", case_sensitive=False),
+                    ),
+                ),
+                # Output discipline: the compiler must end the cycle with the
+                # compiled profile, not an intermediate artifact.
+                StepContract(
+                    step="profile/knowledge_compiler",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="profile", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
     ]

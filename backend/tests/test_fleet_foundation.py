@@ -14,7 +14,6 @@ from app.agents.config import DEFAULT_WORKER, WORKER_VARIANTS
 from app.agents.improve import build_agent_units, build_branch_units
 from app.agents.registry import all_agents, build_registry
 from src import run_fleet
-from src.testing.branch import BranchTrajectory
 from src.testing.evaluation import ToolCallRecord
 
 
@@ -83,26 +82,14 @@ def _agent_runner_factory(_definition):
     return runner
 
 
-def _branch_invoker_factory_for(_entry_agent):
-    from app.agents.improve import is_delivery_agent
+def _branch_invoker_factory_for(entry_agent):
+    """The autoloop's deterministic GATE tier: the shared mock invoker that
+    forwards the branch prompt in each spawn command and replays each step's
+    `subagent_mocks` output — the shape step_contracts assert on. It also
+    appends the emit_guidance delivery call for delivery orchestrators."""
+    from app.agents.improve import mock_branch_invoker_factory_for
 
-    def factory(_defn):
-        def invoke(test):
-            calls = [ToolCallRecord(name=s) for s in test.path]
-            # A delivery orchestrator must deliver via emit_guidance or it scores 0.
-            if is_delivery_agent(_defn):
-                calls.append(ToolCallRecord(
-                    name="bash",
-                    args={"command": "python scripts/emit_guidance.py --data "
-                          '\'{"key_points":["Here is a plan for your week, with '
-                          'context."]}\''},
-                ))
-            return BranchTrajectory(
-                output="Here is a plan for your week, with context.",
-                tool_calls=calls,
-            )
-        return invoke
-    return factory
+    return mock_branch_invoker_factory_for(entry_agent)
 
 
 def test_agent_units_improve_and_promote(tmp_path):

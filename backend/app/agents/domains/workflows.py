@@ -76,6 +76,7 @@ from src import (
     AgentTest,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -1722,8 +1723,48 @@ def branches() -> list[BranchTest]:
                 RALF_EXECUTION,
                 RALF_STEP_EVAL,
             ),
+            subagent_mocks={
+                RALF_PLANNING: (
+                    "RALF plan: (1) gather Mokotów restaurant candidates,"
+                    " (2) define tierlist criteria, (3) rank, (4) format the"
+                    " tierlist."
+                ),
+                RALF_PLAN_EVAL: (
+                    "Plan evaluation: approved — steps are ordered and the"
+                    " criteria are measurable."
+                ),
+                RALF_EXECUTION: (
+                    "Execution: gathered 18 restaurants and ranked them into"
+                    " S/A/B/C tiers by food, value, and vibe."
+                ),
+                RALF_STEP_EVAL: (
+                    "RALF step evaluation: all 4 steps passed; the final"
+                    " tierlist of Mokotów restaurants is complete and"
+                    " well-formed."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="ralf", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the user's actual task (the restaurant
+                # tierlist) must reach the planning step.
+                StepContract(
+                    step=RALF_PLANNING,
+                    input_evaluators=(
+                        SubstringEvaluator(
+                            needle="restaurant", case_sensitive=False,
+                        ),
+                    ),
+                ),
+                # Output discipline: the closing evaluator must verdict on the
+                # executed STEPS, not restate the plan.
+                StepContract(
+                    step=RALF_STEP_EVAL,
+                    output_evaluators=(
+                        SubstringEvaluator(needle="step", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
         # /server dispatches a monitoring request to a server specialist.
@@ -1732,8 +1773,27 @@ def branches() -> list[BranchTest]:
             entry_agent="workflows/server",
             prompt="status",
             path=("server/hardware_agent",),
+            subagent_mocks={
+                "server/hardware_agent": (
+                    "Hardware status: CPU 41C load 0.32, RAM 18/64GB, disks"
+                    " healthy (SMART ok), GPU idle at 33C."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="hardware", case_sensitive=False),
+            ),
+            step_contracts=(
+                # The STATUS intent must be forwarded; the specialist must
+                # answer with real readings, not an acknowledgement.
+                StepContract(
+                    step="server/hardware_agent",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="status", case_sensitive=False),
+                    ),
+                    output_evaluators=(
+                        SubstringEvaluator(needle="cpu", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
         # /master_organizer launches the detached planner under a lock.
@@ -1742,6 +1802,26 @@ def branches() -> list[BranchTest]:
             entry_agent="workflows/master_organizer",
             prompt="plan my week around my goals",
             path=("support/master_organizer",),
+            subagent_mocks={
+                "support/master_organizer": (
+                    "Detached planner launched: weekly plan drafted around"
+                    " your goals — 3 deep-work blocks, gym Mon/Wed/Fri,"
+                    " Sunday review."
+                ),
+            },
+            step_contracts=(
+                # The planning horizon (the week) must reach the organizer;
+                # its reply must actually be a plan.
+                StepContract(
+                    step="support/master_organizer",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="week", case_sensitive=False),
+                    ),
+                    output_evaluators=(
+                        SubstringEvaluator(needle="plan", case_sensitive=False),
+                    ),
+                ),
+            ),
         ),
         # /investigate launches the detached investigator under a lock.
         BranchTest(
@@ -1749,6 +1829,28 @@ def branches() -> list[BranchTest]:
             entry_agent="workflows/master_investigator",
             prompt="investigate AI agent trends deeply",
             path=("support/master_investigator",),
+            subagent_mocks={
+                "support/master_investigator": (
+                    "Detached investigation launched: AI agent trends —"
+                    " multi-agent orchestration and local-first stacks are"
+                    " accelerating; full report queued."
+                ),
+            },
+            step_contracts=(
+                # The investigation subject must be forwarded verbatim; the
+                # investigator must report on the TRENDS asked about.
+                StepContract(
+                    step="support/master_investigator",
+                    input_evaluators=(
+                        SubstringEvaluator(
+                            needle="ai agent trends", case_sensitive=False,
+                        ),
+                    ),
+                    output_evaluators=(
+                        SubstringEvaluator(needle="trend", case_sensitive=False),
+                    ),
+                ),
+            ),
         ),
         # /brief (execute mode) launches the detached daily briefer.
         BranchTest(
@@ -1756,5 +1858,24 @@ def branches() -> list[BranchTest]:
             entry_agent="workflows/briefing",
             prompt="run briefing",
             path=("support/daily_briefer",),
+            subagent_mocks={
+                "support/daily_briefer": (
+                    "Daily brief: 2 priorities due today, calendar clear"
+                    " after 15:00, weather mild; full briefing delivered."
+                ),
+            },
+            step_contracts=(
+                # The BRIEF intent must reach the briefer; it must deliver an
+                # actual brief, not a launch acknowledgement.
+                StepContract(
+                    step="support/daily_briefer",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="brief", case_sensitive=False),
+                    ),
+                    output_evaluators=(
+                        SubstringEvaluator(needle="brief", case_sensitive=False),
+                    ),
+                ),
+            ),
         ),
     ]

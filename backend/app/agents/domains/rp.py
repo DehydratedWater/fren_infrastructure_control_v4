@@ -47,6 +47,7 @@ from src import (
     AgentToolPermissions as ToolPermissions,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -486,8 +487,43 @@ def branches() -> list[BranchTest]:
                 "rp/world_updater",
                 "rp/narrator",
             ),
+            subagent_mocks={
+                "rp/character_speaker": (
+                    "Merchant (in character): 'The caravan? Three nights gone,"
+                    " headed for the salt pass. My brother rode with it.' His"
+                    " hands tremble as he wraps your purchase."
+                ),
+                "rp/world_updater": (
+                    "World state updated for adventure 1, turn 5: rumor"
+                    " 'caravan lost at the salt pass' recorded; merchant"
+                    " disposition +1 toward the player."
+                ),
+                "rp/narrator": (
+                    "Scene: lantern light flickers across the merchant's stall"
+                    " as he leans close, voice dropping — the missing caravan"
+                    " is now your road east, toward the salt pass."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="scene", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the NPC the player addressed must reach
+                # the character speaker's dispatch payload.
+                StepContract(
+                    step="rp/character_speaker",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="merchant", case_sensitive=False),
+                    ),
+                ),
+                # Output discipline: the narration must stay grounded in the
+                # turn's actual subject (the missing caravan).
+                StepContract(
+                    step="rp/narrator",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="caravan", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
     ]

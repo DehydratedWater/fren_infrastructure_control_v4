@@ -28,6 +28,7 @@ from src import (
     AgentTest,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -422,8 +423,28 @@ def branches() -> list[BranchTest]:
             entry_agent=ORCHESTRATOR,
             prompt="Run a full server health check (status).",
             path=("server/hardware_agent",),
+            subagent_mocks={
+                "server/hardware_agent": (
+                    "Hardware status: CPU 41C load 0.32, RAM 18/64GB, disks"
+                    " healthy (SMART ok), GPU idle at 33C — overall server"
+                    " health: OK."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="hardware", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the HEALTH intent must reach the
+                # hardware specialist; its report must carry real readings.
+                StepContract(
+                    step="server/hardware_agent",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="health", case_sensitive=False),
+                    ),
+                    output_evaluators=(
+                        SubstringEvaluator(needle="cpu", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
         # a camera "look" request captures, then describes the image
@@ -432,5 +453,31 @@ def branches() -> list[BranchTest]:
             entry_agent=ORCHESTRATOR,
             prompt="Take a photo and tell me what you see.",
             path=("server/camera_capture_agent", "server/vision_analyzer"),
+            subagent_mocks={
+                "server/camera_capture_agent": (
+                    "Captured photo saved to /data/captures/cam_latest.jpg"
+                    " (1920x1080)."
+                ),
+                "server/vision_analyzer": (
+                    "Image description: a desk with two monitors, a mug, and"
+                    " half-open window blinds; daylight scene."
+                ),
+            },
+            step_contracts=(
+                # Context forwarding: the capture request must reach the camera
+                # agent; the analyzer must describe the image, not the request.
+                StepContract(
+                    step="server/camera_capture_agent",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="photo", case_sensitive=False),
+                    ),
+                ),
+                StepContract(
+                    step="server/vision_analyzer",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="image", case_sensitive=False),
+                    ),
+                ),
+            ),
         ),
     ]

@@ -67,6 +67,7 @@ from src import (
     AgentTest,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -1479,7 +1480,31 @@ def branches() -> list[BranchTest]:
             entry_agent=TELEGRAM,
             prompt="Hey, can you help me plan my day?",
             path=("persona/orchestrator", "support/fallback"),
+            subagent_mocks={
+                "persona/orchestrator": (
+                    "Routed to persona: drafted a day plan — morning deep"
+                    " work, lunch walk, afternoon errands; reply sent to the"
+                    " user."
+                ),
+                "support/fallback": (
+                    "Fallback route check: persona reply confirmed delivered;"
+                    " no fallback message needed."
+                ),
+            },
             evaluators=(SubstringEvaluator(needle="route", case_sensitive=False),),
+            step_contracts=(
+                # Context forwarding: the user's actual message must reach the
+                # persona orchestrator (routing that drops the message is the
+                # failure mode this branch exists to catch).
+                StepContract(
+                    step="persona/orchestrator",
+                    input_evaluators=(
+                        SubstringEvaluator(
+                            needle="plan my day", case_sensitive=False,
+                        ),
+                    ),
+                ),
+            ),
         ),
         # Planning: cross-system review then optional web/research dispatch.
         BranchTest(
@@ -1487,8 +1512,36 @@ def branches() -> list[BranchTest]:
             entry_agent=MASTER_ORGANIZER,
             prompt="Organize my week and research how long marathon training takes.",
             path=("support/web_searcher", "support/master_investigator"),
+            subagent_mocks={
+                "support/web_searcher": (
+                    "Search results: typical marathon training plans run 16-20"
+                    " weeks for first-timers (Runner's World, Hal Higdon)."
+                ),
+                "support/master_investigator": (
+                    "Investigation summary: an 18-week marathon training plan"
+                    " fits the current base; weekly plan adjusted to fold in 4"
+                    " runs."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="plan", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the research subject (marathon training)
+                # must reach the web searcher; the investigator's summary must
+                # stay grounded in it.
+                StepContract(
+                    step="support/web_searcher",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="marathon", case_sensitive=False),
+                    ),
+                ),
+                StepContract(
+                    step="support/master_investigator",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="marathon", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
         # Investigation: web research → YouTube scout → optional organizer trigger.
@@ -1501,8 +1554,42 @@ def branches() -> list[BranchTest]:
                 "investigation/youtube_scout",
                 "support/master_organizer",
             ),
+            subagent_mocks={
+                "support/web_searcher": (
+                    "Search results: top local LLM agent frameworks —"
+                    " opencode, LangGraph, CrewAI; benchmarks favor"
+                    " tool-native designs."
+                ),
+                "investigation/youtube_scout": (
+                    "YouTube scout: queued 3 deep-dive videos on local agent"
+                    " frameworks from trusted channels."
+                ),
+                "support/master_organizer": (
+                    "Research filed: local LLM agent framework findings"
+                    " organized into notes with follow-ups scheduled."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="research", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the dive's subject must reach the web
+                # searcher; the organizer must file THESE findings, not
+                # generic notes.
+                StepContract(
+                    step="support/web_searcher",
+                    input_evaluators=(
+                        SubstringEvaluator(
+                            needle="agent frameworks", case_sensitive=False,
+                        ),
+                    ),
+                ),
+                StepContract(
+                    step="support/master_organizer",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="framework", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
     ]

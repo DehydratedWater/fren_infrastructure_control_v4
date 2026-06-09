@@ -53,6 +53,7 @@ from src import (
     AgentToolPermissions as ToolPermissions,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -276,7 +277,42 @@ def branches() -> list[BranchTest]:
             entry_agent=ORCHESTRATOR,
             prompt="Help me plan my week around my fitness goal.",
             path=("context_analyzer", "persona/thinking", "persona/responding"),
+            subagent_mocks={
+                "context_analyzer": (
+                    "Context: the user wants a weekly plan structured around"
+                    " their fitness goal (gym 3x/week); mood receptive, no"
+                    " blockers in recent history."
+                ),
+                "persona/thinking": (
+                    "Thinking: anchor workouts Mon/Wed/Fri mornings, protect"
+                    " recovery days, fold meal prep into Sunday; keep the tone"
+                    " encouraging."
+                ),
+                "persona/responding": (
+                    "Here's a plan for your week built around your fitness"
+                    " goal: Mon/Wed/Fri morning workouts, Tue/Thu walks, and"
+                    " Sunday meal prep + review."
+                ),
+            },
             evaluators=(SubstringEvaluator(needle="plan", case_sensitive=False),),
+            step_contracts=(
+                # Context forwarding: the fitness goal from the user's message
+                # must reach the context analyzer's dispatch payload.
+                StepContract(
+                    step="context_analyzer",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="fitness", case_sensitive=False),
+                    ),
+                ),
+                # Output discipline: the responder (delivery step) must produce
+                # the plan the user asked for, not generic chat.
+                StepContract(
+                    step="persona/responding",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="plan", case_sensitive=False),
+                    ),
+                ),
+            ),
         ),
         # trivial greeting → quick_ack short-circuit
         BranchTest(
@@ -284,5 +320,18 @@ def branches() -> list[BranchTest]:
             entry_agent=ORCHESTRATOR,
             prompt="thanks!",
             path=("persona/quick_ack",),
+            subagent_mocks={
+                "persona/quick_ack": "You're welcome! Anytime.",
+            },
+            step_contracts=(
+                # The user's actual message must be forwarded to quick_ack (an
+                # ack written blind to the message is the failure mode here).
+                StepContract(
+                    step="persona/quick_ack",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="thanks", case_sensitive=False),
+                    ),
+                ),
+            ),
         ),
     ]

@@ -27,6 +27,7 @@ from src import (
     AgentTest,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -336,8 +337,29 @@ def branches() -> list[BranchTest]:
             entry_agent=ORCHESTRATOR,
             prompt="Create a workflow that posts a daily standup, then review it.",
             path=("workflow_master/quality_reviewer",),
+            subagent_mocks={
+                "workflow_master/quality_reviewer": (
+                    "Quality review: the daily standup workflow passes"
+                    " security and quality checks — no unsafe shell, schedule"
+                    " valid; approved."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="review", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the reviewer must be handed THE standup
+                # workflow that was just created; output discipline: it must
+                # actually deliver a review verdict.
+                StepContract(
+                    step="workflow_master/quality_reviewer",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="standup", case_sensitive=False),
+                    ),
+                    output_evaluators=(
+                        SubstringEvaluator(needle="review", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
     ]

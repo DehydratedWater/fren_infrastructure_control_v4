@@ -44,7 +44,7 @@ from src import (
 from src.improvement import Criterion, OptimisationCriterion, flailing_note
 from src.improvement.mutators import MutationContext
 from src.improvement.version import ComponentVersion
-from src.testing.branch import BranchInvoker
+from src.testing.branch import BranchInvoker, BranchTrajectory
 from src.testing.evaluation import RunContext, ToolCallRecord, evaluate
 
 # How a candidate agent definition is run for ONE agent test → (output, calls).
@@ -951,6 +951,62 @@ def build_branch_evaluator(
         }
 
     return evaluator
+
+
+def mock_branch_invoker_factory_for(entry_agent: str):
+    """Deterministic GATE-tier BranchInvokerFactory — no model calls.
+
+    Simulates a FAITHFUL orchestrator so a branch's `step_contracts` are
+    checkable reproducibly: it dispatches exactly the test's declared `path`,
+    forwarding the branch prompt inside each spawn command, and attaches each
+    step's `subagent_mocks` text as that call's output. The recording shape
+    mirrors the LIVE tier's `subagent_dispatch_chain` exactly —
+    ``args={"via": "spawn", "command": "… run --agent <step> '<prompt>'"}`` and
+    ``output=<the sub-agent's reply>`` — so a contract that passes here asserts
+    the same fields a live run records. The joint output is the LAST step's
+    mock (the framework's `mock_chain_invoker` convention; that invoker is NOT
+    used because it leaves call args empty, which would fail every
+    context-forwarding input contract).
+
+    A delivery orchestrator (emit_guidance in its allow-list) also gets a
+    trailing emit_guidance bash call carrying the joint output, mirroring the
+    production delivery contract.
+    """
+    del entry_agent  # one shape fits every entry; kept for factory-for signature
+
+    def factory(definition: dict[str, Any]) -> BranchInvoker:
+        def invoke(test) -> BranchTrajectory:
+            prompt = test.prompt or (test.turns[0].prompt if test.turns else "")
+            calls: list[ToolCallRecord] = []
+            for step in test.path:
+                cmd = (
+                    "uv run scripts/opencode_manager.py run "
+                    f"--agent {step} '{prompt}'"
+                )
+                calls.append(ToolCallRecord(
+                    name=step,
+                    args={"via": "spawn", "command": cmd},
+                    output=test.subagent_mocks.get(step),
+                ))
+            output: Any = (
+                test.subagent_mocks.get(test.path[-1]) if test.path else None
+            )
+            if output is None:
+                output = f"[deterministic] completed branch {test.name}"
+            if is_delivery_agent(definition):
+                payload = json.dumps(
+                    {"intent": "reply", "key_points": [str(output)[:200]]}
+                )
+                calls.append(ToolCallRecord(
+                    name="bash",
+                    args={"command":
+                          f"python scripts/emit_guidance.py --data '{payload}'"},
+                ))
+            return BranchTrajectory(output=output, tool_calls=calls)
+
+        return invoke
+
+    return factory
 
 
 def build_branch_units(

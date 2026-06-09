@@ -237,8 +237,22 @@ def subagent_dispatch_chain(stdout: str) -> list[ToolCallRecord]:
     <name> …` (primary spawn), not the Task tool — so the raw tool calls are all
     `bash` and the real chain is hidden in the bash command. Pull the dispatched
     agent names out so branch/path grading can see the trajectory.
+
+    Each record carries the per-step contract signal that `StepContract`
+    evaluators assert on:
+    - ``args = {"via": "spawn", "command": <full bash command>}`` — the command
+      embeds the prompt the orchestrator forwarded, so input (context-forwarding)
+      contracts can check the dispatch payload;
+    - ``output`` — the spawn's bash output (the sub-agent's reply) once the part
+      reaches a state that carries one, so output-discipline contracts can check
+      what the sub-agent produced.
+    A tool part streams multiple times under one ``callID`` (pending →
+    completed); updates are merged into ONE record per call (latest state wins)
+    so duplicate part lines don't multiply the chain.
     """
     chain: list[ToolCallRecord] = []
+    by_key: dict[str, ToolCallRecord] = {}
+    anon = 0  # synthetic key for spawn parts without a callID (one per line)
     for line in stdout.splitlines():
         line = line.strip()
         if not line.startswith("{") or "--agent" not in line:
@@ -256,8 +270,27 @@ def subagent_dispatch_chain(stdout: str) -> list[ToolCallRecord]:
         if "--agent" not in cmd:
             continue
         m = re.search(r"--agent\s+[\"']?([A-Za-z0-9_/.-]+)", cmd)
-        if m:
-            chain.append(ToolCallRecord(name=m.group(1), args={"via": "spawn"}))
+        if not m:
+            continue
+        output = state.get("output")
+        cid = part.get("callID")
+        key = cid if isinstance(cid, str) and cid else f"__anon_{anon}"
+        rec = by_key.get(key)
+        if rec is None:
+            rec = ToolCallRecord(
+                name=m.group(1),
+                args={"via": "spawn", "command": cmd},
+                output=output,
+            )
+            by_key[key] = rec
+            chain.append(rec)
+            if key.startswith("__anon_"):
+                anon += 1
+        else:
+            rec.name = m.group(1)
+            rec.args = {"via": "spawn", "command": cmd}
+            if output is not None and str(output) != "":
+                rec.output = output
     return chain
 
 

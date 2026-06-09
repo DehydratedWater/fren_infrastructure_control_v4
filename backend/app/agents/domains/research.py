@@ -39,6 +39,7 @@ from src import (
     AgentToolPermissions as ToolPermissions,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -607,8 +608,45 @@ def branches() -> list[BranchTest]:
                 "research/topic_analyst",
                 "research/price_checker",
             ),
+            subagent_mocks={
+                "research/video_fetcher": (
+                    "Fetched 4 new videos from subscribed channels: 2 on local"
+                    " LLMs, 1 on home automation, 1 on woodworking."
+                ),
+                "research/website_checker": (
+                    "Checked 6 tracked websites: 2 changed since yesterday"
+                    " (vLLM docs, opencode releases)."
+                ),
+                "research/topic_analyst": (
+                    "Topic analysis: local-LLM tooling is trending across"
+                    " today's videos and site changes."
+                ),
+                "research/price_checker": (
+                    "Price check: RTX 4090 down 4%, no other tracked changes."
+                    " Daily research summary ready: 4 videos, 2 site changes,"
+                    " 1 trending topic, 1 price drop."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="video", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the first pipeline step must be told this
+                # is the DAILY run (it scopes what to fetch).
+                StepContract(
+                    step="research/video_fetcher",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="daily", case_sensitive=False),
+                    ),
+                ),
+                # Output discipline: the closing step must actually report on
+                # prices, not echo the pipeline status.
+                StepContract(
+                    step="research/price_checker",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="price", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
         # Techtree full analysis: ingest → analyze commits → suggest (→ notify).
@@ -620,8 +658,36 @@ def branches() -> list[BranchTest]:
                 "research/techtree_commit_analyzer",
                 "research/techtree_suggestion_engine",
             ),
+            subagent_mocks={
+                "research/techtree_commit_analyzer": (
+                    "Analyzed 23 new commits across tracked repos: opencode"
+                    " gained a plugins API; vLLM landed FP8 kv-cache support."
+                ),
+                "research/techtree_suggestion_engine": (
+                    "Suggested features from the commit analysis: adopt the"
+                    " opencode plugins API; trial FP8 kv-cache on the 27B"
+                    " endpoint."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="commit", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the analyzer must be scoped to the
+                # techtree pipeline named in the request.
+                StepContract(
+                    step="research/techtree_commit_analyzer",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="techtree", case_sensitive=False),
+                    ),
+                ),
+                # Output discipline: the engine must actually SUGGEST features.
+                StepContract(
+                    step="research/techtree_suggestion_engine",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="suggest", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
     ]

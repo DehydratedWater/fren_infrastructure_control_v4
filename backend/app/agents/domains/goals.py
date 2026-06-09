@@ -60,6 +60,7 @@ from src import (
     AgentTest,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -1233,8 +1234,41 @@ def branches() -> list[BranchTest]:
                 "goals/strategy_creator",
                 "goals/strategy_analyzer",
             ),
+            subagent_mocks={
+                "goals/priority_auditor": (
+                    "Priority audit: 5 active priorities; 'ship v4 parity' is"
+                    " stale (no progress in 9 days), 'gym 3x/week' on track."
+                ),
+                "goals/strategy_creator": (
+                    "Daily strategy created: front-load v4 parity work into two"
+                    " morning deep-work blocks; keep gym on Mon/Wed/Fri."
+                ),
+                "goals/strategy_analyzer": (
+                    "Effectiveness report: last week's strategy hit 70%"
+                    " adherence; deep-work blocks doubled progress on stale"
+                    " priorities. Weekly priority review report ready to send."
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="report", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the auditor must be asked about
+                # PRIORITIES (the subject of the user's review request).
+                StepContract(
+                    step="goals/priority_auditor",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="priority", case_sensitive=False),
+                    ),
+                ),
+                # Output discipline: the closing analyzer must produce the
+                # report the user asked to receive.
+                StepContract(
+                    step="goals/strategy_analyzer",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="report", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
     ]

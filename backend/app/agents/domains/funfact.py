@@ -18,6 +18,7 @@ from src import (
     AgentTest,
     BranchTest,
     CapabilityTest,
+    StepContract,
     SubstringEvaluator,
 )
 
@@ -213,8 +214,39 @@ def branches() -> list[BranchTest]:
                 "funfact/pattern_analyst",
                 "funfact/fact_writer",
             ),
+            subagent_mocks={
+                "funfact/data_gatherer": (
+                    "Gathered user data: 312 chat messages, 14 goals, and 8"
+                    " food logs from the last 30 days."
+                ),
+                "funfact/pattern_analyst": (
+                    "Pattern found: 78% of the user's gym sessions happen"
+                    " within two hours of a coffee mention."
+                ),
+                "funfact/fact_writer": (
+                    "Fun fact: you basically run on espresso — 78% of your gym"
+                    " sessions follow a coffee within two hours!"
+                ),
+            },
             evaluators=(
                 SubstringEvaluator(needle="fact", case_sensitive=False),
+            ),
+            step_contracts=(
+                # Context forwarding: the gatherer must know it's hunting for a
+                # FUN FACT (scopes which data is worth pulling).
+                StepContract(
+                    step="funfact/data_gatherer",
+                    input_evaluators=(
+                        SubstringEvaluator(needle="fun fact", case_sensitive=False),
+                    ),
+                ),
+                # Output discipline: the writer must deliver an actual fact.
+                StepContract(
+                    step="funfact/fact_writer",
+                    output_evaluators=(
+                        SubstringEvaluator(needle="fact", case_sensitive=False),
+                    ),
+                ),
             ),
         ),
     ]
