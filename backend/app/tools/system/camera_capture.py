@@ -32,7 +32,17 @@ class Output(BaseModel):
     error: str = ""
 
 
-CAPTURES_DIR = Path("data/captures")
+# Captures land on the persistent /data volume (fren_v4_data:/data) so they
+# survive a container recreate. The literal default below matches
+# settings.data_dir's default; dev can repoint the whole tree via DATA_DIR.
+CAPTURES_DIR = Path("/data/captures")
+
+
+def _captures_dir() -> Path:
+    """Resolve the captures dir from settings (DATA_DIR-overridable for dev)."""
+    from app.settings import get_settings
+
+    return Path(get_settings().data_dir) / "captures"
 
 
 def _capture(device: str, out_path: Path) -> bool:
@@ -85,7 +95,8 @@ class CameraCaptureTool(ScriptTool[Input, Output]):
     output_note = "NEXT STEPS: 1) Read the returned path(s) to view the image. 2) Send your description to the user via send_message.py."
 
     def execute(self, inp: Input) -> Output:
-        CAPTURES_DIR.mkdir(parents=True, exist_ok=True)
+        captures_dir = _captures_dir()
+        captures_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
         webcam_path = ""
@@ -93,14 +104,14 @@ class CameraCaptureTool(ScriptTool[Input, Output]):
         errors = []
 
         if inp.command in ("webcam", "both"):
-            path = CAPTURES_DIR / f"cam_{ts}.jpg"
+            path = captures_dir / f"cam_{ts}.jpg"
             if _capture_first(_WEBCAM_DEVICES, path):
                 webcam_path = str(path)
             else:
                 errors.append("webcam capture failed (no working /dev/video* node)")
 
         if inp.command in ("desk", "both"):
-            path = CAPTURES_DIR / f"cam_desk_{ts}.jpg"
+            path = captures_dir / f"cam_desk_{ts}.jpg"
             if _capture_first(_DESK_DEVICES, path):
                 desk_path = str(path)
             else:

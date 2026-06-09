@@ -98,14 +98,6 @@ def test_enabled_schedule_script_jobs_exist():
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PORT GAP: several agents allow scripts with no CLI wrapper on disk — "
-    "scripts/strategy_tracker.py, scripts/routine_manager.py, scripts/nudge_strategist.py "
-    "(tool MODULES exist under backend/app/tools/goals/ but no scripts/*.py wrapper), "
-    "and scripts/night_analysis_query.py (no module at all). Compiled agents can "
-    "'use' tools that 404 at runtime. Fix: add the scripts/ CLI wrappers.",
-)
 def test_every_allowed_script_in_compiled_fleet_exists_on_disk():
     """Every ``python scripts/X.py`` an agent may run must exist on disk.
 
@@ -163,13 +155,6 @@ def test_every_compiled_model_maps_to_a_declared_provider_model():
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PROVIDER PARITY REGRESSION (all-variant view): compiling ALL 7 worker "
-    "variants emits zai-coding-plan/glm-4.7, /glm-5, /glm-5.1 model lines that "
-    "opencode.json does not declare. Same root cause as the config-preset test. "
-    "Fix: add those 3 model entries to opencode.json's zai-coding-plan provider.",
-)
 def test_every_compiled_model_across_all_variants_is_declared(tmp_path):
     """Compile EVERY worker variant and assert each ``model:`` resolves in opencode.json.
 
@@ -195,14 +180,6 @@ def test_every_compiled_model_across_all_variants_is_declared(tmp_path):
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PROVIDER PARITY REGRESSION: opencode.json's zai-coding-plan block "
-    "declares ONLY glm-4.5-air, but config.py compiles the glm-4.7 / glm-5 / glm-5.1 "
-    "worker variants (v3's opencode.json declared all four). Agents in those three "
-    "variants route to undeclared models. Fix: add glm-4.7/glm-5/glm-5.1 model "
-    "entries to opencode.json's zai-coding-plan provider (as v3 had).",
-)
 def test_config_presets_match_opencode_provider_models():
     """The agents/config.py presets must line up with opencode.json provider keys.
 
@@ -227,14 +204,6 @@ def test_config_presets_match_opencode_provider_models():
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="VISION ENDPOINT MISMATCH: config.py _VLLM_VISION pins 192.168.0.42:5504 "
-    "while opencode.json local-vllm-image (the A4000) is 192.168.0.95:5504. The "
-    "compiled fleet routes vision agents via opencode.json (.95, correct), but the "
-    "config.py constant is wrong and would misroute any tool-side use. Fix: set "
-    "_VLLM_VISION base_url to http://192.168.0.95:5504/v1.",
-)
 def test_vision_config_base_url_matches_opencode_image_provider():
     """agents/config._VLLM_VISION base_url must match opencode.json local-vllm-image.
 
@@ -330,12 +299,6 @@ def test_docker_compose_mounts_the_persistent_data_volume():
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PERSISTENCE BUG: captures write to relative 'data/captures' which "
-    "resolves under WORKDIR /app/backend (ephemeral image layer), NOT the "
-    "/data volume. Lost on container recreate. Fix: anchor to /data.",
-)
 def test_camera_and_screenshot_captures_use_persistent_volume():
     """camera_capture + screenshot must write under the persistent /data mount.
 
@@ -354,12 +317,6 @@ def test_camera_and_screenshot_captures_use_persistent_volume():
         )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="PERSISTENCE BUG: render_and_send copies stray renders into "
-    "PROJECT_ROOT/data/rendered (ephemeral /app/backend/data/rendered), not the "
-    "/data volume; and comfyui download_output writes to /tmp. Fix: anchor to /data.",
-)
 def test_render_output_dir_is_under_persistent_volume():
     """render_and_send's self-review copy dir must be under /data."""
     src = (REPO_ROOT / "scripts" / "render_and_send.py").read_text()
@@ -374,16 +331,18 @@ def test_render_output_dir_is_under_persistent_volume():
 
 
 def test_comfyui_download_lands_outside_tmp():
-    """DOCUMENTS that ComfyUI downloads land in /tmp (cleared on reboot/recreate).
+    """ComfyUI downloads must land on the persistent /data volume, not /tmp.
 
-    Not strictly the /data volume, but the same ephemerality class — renders
-    pulled from the remote ComfyUI host are written to /tmp/comfyui_dl_* before
-    send. Asserting the current reality so the report is grounded.
+    Renders pulled from the remote ComfyUI host are written to a download dir
+    before send; that dir is now anchored under /data (DATA_DIR-overridable) so
+    the render survives a container recreate instead of being lost from /tmp.
     """
     src = (REPO_ROOT / "backend" / "app" / "comfyui" / "client.py").read_text()
-    assert "/tmp/comfyui_dl_" in src, (
-        "download_output no longer writes to /tmp — update this parity test if "
-        "the path was moved to /data."
+    assert "/tmp/comfyui_dl_" not in src, (
+        "download_output still writes to /tmp (ephemeral) — anchor it under /data"
+    )
+    assert PERSISTENT_VOLUME_MOUNT in src, (
+        "download_output no longer references the persistent /data volume"
     )
 
 
@@ -400,13 +359,6 @@ def test_user_mood_repo_has_a_drift_writer():
     assert hasattr(UserMoodRepo, "get") and hasattr(UserMoodRepo, "history")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="EMOTION GAP: nothing in the running system calls UserMoodRepo.drift(). "
-    "The tool (user_mood_manager) + dashboard are READ-ONLY; emotional_state stays "
-    "at its default row forever (no scheduler job, no chat hook writes it). Fix: "
-    "wire a drift() caller (tone classifier hook or a scheduled job).",
-)
 def test_user_mood_drift_is_called_somewhere_in_the_codebase():
     """Some non-test module must call UserMoodRepo().drift(...) or the emotion
     state never updates. (VibeStateRepo.drift IS wired — user_mood is not.)
@@ -441,13 +393,6 @@ def test_user_mood_freshness_helper_is_available():
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="LEDGER BUG: spawn_agent() calls ensure_run() (status defaults to "
-    "'running') but NEVER complete_run(). Every scheduler/bot-spawned run stays "
-    "status=running forever -> dashboard + supersede logic break. Fix: call "
-    "complete_run() at the end of spawn_agent.",
-)
 def test_spawn_agent_completes_the_run():
     """spawn.py must call complete_run() so runs don't stay 'running' forever."""
     src = (REPO_ROOT / "backend" / "app" / "telegram" / "spawn.py").read_text()

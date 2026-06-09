@@ -60,6 +60,13 @@ class Settings(BaseSettings):
         default=Path("/data/agents"), alias="AGENTS_DIR",
         description="Where compiled .opencode agent trees live (NOT /tmp).",
     )
+    # Root of the persistent volume (fren_v4_data:/data). All media that must
+    # survive a container recreate — captures, renders, comfyui downloads — is
+    # anchored here. Overridable via DATA_DIR so dev (no /data mount) still works.
+    data_dir: Path = Field(
+        default=Path("/data"), alias="DATA_DIR",
+        description="Persistent-volume root for media (captures/renders/downloads).",
+    )
     # How often the checker service runs an intervention tick (seconds).
     checker_interval_seconds: int = Field(
         default=300, alias="CHECKER_INTERVAL_SECONDS",

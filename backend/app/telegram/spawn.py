@@ -86,6 +86,20 @@ async def spawn_agent(
     )
     result.run_id = run_id
 
+    # Close out the ledger run row so it doesn't stay status='running' forever
+    # (the dashboard + supersede logic depend on a terminal status). Best-effort:
+    # a failure here must NEVER block or fail the agent run.
+    try:
+        from app.db.repos.execution_ledger import ExecutionLedgerRepo
+
+        await ExecutionLedgerRepo().complete_run(
+            run_id,
+            status="completed" if result.ok else "failed",
+            contract_passed=result.ok,
+        )
+    except Exception:  # noqa: BLE001 — ledger is observability, never blocks spawn
+        pass
+
     # Persist the parsed trajectory (assistant output + the ordered tool calls)
     # as ONE `run_trace` artifact so the dashboard can replay what the agent
     # reasoned and which tools/commands it ran. This trajectory is otherwise
