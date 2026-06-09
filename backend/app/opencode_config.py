@@ -7,10 +7,10 @@ resolve their (base_url, api_key, model) by reading the provider blocks from
 block, so persona_prose found no `local-vllm-*` provider → empty base_url →
 fell through to api.openai.com and 401'd.
 
-This writes the FULL provider set (z.ai worker + the local-vLLM servers on the
-A4000), faithfully matching v3's opencode.json so the voice/prose layer resolves
-the local Qwen models. Secrets stay as `env:VAR` refs (opencode expands them),
-never inlined.
+This writes the TRIMMED provider set: `local-vllm-remote` (the local Qwen-27B
+on :8082 — the DEFAULT worker + the voice/prose target) plus `zai-coding-plan`
+declaring the two alt cloud models glm-4.7 / glm-5.1. Secrets stay as `env:VAR`
+refs (opencode expands them), never inlined.
 """
 
 from __future__ import annotations
@@ -22,18 +22,35 @@ from pathlib import Path
 _VLLM_TIMEOUT = 1800000
 
 
-def build_config(worker_model: str = "zai-coding-plan/glm-4.5-air") -> dict:
-    """Build the opencode.json dict (providers + default model)."""
+def build_config(worker_model: str = "local-vllm-remote/qwen35-27b") -> dict:
+    """Build the opencode.json dict (providers + default model).
+
+    Only the THREE live worker models are declared:
+      - local-vllm-remote/qwen35-27b  — the DEFAULT/primary (local qwen, :8082;
+        multimodal, so vision/video route here too);
+      - zai-coding-plan/glm-4.7, zai-coding-plan/glm-5.1 — the two ALT cloud
+        compilations (`-glm47` / `-glm51`).
+    The split / local-glm (:5502) / analytical (:8083) / A4000-vision (:5504)
+    providers were dropped — no compiled worker model references them, and the
+    persona/rp prose layer resolves only `local-vllm-remote`.
+    """
     return {
         "$schema": "https://opencode.ai/config.json",
         "model": worker_model,
         "small_model": worker_model,
         "provider": {
-            # Worker provider — z.ai coding plan (key from env at run time).
+            # Worker provider — z.ai coding plan (key from env at run time). The
+            # two alt variants compile to glm-4.7 / glm-5.1, declared here so
+            # `-glm47` / `-glm51` resolve instead of silently falling back.
             "zai-coding-plan": {
                 "options": {"apiKey": "${ZAI_API_KEY}"},
+                "models": {
+                    "glm-4.7": {"id": "glm-4.7", "options": {"temperature": 0.6}},
+                    "glm-5.1": {"id": "glm-5.1", "options": {"temperature": 0.6}},
+                },
             },
-            # Local vLLM on the A4000 — the persona/rp prose + interactive targets.
+            # Local vLLM on the A4000 (:8082) — the DEFAULT worker + the
+            # persona/rp prose + interactive targets. Multimodal (vision/video).
             "local-vllm-remote": {
                 "options": {
                     "apiKey": "env:VLLM_API_KEY",
@@ -47,59 +64,6 @@ def build_config(worker_model: str = "zai-coding-plan/glm-4.5-air") -> dict:
                         "interleaved": {"field": "reasoning_content"},
                         "limits": {"context": 262144, "output": 32768},
                         "options": {"temperature": 0.6, "topP": 0.95, "topK": 20},
-                    },
-                },
-            },
-            "local-vllm-fast": {
-                "options": {
-                    "apiKey": "env:VLLM_API_KEY",
-                    "baseURL": "http://192.168.0.42:8082/v1",
-                    "timeout": _VLLM_TIMEOUT,
-                },
-                "models": {
-                    "qwen35-35b-a3b": {
-                        "id": "qwen35-35b-a3b",
-                        "options": {"temperature": 0.6, "topP": 0.95, "topK": 20},
-                    },
-                },
-            },
-            "local-vllm-analytical": {
-                "options": {
-                    "apiKey": "env:VLLM_API_KEY",
-                    "baseURL": "http://192.168.0.42:8083/v1",
-                    "timeout": _VLLM_TIMEOUT,
-                },
-                "models": {
-                    "qwen35-27b-heretic": {
-                        "id": "qwen35-27b-heretic",
-                        "options": {"temperature": 0.6, "topP": 0.95, "topK": 20},
-                    },
-                },
-            },
-            "local-vllm": {
-                "options": {
-                    "apiKey": "env:VLLM_API_KEY",
-                    "baseURL": "http://192.168.0.42:5502/v1",
-                    "timeout": _VLLM_TIMEOUT,
-                },
-                "models": {
-                    "glm-4.5-air-local": {
-                        "id": "cyankiwi/GLM-4.5-Air-Derestricted-AWQ-4bit",
-                        "options": {"temperature": 0.6, "topP": 0.95},
-                    },
-                },
-            },
-            "local-vllm-image": {
-                "options": {
-                    "apiKey": "env:VLLM_API_KEY",
-                    "baseURL": "http://192.168.0.95:5504/v1",
-                    "timeout": _VLLM_TIMEOUT,
-                },
-                "models": {
-                    "qwen3-8b-vl": {
-                        "id": "qwen3-8b-vl",
-                        "limits": {"context": 25000, "output": 8000},
-                        "options": {"temperature": 0.6},
                     },
                 },
             },
@@ -133,7 +97,7 @@ def write_config(path: Path | None = None, *, worker_model: str | None = None) -
     project-root opencode.json (persona_prose/rp_prose). Pass `path` to write a
     single explicit location instead.
     """
-    wm = worker_model or os.environ.get("WORKER_MODEL", "zai-coding-plan/glm-4.5-air")
+    wm = worker_model or os.environ.get("WORKER_MODEL", "local-vllm-remote/qwen35-27b")
     cfg = build_config(wm)
     cfg["provider"]["zai-coding-plan"]["options"]["apiKey"] = os.environ.get("ZAI_API_KEY", "")
     blob = json.dumps(cfg, indent=2)
