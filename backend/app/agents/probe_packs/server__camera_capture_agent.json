@@ -1,0 +1,43 @@
+{
+  "agent_id": "server/camera_capture_agent",
+  "generated_at": "2026-06-09T23:22:51.303592+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "basic_frame_capture",
+      "prompt": "Can you fetch image from camera?",
+      "criteria": "The server/camera_capture_agent lists available cameras using v4l2-ctl, captures a frame with ffmpeg to data/captures/, verifies the resulting file exists and is non-empty, and reports the outcome (success or failure with details) back to the user. A good response confirms the capture was attempted, states which camera device was used, names the output file path, and shares the verification result.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #4 'Can you fetch image from camera?' and #17 'Can you send me images of what you can see via camera'"
+    },
+    {
+      "name": "camera_access_check",
+      "prompt": "Can you check if you have access to the camera from the server? Take a picture and send it to me.",
+      "criteria": "The agent first probes camera availability (e.g. listing /dev/video* devices or running v4l2-ctl --list-devices), then attempts an ffmpeg capture to data/captures/, verifies the file, and clearly reports whether access is working and whether the capture succeeded. A good response covers both the diagnostic step and the capture result, including any error output if access fails.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #8 'Can you check if you have access to the camera from the server? Also, are you able to take a picture using the subagent and send it to me?'"
+    },
+    {
+      "name": "second_camera_probe",
+      "prompt": "Hej, słyszałem że masz drugą kamerę na serwerze. Możesz sprawdzić które urządzenia video są dostępne i zrobić zdjęcie z każdej z nich?",
+      "criteria": "The agent runs v4l2-ctl to enumerate all video devices, identifies each camera (e.g. /dev/video0, /dev/video1), captures a frame from each detected device with ffmpeg into data/captures/ with distinguishable filenames, verifies all files, and reports the full inventory plus per-camera capture results. A good response lists every device found, attempts capture from each, and reports successes and failures individually.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #22 'Yeah you got a second camera' and #36 'I gave you the camera. Can you check how it works?'"
+    },
+    {
+      "name": "capture_despite_empty_room",
+      "prompt": "Zrób zdjęcie z kamerki, ale uwaga — jestem w Warszawie nie we Wrocławiu, więc pewnie nic ciekawego nie ujrzysz. Chciałbym po prostu sprawdzić czy sprzęt działa.",
+      "criteria": "The agent acknowledges the user's context (room likely empty) but proceeds with the technical task: lists cameras, captures a frame with ffmpeg to data/captures/, verifies the file, and reports the technical result (device used, file path, file size, success/failure) without worrying about the image content. A good response separates the technical health-check from visual content expectations and confirms whether the camera hardware is functioning.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #38 'Im in Warsaw not in Wrocław, Camera won't show anything' and #36 'I didn't quite manage to go for a walk, but instead I gave you the camera. Can you check how it works?'"
+    },
+    {
+      "name": "retest_camera_before_leaving",
+      "prompt": "Okay, before I head out, can you quickly test the server camera again? Just wanna make sure it's still working after the last restart.",
+      "criteria": "The agent runs a full capture cycle: lists cameras with v4l2-ctl, captures a frame with ffmpeg to data/captures/ (using a timestamped or sequentially named file to avoid overwriting prior captures), verifies the file is valid, and reports the result. A good response confirms the test was run, states the camera device and output file, includes file-size or dimensions as proof of a valid capture, and logs the event to the context cache for future reference.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #20 'Okay, before I leave, can you test the server camera again?' and #36 about checking how the camera works"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "agent_id": "food/food_suggester",
+  "generated_at": "2026-06-09T23:20:22.113574+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "suggest_meal_avoid_recent",
+      "prompt": "I've eaten a sandwich with cottage cheese and tomato for lunch, and yesterday I had pasta with pesto and a wrap with tuna. Can you suggest something for dinner tonight? I'd like something warm and filling but not too heavy.",
+      "criteria": "The food_suggester agent checks recent meals (sandwich with cottage cheese and tomato, pasta with pesto, wrap with tuna) to avoid repetition, proposes a warm, filling-but-not-heavy dinner option with clear reasoning for why it fits the request and differs from recent meals.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 4, 9, 10, 16, 26 — users reporting what they ate and seeking next meal ideas."
+    },
+    {
+      "name": "restaurant_recommendation_check",
+      "prompt": "DO you recommend restaurant Oma? I'm thinking about ordering something from there today. I generally like Asian food and sushi, but I also want to try something new. What would you suggest I order from there?",
+      "criteria": "The food_suggester agent addresses the restaurant Oma specifically, considers the user's preference for Asian food and sushi, recommends a specific dish or dishes from that restaurant, and explains the reasoning behind the suggestion while noting something new to try.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 12 ('DO you recommend restaurant Oma?') and 18 ('I've eaten sushi')."
+    },
+    {
+      "name": "quick_meal_idea_polish",
+      "prompt": "Oki, mam ochotę na coś na szybko, ale nie chcę znowu ryżu ani makaronu. Co możesz polecić? Mam w lodówce jajka, ser, chleb, trochę warzyw i tuńczyka.",
+      "criteria": "The food_suggester agent suggests a quick meal in Polish that avoids rice and pasta, uses the available ingredients listed (eggs, cheese, bread, some vegetables, tuna), provides a concrete recipe idea with reasoning, and responds in Polish matching the user's language.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 5, 10, 11, 29 — Polish quick meal requests and the casual 'Oki' phrasing."
+    },
+    {
+      "name": "recipe_source_lookup",
+      "prompt": "Can you look up a good recipe for homemade ramen on aniagotuje or similar Polish recipe sites? I want to try making it myself this weekend. I've eaten ramen at restaurants before but never cooked it. I'd like something not too complicated with ingredients I can get in a Polish supermarket.",
+      "criteria": "The food_suggester agent searches for a ramen recipe on Polish recipe sites like aniagotuje, picks a beginner-friendly version, lists the ingredients confirming they are available in Polish supermarkets, and explains why this recipe is a good fit for a first-timer.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 21 ('I'll be eating ramen in like 40min') and 31 ('Have you checked the aniagotuje page for these recipes?')."
+    },
+    {
+      "name": "meal_plan_with_ingredients_to_buy",
+      "prompt": "Well I want to plan meals for the next 3 days. I've got chicken, rice, some frozen veggies, and soy sauce at home. I don't want to eat the same thing every day and I'd like a shopping list of what I still need to buy. Can you help with that?",
+      "criteria": "The food_suggester agent creates a 3-day meal plan using the existing ingredients (chicken, rice, frozen veggies, soy sauce) with variety across days, provides a shopping list of missing ingredients, and explains the reasoning for each meal choice and how it maximizes what's already available.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 20 ('workflows for selecting dishes and planning out what to buy') and 30 ('Remind me tomorrow that I need to buy ingredients and prepare something for dinner')."
+    }
+  ]
+}

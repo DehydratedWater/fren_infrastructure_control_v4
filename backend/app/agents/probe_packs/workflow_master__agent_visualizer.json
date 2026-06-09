@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflow_master/agent_visualizer",
+  "generated_at": "2026-06-09T23:29:33.028203+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "show_full_fleet_diagram",
+      "prompt": "Show me the full diagram of all agents and how they connect. I want to see every subagent reference and task delegation in one view, color-coded by agent type.",
+      "criteria": "The agent_visualizer must scan the agent definitions in the fleet, extract every subagent and Task reference, and produce a complete color-coded dependency graph (Mermaid or text) showing how all agents connect. A good response includes all agents, labels edges with the referenced subagent/task names, and applies a clear color scheme by agent type.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 13 (graph appreciation) and msg 9 (curiosity about module structure)."
+    },
+    {
+      "name": "filtruj_po_typie_task",
+      "prompt": "Pokaż mi diagram tylko dla agentów typu 'support' i 'workflow'. Chcę widzieć jak te dwa typy agentów ze sobą współpracują, resztę pomiń. Oznacz na czerwono połączenia gdzie task jest delegowany do subagenta.",
+      "criteria": "Agent_visualizer musi wygenerować przefiltrowany diagram zależności zawierający tylko agenty typu 'support' i 'workflow', z pominięciem reszty floty. Połączenia delegujące task do subagenta muszą być zaznaczone na czerwono. Dobra odpowiedź zawiera czysty, czytelny graf z legendą kolorów i poprawnie odfiltrowanymi węzłami.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 29 (removing items from a list) and msg 8 (marking/filtering specific categories)."
+    },
+    {
+      "name": "single_agent_deep_dive",
+      "prompt": "I want to see the full dependency tree for the 'research/techtree_orchestrator' agent only. Show me all its subagents, what tasks it delegates, and whether any of those subagents spawn further subagents. Use text-based diagram format please, not Mermaid.",
+      "criteria": "The agent_visualizer must trace the complete dependency tree for the specified agent, including recursive subagent references (subagents that themselves have subagents). Output must be in text-based format, not Mermaid. A good response clearly shows the hierarchy depth, names each subagent and task reference, and formats it as a readable indented tree or ASCII diagram.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 16 (deep dive into Vis structure) and msg 12 (understanding task ordering and dependencies)."
+    },
+    {
+      "name": "highlight_circular_deps",
+      "prompt": "Can you check the whole agent fleet for any circular dependencies? Like where agent A calls subagent B which calls subagent A? Highlight those cycles in the diagram and list them out separately so I can see if there's a problem.",
+      "criteria": "Agent_visualizer must scan all agent definitions for circular dependency chains (A→B→A or longer cycles), produce a full fleet diagram with those cycles visually highlighted (distinct color or bold), and separately list each detected cycle. A good response identifies real cycles if present, or explicitly confirms none exist, and the diagram makes cycles immediately visible.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 26 (checking underlying structure) and msg 27 (debugging a failed process)."
+    },
+    {
+      "name": "portret_diagram_observ",
+      "prompt": "Potrzebuję diagramu tylko dla agentów observation/profile - tych co analizują dane użytkownika. Chcę tryb 'portrait', czyli żeby diagram był wyższy niż szerszy, żeby mi się ładował na telefonie. Mermaid format.",
+      "criteria": "Agent_visualizer musi przefiltrować agenty do tylko tych związanych z observation/profile, wygenerować diagram w formacie Mermaid z układem portrait (vertical, top-down, wyższy niż szerszy), odpowiednim do wyświetlania na telefonie. Dobra odpowiedź zawiera poprawną składnię Mermaid z kierunkiem TD (top-down) i tylko relevant węzły.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 19 (portrait mode request) and msg 20 (checking today's events/data)."
+    }
+  ]
+}

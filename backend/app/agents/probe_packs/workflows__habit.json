@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/habit",
+  "generated_at": "2026-06-09T23:31:10.111351+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "habit_mark_complete",
+      "prompt": "Mark paying for apartment as done",
+      "criteria": "The /habit agent should process a habit-completion request by confirming that the 'paying for apartment' habit was marked as completed for today, displaying the updated streak or completion status. A good response acknowledges the specific habit name, confirms it is now done, and may show relevant streak info.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real message #36: 'Mark paying for apartment as done'"
+    },
+    {
+      "name": "habit_due_today_list",
+      "prompt": "What habits do I have due today?",
+      "criteria": "The /habit agent should retrieve and display all habits that are scheduled for today. A good response lists each due habit with its name, frequency, current streak, and completion status, giving the user a clear overview of what remains to be done.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real messages #17 and #30 ('Can you check my current tasks?') adapted for the habit domain"
+    },
+    {
+      "name": "habit_skip_today",
+      "prompt": "Skip my morning meditation for today, I'm really not feeling it",
+      "criteria": "The /habit agent should process a skip request by recording that the 'morning meditation' habit is skipped for today without breaking the streak (if skip policy allows). A good response confirms the skip, explains any effect on the streak, and perhaps shows remaining due habits.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the casual tone of real messages #12/#16 about sleep and #33 'don't worry'"
+    },
+    {
+      "name": "habit_streak_stats_pl",
+      "prompt": "Pokaż mi statystyki streaków dla moich nawyków, które mam z najwyższą frekwencją",
+      "criteria": "The /habit agent should display streak statistics for all habits, highlighting those with the highest completion frequency. A good response shows each habit's current streak, longest streak, and completion rate, sorted so the strongest habits appear first. The response should be in Polish or mixed Polish/English matching the user's language.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Polish-language probe inspired by the bilingual corpus mix; concept from habit role's 'streak stats' responsibility"
+    },
+    {
+      "name": "habit_log_medication_dose",
+      "prompt": "Just took 10mg of mph, log it under my medication habit",
+      "criteria": "The /habit agent should interpret this as both a log entry and a habit completion for a medication-related recurring habit. A good response records the dose (10mg mph) under the appropriate medication habit, marks it as completed for today, confirms the time, and shows any streak data for the medication habit.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real messages #2, #10, #19, #28: 'Just took 10mg of mph' / 'I took 5mg mph 20min ago' / 'I've just took another 5mg of mph'"
+    }
+  ]
+}

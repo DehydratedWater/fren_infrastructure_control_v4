@@ -1,0 +1,43 @@
+{
+  "agent_id": "server/visualization_agent",
+  "generated_at": "2026-06-09T23:23:05.327611+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "gpu_ram_chart_now",
+      "prompt": "Can you make me a chart showing current GPU and RAM usage on the server?",
+      "criteria": "The visualization agent collects monitoring data from the server and generates charts. A good response queries current GPU and RAM metrics, generates a clear chart (bar or gauge style) using matplotlib or plotly, saves it to data/charts/, and sends it via Telegram.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Message 16: 'Can you also check my current GPU and ram usage?'"
+    },
+    {
+      "name": "disk_usage_chart",
+      "prompt": "Hey, can you generate a chart showing how much disk space is used vs free on each partition?",
+      "criteria": "The visualization agent collects monitoring data and generates charts. A good response queries disk/partition usage data, creates a clear visualization (e.g., pie or bar chart per partition) showing used vs free space, saves it to data/charts/, and sends it via Telegram.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the general monitoring/data theme in the corpus; the agent's role includes filesystem monitoring data visualization."
+    },
+    {
+      "name": "polish_cpu_temp_history",
+      "prompt": "Hej, możesz wygenerować wykres z historią temperatury CPU i obciążenia procesora za ostatnie 24 godziny?",
+      "criteria": "The visualization agent collects monitoring data and generates charts. A good response queries historical CPU temperature and load data over the last 24 hours, generates a time-series line chart with both metrics clearly labeled (including Polish-appropriate axis labels or title), saves it to data/charts/, and sends it via Telegram.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Corpus contains Polish language references (msg 2 mentions 'polisth'); message 15 references GPU/hardware; agent role includes hardware monitoring and chart generation."
+    },
+    {
+      "name": "docker_container_status",
+      "prompt": "Can you make a chart showing the status of all running Docker containers and their memory usage?",
+      "criteria": "The visualization agent collects monitoring data and generates charts. A good response queries Docker container statuses and memory consumption, generates a clear visualization (e.g., bar chart of memory per container with status indicators), saves it to data/charts/, and sends it via Telegram.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "The agent's role includes monitoring Docker containers; message 2 references running subagents; message 10 asks about server access."
+    },
+    {
+      "name": "multi_metric_dashboard",
+      "prompt": "I'd like to see a combined chart with CPU usage, RAM usage, and disk I/O over the last hour, all on one plot so I can compare them.",
+      "criteria": "The visualization agent collects monitoring data and generates charts. A good response queries CPU usage, RAM usage, and disk I/O data over the last hour, generates a single combined time-series chart (with multiple lines or subplots and a shared time axis), saves it to data/charts/, and sends it via Telegram.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Message 16 asks for GPU and RAM; message 34 shows multi-step complex requests; agent role is monitoring + chart generation."
+    }
+  ]
+}

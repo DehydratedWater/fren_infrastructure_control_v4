@@ -1,0 +1,43 @@
+{
+  "agent_id": "server/vision_analyzer",
+  "generated_at": "2026-06-09T23:22:58.118390+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "basic_path_analysis",
+      "prompt": "Hey, can you analyze @captures/room_latest.jpg and tell me what you see in the image?",
+      "criteria": "The agent's role is to resolve @-prefixed relative image paths to absolute paths and call the analyze_image MCP tool. A good response resolves the relative path 'captures/room_latest.jpg' to an absolute filesystem path, calls the MCP tool, and returns a clear plain-text description of the image contents.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 4, 12, 19, 29 where user asks about camera captures and screenshots from the server camera."
+    },
+    {
+      "name": "polish_camera_capture",
+      "prompt": "Hej, sprawdz proszę zdjęcie @camera_snap/snapshot_2026-06-10_14-30.png i opisz co jest na obrazku, czy widać tam kogoś w pokoju?",
+      "criteria": "The agent's role is to resolve @-prefixed relative image paths to absolute paths and call analyze_image MCP. A good response resolves 'camera_snap/snapshot_2026-06-10_14-30.png' to an absolute path, invokes the MCP analysis tool, and returns a plain-text Polish or English description addressing whether someone is visible in the room.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 29 'Can you check through the server camera if I'm sitting in the room?' — combined with Polish language patterns from the corpus."
+    },
+    {
+      "name": "multiple_images_comparison",
+      "prompt": "I have two captures from the security camera. Can you look at @cam/entrance_before.jpg and @cam/entrance_after.jpg and describe what changed between them?",
+      "criteria": "The agent's role is to resolve @-prefixed relative image paths and call analyze_image MCP. A good response resolves BOTH relative paths to absolute paths, calls the MCP tool for each image, and provides plain-text descriptions that allow the user to understand the differences between the two captures.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 4 and 29 about checking the server camera, extended to a multi-image comparison scenario."
+    },
+    {
+      "name": "hardware_component_identification",
+      "prompt": "Hey, I just took a photo of my server rack with the USB camera. The capture is at @captures/server_rack_2026-06-10.png. Can you analyze it and tell me if you can identify what hardware components are visible, specifically the GPU and any LED status indicators?",
+      "criteria": "The agent's role is to resolve @-prefixed relative image paths and call analyze_image MCP. A good response resolves 'captures/server_rack_2026-06-10.png' to an absolute path, calls the MCP tool, and returns a plain-text description that specifically addresses visible hardware components like GPUs and LED status indicators if they are discernible in the image.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 26 about the RX 7900 XT GPU and message 30 about server instability, combined with camera capture requests."
+    },
+    {
+      "name": "ambient_lighting_check",
+      "prompt": "Mam zrzut ekranu z kamery w pokoju pod @room/cam_capture_03.png. Mozesz to przeanalizowac i powiedziec jakosc oswietlenia w pokoju? Chce wiedziec czy swiatla sa wlaczone czy wylaczone i jaki jest ogolny nastrój pomieszczenia.",
+      "criteria": "The agent's role is to resolve @-prefixed relative image paths and call analyze_image MCP. A good response resolves 'room/cam_capture_03.png' to an absolute path, invokes the MCP analysis, and returns a plain-text description that addresses the room's lighting conditions — whether lights appear on or off — and the overall ambiance of the space.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 15, 17, 22 about dimming/checking lights and message 29 about checking the room via camera, combined with Polish language from the corpus."
+    }
+  ]
+}

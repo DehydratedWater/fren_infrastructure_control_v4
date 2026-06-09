@@ -1,0 +1,43 @@
+{
+  "agent_id": "server/orchestrator",
+  "generated_at": "2026-06-09T23:22:20.981476+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "camera_capture_test",
+      "prompt": "Hey, can you take a photo with the server camera? I want to see if it's working properly now after the reconnection.",
+      "criteria": "The server/orchestrator agent should recognize this as a camera-related request, classify it as 'camera', and dispatch it to the camera specialist agent. A good response routes to the camera_capture_agent and returns the captured image or a status report about the camera.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real messages #1, #9, #10, #20, #33 — users frequently ask to test or capture from the server camera."
+    },
+    {
+      "name": "disk_usage_check_pl",
+      "prompt": "Sprawdź mi ile miejsca zostało na dyskach serwera, chcę wiedzieć czy muszę coś czyścić.",
+      "criteria": "The server/orchestrator agent should recognize this Polish-language request as a disk monitoring query, classify it as 'disk', and dispatch to the filesystem_agent specialist. A good response returns disk usage data for monitored partitions with clear information about which partitions are getting full.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the agent's documented 'disk' classification capability; no direct corpus match but fits the server monitoring role."
+    },
+    {
+      "name": "server_status_unstable",
+      "prompt": "My server seems a bit unstable when I'm logged into the UI. Can you check the current status — CPU, RAM, uptime, and running containers?",
+      "criteria": "The server/orchestrator agent should classify this as a 'status' request and dispatch to the hardware_agent specialist. A good response returns a comprehensive hardware/system report including CPU load, RAM usage, uptime, and Docker container status, so the user can diagnose instability.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #37 'My server is bit unstable when I'm logged into ui' combined with the agent's hardware monitoring scope."
+    },
+    {
+      "name": "session_monitoring_check",
+      "prompt": "Hej, pokaż mi aktywne sesje i połączenia SSH na serwerze. Chcę sprawdzić czy ktoś poza mną jest zalogowany.",
+      "criteria": "The server/orchestrator agent should recognize this as a sessions monitoring request, classify it as 'sessions', and dispatch to the sessions_agent specialist. A good response lists all active sessions and SSH connections, clearly identifying each session's user, source IP, and duration.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the agent's documented 'sessions' classification; combined with the general server monitoring pattern from the corpus."
+    },
+    {
+      "name": "camera_and_chart_combined",
+      "prompt": "Can you grab a shot from the camera and also generate a chart showing CPU and RAM usage over the last few hours? Want to see both at once.",
+      "criteria": "The server/orchestrator agent should recognize this as a multi-part request involving both 'camera' (camera_capture_agent) and 'chart' (visualization_agent) categories. A good response dispatches to both specialists in parallel and returns both the camera image and the performance chart, demonstrating proper routing of compound requests.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #17 requesting both screen and camera capture, and the agent's 'chart' classification capability for visualization requests."
+    }
+  ]
+}

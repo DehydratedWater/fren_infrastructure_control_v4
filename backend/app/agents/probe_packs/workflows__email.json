@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/email",
+  "generated_at": "2026-06-09T23:32:34.173021+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "check_inbox_unread",
+      "prompt": "/email check my inbox, show me any unread emails from today",
+      "criteria": "The agent acts as the /email command handler. A good response queries the Gmail inbox for unread messages from today, presents them in a clear summary (sender, subject, time), and confirms how many were found or reports if the inbox is empty.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 24 'Can you fetch what do i have on my todo list?' — direct data-fetch style request applied to email inbox."
+    },
+    {
+      "name": "search_email_polish",
+      "prompt": "/email przeszukaj mi skrzynkę, znajdź maile od Piotra z tego tygodnia, potrzebuję tematu i daty każdego",
+      "criteria": "The agent acts as the /email command handler processing a Polish-language request. A good response searches the inbox for emails from 'Piotr' within the current week, returns subject and date for each match, and handles the case of zero results gracefully — all while maintaining Polish in the reply.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 25 'Can you tell me more about barteks commit?' — searching for specific info about a named person, and the general Polish/English mix in the corpus."
+    },
+    {
+      "name": "compose_send_whitelisted",
+      "prompt": "/email compose and send a message to bartek@example.com with subject 'Techtree sync update' and body: Hey Bartek, just wanted to let you know I pushed the latest changes to the techtree repo tonight. Let me know if the CI passes on your end. Thanks!",
+      "criteria": "The agent acts as the /email command handler for compose+send. A good response verifies the recipient is whitelisted, confirms the subject and body back to the user for a safety gate before sending, then sends the email and reports success or explains why it cannot send (e.g. non-whitelisted recipient).\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 21 'I'm still debugging for techtree' and message 15 'Great please give me one more' — active project context with direct action requests."
+    },
+    {
+      "name": "draft_email_reply",
+      "prompt": "/email draft a reply to the last email I received. Keep it short and polite, something like: Thanks for the heads up, I'll look into it tomorrow morning. Don't send it yet, just save it as a draft.",
+      "criteria": "The agent acts as the /email command handler for drafts. A good response finds the most recent email in the inbox, creates a draft reply with the approximate body text requested, confirms it was saved as a draft without sending it, and references which email it is replying to.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 20 'Please try again' and message 36 'Please make it a rule...' — cautious, iterative approach with explicit 'don't send yet' instruction."
+    },
+    {
+      "name": "cross_reference_delegate",
+      "prompt": "/email find all emails from this month that mention 'invoice' or 'faktura' and cross-reference them with my todo list to see if I have any unpaid invoice tasks that might be related. Give me a summary.",
+      "criteria": "The agent acts as the /email command handler. Since this requires cross-referencing email search results with the todo list (a complex cross-referencing task), a good response first resolves the email search via gmail_manager.py, then delegates the cross-referencing with the todo list to support/email_agent, and returns a unified summary showing matched invoices and their corresponding task status.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 37 'Mark paying for apartment as done' (invoice/payment tasks), message 14 'Please mark all tasks connected to adding API keys as already done' (task-email linkage), and message 13 'you don't really have access to the data I need' — the need for multi-source cross-referencing."
+    }
+  ]
+}

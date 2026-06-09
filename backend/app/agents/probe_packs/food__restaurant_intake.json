@@ -1,0 +1,43 @@
+{
+  "agent_id": "food/restaurant_intake",
+  "generated_at": "2026-06-09T23:21:57.197908+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "detailed_restaurant_with_full_info",
+      "prompt": "Hey, I went to this place called Sakura Sushi on ulica Mokotowska 3 in Warsaw yesterday, it's a Japanese place, mid-range prices, I had the salmon sashimi and a spicy tuna roll, my friend had tempura shrimp, please add it to the list.",
+      "criteria": "The restaurant_intake agent must extract: restaurant name (Sakura Sushi), cuisine (Japanese), location (ulica Mokotowska 3, Warsaw), price range (mid-range), and dishes (salmon sashimi, spicy tuna roll, tempura shrimp), then confirm it will be saved via the food manager. A good response captures every field accurately without hallucinating extra details.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 12 ('the standard atenza 36') which mentions a specific dish at a venue, and msg 15 ('DO you recommend restaurant Oma?') which references a restaurant by name."
+    },
+    {
+      "name": "brief_restaurant_name_only",
+      "prompt": "Add restaurant Oma to my places please",
+      "criteria": "The restaurant_intake agent must extract the restaurant name (Oma) and acknowledge that limited information was provided (no cuisine, location, price range, or dishes). A good response saves what is available via the food manager and either asks for more details or notes the partial data, without fabricating missing fields.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Directly inspired by msg 15 ('DO you recommend restaurant Oma?')."
+    },
+    {
+      "name": "polish_restaurant_with_dishes",
+      "prompt": "Byłem wczoraj w Trattoria da Mario na Kazimierzu w Krakowie, kuchnia włoska, ceny przystępne, jedliśmy margheritę, carbonarę i tiramisu na deser, zapisz to proszę",
+      "criteria": "The restaurant_intake agent must extract from the Polish-language input: restaurant name (Trattoria da Mario), cuisine (włoska/Italian), location (Kazimierz, Kraków), price range (przystępne/affordable), and dishes (margherita, carbonara, tiramisu). A good response responds in Polish or clearly understood language, saves all extracted data via the food manager, and does not miss any of the three dishes.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the Polish context noted in the corpus mix, and msgs 9/24/27 which mention specific Italian dishes like 'pasta with pesto' and 'alio e olio'."
+    },
+    {
+      "name": "restaurant_quick_food_log",
+      "prompt": "I've eaten pad thai at that Thai place on Bracka street near the market square, pretty cheap, maybe 25 zł, they also had green curry and spring rolls on the menu",
+      "criteria": "The restaurant_intake agent must extract: cuisine (Thai), location (Bracka street near market square), price range (~25 zł / cheap), dishes eaten (pad thai), and additional menu items mentioned (green curry, spring rolls). A good response distinguishes between what was actually eaten versus what was merely on the menu, and saves the restaurant entry with all relevant fields.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 27 ('I've eaten rice balls with tunna') and msg 29 ('I've eaten a donut + got myself a coffee') which log meals with dish details, plus the price awareness from msg 12."
+    },
+    {
+      "name": "mixed_lang_partial_restaurant_info",
+      "prompt": "So I found this new place, Smaki Domowe, it's somewhere in the city center, polska kuchnia obviously, I had żurek and schabowy, pretty cheap, you should save it",
+      "criteria": "The restaurant_intake agent must extract from the mixed English/Polish input: restaurant name (Smaki Domowe), cuisine (polska kuchnia / Polish), location (city center — vague but present), price range (cheap), and dishes (żurek, schabowy). A good response handles the code-switching naturally, records the partial location without fabricating a specific address, and saves via the food manager.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the corpus language mix, msg 12's brief food+venue logging style, and msg 9's casual tone ('Oki, I'll eat pasta with pesto now')."
+    }
+  ]
+}

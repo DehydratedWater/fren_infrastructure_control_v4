@@ -1,0 +1,43 @@
+{
+  "agent_id": "food/orchestrator",
+  "generated_at": "2026-06-09T23:20:21.952084+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "suggest_meal_for_dinner",
+      "prompt": "Hey, I don't know what to eat for dinner today. Can you suggest something? I have some chicken, rice, and bell peppers in the fridge. Nothing too complicated please.",
+      "criteria": "The food/orchestrator classifies this as a 'suggest' intent and dispatches to the meal-suggester subagent (or directly suggests meals). A good response proposes concrete meal ideas using the listed ingredients (chicken, rice, bell peppers), is concise, and does not hallucinate ingredients the user didn't mention.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msgs 9 (I'll eat something first), 27 (eat something), and 8 (prepare something for dinner) — user indecisive about meals."
+    },
+    {
+      "name": "list_all_recipes_polish",
+      "prompt": "Hej, pokaż mi wszystkie przepisy które mam zapisane w bazie. Chcę sprawdzić czy ten co dodałem wczoraj jest tam.",
+      "criteria": "The food/orchestrator classifies this as a 'list' intent for recipes and retrieves/displays all stored recipes from the food DB. A good response lists every recipe with names (and optionally key details), confirms retrieval, and specifically lets the user verify whether their recently-added recipe appears. Responds in Polish or English-Polish mix matching the user's language.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msgs 4 (Can you check if any recipe was added?) and 13 (Great, do I have any recipes?) — recipe listing queries."
+    },
+    {
+      "name": "add_new_recipe_inline",
+      "prompt": "Can you add this recipe to my collection? It's called 'Quick Garlic Butter Shrimp': ingredients are 500g shrimp, 4 cloves garlic, 50g butter, 1 tbsp olive oil, juice of half a lemon, salt and pepper. Steps: melt butter with olive oil, add minced garlic for 30 seconds, toss in shrimp on medium heat for 3 minutes per side, squeeze lemon, season and serve.",
+      "criteria": "The food/orchestrator classifies this as 'add_recipe' intent and dispatches to the recipe-adding subagent. A good response confirms the recipe 'Quick Garlic Butter Shrimp' was saved with all listed ingredients and steps, and gives a clear confirmation message back to the user.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msgs 4 and 13 about recipe management; the corpus shows users manage a recipe DB."
+    },
+    {
+      "name": "add_restaurant_from_experience",
+      "prompt": "Byłem wczoraj w restauracji 'Pod Aniołem' na Kazimierzu, jedzenie było super, dodaj ją do mojej listy restauracji. Adres to Szeroka 6, Kraków. Mają świetne pierogi i rosół.",
+      "criteria": "The food/orchestrator classifies this as 'add_restaurant' intent and dispatches to the restaurant-intake subagent with the provided details. A good response confirms the restaurant 'Pod Aniołem' at Szeroka 6, Kraków was added, notes the user's highlights (pierogi, rosół), and responds in Polish matching the user's language.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 5 (eaten some Pierogis) and msg 2 referencing a dinner plan; corpus has Polish food references."
+    },
+    {
+      "name": "logged_past_meal_and_list_inventory",
+      "prompt": "I've eaten ramen around 18:00 today. Also can you show me what's currently in my food database — all recipes, restaurants, and any logged meals?",
+      "criteria": "The food/orchestrator handles a compound request: first logs the ramen meal at 18:00, then classifies the listing request as 'list' and retrieves the full food DB contents. A good response (1) confirms the ramen meal at 18:00 was logged, (2) lists all stored recipes, restaurants, and meal logs in a structured, readable format, and (3) does not skip either part of the request.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 34 (I've eaten ramen around 15:30) combined with msg 13 (do I have any recipes?) — compound food-logging plus listing."
+    }
+  ]
+}

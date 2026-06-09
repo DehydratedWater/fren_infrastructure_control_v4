@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/priority",
+  "generated_at": "2026-06-09T23:32:03.115218+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "add_priority_task",
+      "prompt": "Hey add a priority for me: set up KsEF integration — it's tedious but important, I need it done this week",
+      "criteria": "Agent must act as /priority command handler. A good response confirms the priority was added via priority_manager.py, asks or infers importance and immediacy values to place it in the correct Eisenhower quadrant, and acknowledges the task details (KsEF integration, this week).\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #25 ('I need to finish up setting up the KsEF first, but it is quite tideus') and #21 ('Hey add also task...')"
+    },
+    {
+      "name": "list_pending_priorities",
+      "prompt": "Hey what priorities do I have pending right now?",
+      "criteria": "Agent must act as /priority command handler. A good response retrieves and lists the user's current priorities from priority_manager.py, ideally showing each with its Eisenhower quadrant classification (importance x immediacy), and presents them clearly.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #36 ('Hey what tasks do I have pending?') and #24 ('What I my current tasks?')"
+    },
+    {
+      "name": "show_eisenhower_matrix",
+      "prompt": "Pokaż mi moją macierz Eisenhowera, chcę zobaczyć jak mi poukładane są priorytety",
+      "criteria": "Agent must act as /priority command handler. A good response generates or displays the full Eisenhower matrix (4 quadrants: urgent+important, important+not urgent, urgent+not important, neither) populated with the user's actual priorities, explaining the layout clearly in Polish.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #36 and the agent's core matrix operation; Polish language reflecting the bilingual corpus mix."
+    },
+    {
+      "name": "update_priority_urgency",
+      "prompt": "Can you update that rent payment priority? I've already paid it so mark it as done or at least move it to not urgent",
+      "criteria": "Agent must act as /priority command handler. A good response updates the specified priority (rent payment) in priority_manager.py — either marking it complete or adjusting its immediacy to reflect it's no longer urgent, and confirms the change clearly.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #9 ('Haven't you already marked rent payment as done?')"
+    },
+    {
+      "name": "audit_priority_alignment",
+      "prompt": "Run a priority audit for me — I feel like I've been spending time on unimportant stuff lately, can you check if my priorities are actually aligned with what matters?",
+      "criteria": "Agent must act as /priority command handler running the audit operation. A good response analyses the user's priorities against the Eisenhower framework, identifies mismatches (e.g. items in wrong quadrants, neglected important-not-urgent tasks), and gives concrete realignment suggestions.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #8 ('You are comparing yearly to monthly, I earn 22k zł monthly') showing the user cares about accurate categorization, and message #35 about recursive CV fine-tuning reflecting concern with priority alignment."
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/task_view",
+  "generated_at": "2026-06-09T23:32:05.431446+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "check_pending_tasks_overview",
+      "prompt": "Can you check my pending tasks?",
+      "criteria": "The task_view agent should gather all todos (today, overdue, upcoming), habits due today, and strategy time blocks, group them by urgency, and return a comprehensive overview. A good response lists tasks organized by urgency category and includes habit and time-block info.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #15: 'Can you check my pending tasks?'"
+    },
+    {
+      "name": "fetch_tasks_with_deadlines",
+      "prompt": "Can you fetch me the pending tasks with deadlines? I need to know what's overdue, what's due today, and what's coming up next.",
+      "criteria": "The task_view agent should retrieve all pending todos categorized by deadline urgency (overdue, today, upcoming), and present them grouped accordingly. A good response clearly separates overdue items from today's and upcoming tasks with their deadlines visible.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #22: 'Can you fetch me the pending tasks with deadlines?' and #13: 'anything else that i must do before leaving?'"
+    },
+    {
+      "name": "polish_task_overview_request",
+      "prompt": "Chciałbym sprawdzić moje dzisiejsze zadania i nawyki. Pokaż mi pełen przegląd — co mam do zrobienia dzisiaj, co jest zaległe, i co mnie czeka w najbliższym czasie?",
+      "criteria": "The task_view agent should understand the Polish-language request and return a comprehensive overview of today's todos, overdue items, upcoming tasks, habits due today, and strategy time blocks grouped by urgency. A good response handles Polish correctly and covers all categories.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #35: 'Chciałbym sprawdzić, jak dobrze to działa. Możesz mi coś odpowiedzieć?' combined with the task-checking pattern from #15 and #22."
+    },
+    {
+      "name": "leaving_soon_what_must_i_do",
+      "prompt": "I need to leave in about an hour. Anything else that I must do before leaving? Show me what's urgent and what habits I still need to complete today.",
+      "criteria": "The task_view agent should present an urgency-focused overview highlighting only time-sensitive and overdue items plus any habits due today that haven't been completed. A good response prioritizes the most urgent items first and clearly indicates what can't wait before the user leaves.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #13: 'anything else that i must do before leaving?' and #18: 'And also as a priority, important but not very asap'"
+    },
+    {
+      "name": "priority_grouped_full_overview",
+      "prompt": "Give me a full task overview grouped by priority. I want to see overdue stuff first, then today's tasks, then upcoming. Also include my habits for today and any strategy time blocks I have scheduled. And also as a priority, important but not very asap — those should be listed separately so I don't forget them but don't panic about them either.",
+      "criteria": "The task_view agent should return a comprehensive overview with todos grouped by urgency (overdue → today → upcoming), habits due today, strategy time blocks, AND a separate 'important but not ASAP' category. A good response respects the explicit priority grouping the user requested and keeps medium-priority items visually distinct from urgent ones.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #18: 'And also as a priority, important but not very asap' and #22: 'Can you fetch me the pending tasks with deadlines?'"
+    }
+  ]
+}

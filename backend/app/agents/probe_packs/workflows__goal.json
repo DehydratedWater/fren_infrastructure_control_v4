@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/goal",
+  "generated_at": "2026-06-09T23:30:50.460462+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "add_goal_with_details",
+      "prompt": "/goal add a new goal called \"finish master thesis revisions\" with description \"Incorporate all reviewer feedback, rewrite chapter 3 on Agile methodologies, and submit final version by end of July\", priority high, under my academic life area",
+      "criteria": "The agent parses the /goal add request, extracts name, description, priority, and parent area, calls goal_manager to create the goal in the hierarchy, and confirms creation with a clear summary of what was added and where it sits in the hierarchy.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #10, #17, #25, #32 — user frequently discusses master thesis progress and task management."
+    },
+    {
+      "name": "list_active_goals_polish",
+      "prompt": "/goal pokaż mi wszystkie moje aktywne cele, szczególnie te związane z nauką i finansami",
+      "criteria": "The agent parses the /goal list request in Polish, queries goal_manager for all active goals, filters or highlights those related to 'nauka' (study/academics) and 'finanse' (finances), and returns a readable list. The response should handle the Polish-language request naturally.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the Polish/English mix in the corpus and finance-related mentions like #8 (proof of income) and #29 (sell walker)."
+    },
+    {
+      "name": "update_goal_status",
+      "prompt": "/goal update the goal about selling the walker to status completed, I finally dealt with it last week. Also change the deadline on my \"send invoice\" goal to this Friday.",
+      "criteria": "The agent parses two distinct update operations from one message: (1) marks the walker-selling goal as completed, (2) updates the deadline on the invoice goal to this Friday. It calls goal_manager for each update and confirms both changes were applied successfully.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #26 (remind me to send invoice) and #29 (sell walker after dead aunt, waiting 8 years)."
+    },
+    {
+      "name": "get_full_hierarchy",
+      "prompt": "/goal show me my full goal hierarchy, I want to see how everything connects from top-level life areas down to individual tasks. Can you also tell me if there are any orphan goals that aren't linked to a parent?",
+      "criteria": "The agent calls goal_manager's get-hierarchy function, renders the full 6-level tree structure clearly, and additionally identifies any goals without a parent link. The response should present the hierarchy in a readable format (e.g., indented tree or diagram description) and list any orphans separately.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #9 (show as diagram) and message #1 (reference point of what kind of equity do I want)."
+    },
+    {
+      "name": "delete_and_reassign_goals",
+      "prompt": "/goal usuń cel o nazwie \"research crypto trends\" bo już w to nie wierzę xD. A tak w ogóle to przenieś wszystkie cele z kategorii crypto do archiwum albo je też usuń, whatever",
+      "criteria": "The agent parses the /goal delete request in mixed Polish/English, deletes the specific named goal 'research crypto trends', then finds all goals in the 'crypto' category and either archives or deletes them as appropriate. It confirms each action taken with a count of affected goals.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #13 (I don't believe in crypto, One Boxer xD) and the casual deletion/archival intent."
+    }
+  ]
+}

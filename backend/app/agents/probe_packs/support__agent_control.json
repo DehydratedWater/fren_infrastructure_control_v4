@@ -1,0 +1,43 @@
+{
+  "agent_id": "support/agent_control",
+  "generated_at": "2026-06-09T23:27:23.553721+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "status_all_agents",
+      "prompt": "Hey, can you give me a rundown of all agents that are currently running? I want to know their names, what model variant they're using, and what they're working on right now.",
+      "criteria": "The agent_control specialist should query active agents and return a clear list showing each running agent's name, model variant, and current task/status. A good response is structured, covers all live agents, and does not fabricate information about agents that are not running.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 24 (user asking about task status) and message 10 (user aware of specific agents like ralf/investigator being spun up)."
+    },
+    {
+      "name": "launch_investigator_email",
+      "prompt": "Hej, can you spin up the investigator agent and tell it to research current best practices for deploying Qwen 3 on consumer GPUs, then send the summary to my email at ignacy.daszkiewicz@gmail.com?",
+      "criteria": "The agent_control specialist should launch the stopped investigator agent (or confirm it is already running) and pass it a thought_transfer message containing the research request and email delivery instruction. A good response confirms the agent was started, relays the message, and does not attempt to do the research itself.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Directly inspired by message 10 ('spin up ralf and research on how people are configuring qwen3.6-35b') and message 22 ('spin up investigator')."
+    },
+    {
+      "name": "pass_message_to_running_agent",
+      "prompt": "Witam, the investigator did an analysis earlier today but I never got it. Can you check if investigator is still running and if so, pass it a message to retry sending the results to ignacy.daszkiewicz@gmail.com?",
+      "criteria": "The agent_control specialist should first check whether the investigator agent is currently running. If it is, the agent should use thought_transfer to relay the user's request to resend results to the specified email. If it is not running, the agent should inform the user and offer to relaunch it. A good response does not pretend to have the analysis data itself.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 14 ('retry sending me this analysis done by investigator you did earlier today') and message 7 ('I got no email with this analysis')."
+    },
+    {
+      "name": "recent_logs_and_locks",
+      "prompt": "Hey, something went wrong — tasks I asked to be marked as done are still showing as overdue, and a reschedule didn't go through. Can you pull up the recent logs and show me any locks that are currently held? I want to see what happened.",
+      "criteria": "The agent_control specialist should retrieve and display recent log entries and any currently held locks across agents. A good response presents logs in a readable chronological format, identifies any stuck locks that might explain the failure, and refrains from guessing causes not supported by the log data.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 24 ('for some reason it's like third time you haven't mark them as done…can you fix these and investigate what went wrong?')."
+    },
+    {
+      "name": "agent_status_with_launch_request",
+      "prompt": "Hej, quick check — which agents are alive right now and what are they doing? Also I want to send a message to the ralf agent telling it to pause the current stage and wait for my input before continuing. Can you do that?",
+      "criteria": "The agent_control specialist should (1) list all running agents with their names, model variants, and current work, and (2) send a thought_transfer to the ralf agent instructing it to pause and await user input. If ralf is not running, the agent should say so and ask whether to launch it. A good response handles both parts distinctly and does not confuse status reporting with message passing.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 5 ('be sure to use Ralf not investigator') and message 10 ('spin up ralf'), combining status inquiry with an instruction relay."
+    }
+  ]
+}

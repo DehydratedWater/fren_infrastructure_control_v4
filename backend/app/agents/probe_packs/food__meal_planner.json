@@ -1,0 +1,43 @@
+{
+  "agent_id": "food/meal_planner",
+  "generated_at": "2026-06-09T23:21:03.425557+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "simple_meal_report",
+      "prompt": "I've eaten rice balls with tuna for lunch",
+      "criteria": "The meal_planner agent tracks daily meal intake via escalating check-ins. A good response briefly acknowledges the reported meal (rice balls with tuna), records it as today's meal status, does NOT nag or escalate further, and exits cleanly.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #2, #28, #35 where user reports eating rice balls or pesto pasta."
+    },
+    {
+      "name": "intention_to_eat_soon",
+      "prompt": "Oki, I'll get something to eat now, probably pesto pasta",
+      "criteria": "The meal_planner agent tracks daily meal intake via escalating check-ins. A good response acknowledges the intention warmly, optionally encourages follow-through, and does NOT treat this as a confirmed meal or send a full escalation — it should hold or lightly nudge later.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #16, #18 where user states intent to eat pesto pasta / 'get something to eat now'."
+    },
+    {
+      "name": "dismiss_already_ate",
+      "prompt": "Ah don't worry I've already eaten sushi, you already asked",
+      "criteria": "The meal_planner agent tracks daily meal intake via escalating check-ins. A good response recognizes the user already ate (sushi), updates meal status, apologizes briefly for the repeated nudge, and exits silently without further escalation or pushback.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #24, #31, #35 where user dismisses check-ins noting they already ate or 'I've told you that'."
+    },
+    {
+      "name": "meal_with_medication_report",
+      "prompt": "Just took 10mg of mph and eaten pizza, the frozen one",
+      "criteria": "The meal_planner agent tracks daily meal intake via escalating check-ins. A good response acknowledges the meal (frozen pizza) and updates meal status. It should NOT provide medical commentary on the medication, ignore or neutrally note the MPH detail, and not escalate further about eating.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #15, #26, #39 where user reports taking 10mg MPH alongside eating."
+    },
+    {
+      "name": "retroactive_late_meal",
+      "prompt": "The lasagne was actually eaten yesterday around 23:00, just forgot to tell you earlier",
+      "criteria": "The meal_planner agent tracks daily meal intake via escalating check-ins. A good response accepts the retroactive meal report (lasagne at 23:00), updates the correct day's meal status, does not nag or escalate about the delay, and adjusts current check-in state so the user isn't re-prompted unnecessarily.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #13 and #20 'The lasagne was eaten tommorow around 23:00' reporting delayed lasagne."
+    }
+  ]
+}

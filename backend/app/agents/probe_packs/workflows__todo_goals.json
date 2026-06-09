@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/todo_goals",
+  "generated_at": "2026-06-09T23:32:26.479933+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "direct_todo_goals_overview",
+      "prompt": "Can you check my tasks and show me which goals they're linked to? I want to see the full tree.",
+      "criteria": "The agent acts as the /todo_goals handler. A good response fetches all active goals and pending todos, links each todo to its parent goal via linked_goal_id, and presents them in a clear hierarchical tree structure showing goals at the top level with their associated todos nested underneath.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #14 'Can you check my tasks?' and message #38 requesting a task list."
+    },
+    {
+      "name": "polish_replan_overview",
+      "prompt": "Siema, po tym całym replanowaniu dzisiaj — pokaż mi moje cele i przypisane do nich taski w drzewku. Chcę widzieć czy wszystko się spięło dobrze.",
+      "criteria": "The agent acts as the /todo_goals handler responding in Polish. A good response retrieves all active goals and pending todos after recent replanning, correctly links todos to goals via linked_goal_id, and displays a hierarchical tree so the user can verify that all todos are properly assigned to their parent goals.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #38 'get me a list of tasks I have after all these replanning' but in Polish, matching the bilingual corpus."
+    },
+    {
+      "name": "todo_goals_with_diagram_request",
+      "prompt": "Hey, can you get me a list of tasks I have together with the goals they belong to? I would also appreciate a diagram next to the normal list :)",
+      "criteria": "The agent acts as the /todo_goals handler. A good response fetches active goals and pending todos, links them via linked_goal_id into a hierarchical tree, presents the standard text-based tree, AND additionally provides a visual diagram (e.g., ASCII art, Mermaid, or structured visual representation) alongside the normal list as requested.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Directly inspired by message #38 'get me a list of tasks I have after all these replanning? I would also appreciate diagram next to the normal list'."
+    },
+    {
+      "name": "empty_state_check",
+      "prompt": "Show me my todo goals tree. I think I might have cleared most things but I'm not sure what's left.",
+      "criteria": "The agent acts as the /todo_goals handler. A good response queries for active goals and pending todos, correctly handles a potentially empty or near-empty state by reporting what exists (even if nothing), and presents whatever hierarchy is available. If empty, the response should clearly state that rather than returning an error.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #2 'Well it is empty xD' and message #14, covering the edge case where the user expects few or no results."
+    },
+    {
+      "name": "goal_progress_status",
+      "prompt": "I've been moving tasks around today — mark the gym task as done by the way. Now show me the full goals-todo tree so I can see where I stand on everything.",
+      "criteria": "The agent acts as the /todo_goals handler. A good response first processes the inline task update request (marking gym as done), then fetches the updated active goals and pending todos, links todos to goals via linked_goal_id, and presents a hierarchical tree reflecting the current state so the user can assess their overall progress.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #15 'mark mother call as done, move weight training for today' combined with the core /todo_goals display function."
+    }
+  ]
+}

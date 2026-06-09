@@ -1,0 +1,43 @@
+{
+  "agent_id": "research/techtree_orchestrator",
+  "generated_at": "2026-06-09T23:23:45.949854+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "full_pipeline_ingest_analyze_notify",
+      "prompt": "Run the full techtree pipeline now. Pull any new commits from the repo, analyze each one for relevant changes, generate feature suggestions from the analysis, and notify me on Telegram when done. If there are no new commits just let me know.",
+      "criteria": "The techtree_orchestrator agent must pull/ingest new commits from the monitored repo, dispatch each commit for analysis, trigger suggestion generation from the analysis results, and confirm Telegram notification. If no new commits exist, it should exit gracefully and report that. A good response outlines each pipeline step taken and confirms notification.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the general pattern of multi-step check-and-notify requests like msgs 9, 36, 37."
+    },
+    {
+      "name": "quick_check_new_commits",
+      "prompt": "Szybkie sprawdzenie – czy są jakieś nowe commity w techtree? Tylko ingest i daj znać.",
+      "criteria": "The techtree_orchestrator agent must invoke quick-check mode: ingest new commits without running analysis or suggestion generation, and report whether any new commits were found. A good response confirms the quick-check mode was used, states the commit count (or zero), and does NOT proceed to full analysis/suggestions.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by quick status-check messages like msgs 10, 15, 24 and Polish-language requests like msgs 13, 35."
+    },
+    {
+      "name": "analyze_and_email_suggestions",
+      "prompt": "Pull new commits from the techtree repo, run the commit analysis on each one, generate suggestions from the results, and send the full suggestion report to my email at ignacy.daszkiewicz@gmail.com. Include the commit hash, a summary of changes, and the generated suggestion for each commit.",
+      "criteria": "The techtree_orchestrator agent must pull commits, run commit analysis, generate suggestions, and email the compiled report. A good response confirms ingestion happened, describes the analysis and suggestion generation, and confirms the email was sent to the specified address with commit hashes, change summaries, and suggestions included.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by email-delivery requests like msgs 9, 36, 37, 38 that specify an explicit email address and desired output format."
+    },
+    {
+      "name": "pipeline_status_and_recent_commits",
+      "prompt": "Jaki jest aktualny status monitorowania techtree? Kiedy ostatnio pobierano commity, ile było analizowanych i czy są jakieś oczekujące sugestie, które jeszcze nie zostały wysłane?",
+      "criteria": "The techtree_orchestrator agent must report on its current pipeline state: last ingestion timestamp, number of commits recently analyzed, and any pending suggestions not yet notified. A good response provides concrete status data and does NOT trigger a new pipeline run unless explicitly asked.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by status-check messages like msgs 11, 19, 20, 34 asking 'how are you checking that' or 'check status of X'."
+    },
+    {
+      "name": "ingest_dispatch_analyze_single_commit",
+      "prompt": "I just pushed a commit to the techtree repo. Run the pipeline: ingest the new commit, dispatch it for analysis to see what changed, then generate suggestions based on the analysis. Don't send any email or Telegram notification this time – just give me the analysis and suggestions here in chat.",
+      "criteria": "The techtree_orchestrator agent must pull the latest commit, run commit analysis, and generate suggestions, but explicitly skip email/Telegram notification. A good response shows the commit details, the analysis output, the generated suggestions, and confirms notifications were suppressed as requested.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msgs 3, 8 ('how is the video going?', 'have you been able to generate the video earlier?') – checking on specific pipeline outputs without triggering external notifications."
+    }
+  ]
+}

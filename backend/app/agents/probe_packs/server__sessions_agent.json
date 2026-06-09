@@ -1,0 +1,43 @@
+{
+  "agent_id": "server/sessions_agent",
+  "generated_at": "2026-06-09T23:22:52.414072+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "who_logged_in_now",
+      "prompt": "Hey, can you check who is currently logged into the server? I want to make sure it's just me.",
+      "criteria": "The server/sessions_agent gathers active sessions using tools like 'who', 'w', or 'last' and reports SSH connections. A good response runs the appropriate command, lists each active session with username, terminal, source IP, and login time, and formats it into a clear Telegram-ready report.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 22/25/32 style of asking for server status checks; the agent's role directly maps to session reporting."
+    },
+    {
+      "name": "ssh_report_polish",
+      "prompt": "Hej, pokaż mi aktywne sesje SSH na serwerze. Chcę sprawdzić czy ktoś się nie wpiął.",
+      "criteria": "The server/sessions_agent gathers active sessions and reports SSH connections. A good response lists all active SSH sessions with details (user, remote host, login time), written in Polish to match the user's language, and flags whether any look unexpected or unfamiliar.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Polish-language probe inspired by the English/Polish mix in the corpus; mirrors the security-conscious tone of msg 31/33."
+    },
+    {
+      "name": "suspicious_session_check",
+      "prompt": "My server was acting a bit unstable when I was logged into UI earlier. Can you pull up all active sessions and recent logins? I want to see if there's anyone else connected right now or any logins I don't recognise.",
+      "criteria": "The server/sessions_agent gathers active sessions and reports SSH connections. A good response runs both current-session commands (who/w) and recent-login history (last), presents both in a formatted report, and explicitly highlights any sessions the user might not recognise, including timestamps and source addresses.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 33 ('My server is bit unstable when I'm logged into ui') combined with the agent's session-reporting role."
+    },
+    {
+      "name": "gpu_and_sessions_combo",
+      "prompt": "Can you also check my current GPU and ram usage? And while you're at it show me who's logged in right now and any recent SSH connections.",
+      "criteria": "The server/sessions_agent gathers active sessions and reports SSH connections. A good response provides the full session/SSH report (active users, terminals, IPs, login times) formatted as a Telegram message. The GPU/RAM portion may be noted as outside this agent's scope or delegated, but the session report must be complete and well-formatted.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 22 ('Can you also check my current GPU and ram usage?') and the pattern in msg 37 of combining multiple server-related requests."
+    },
+    {
+      "name": "last_logins_history",
+      "prompt": "Hey, show me the last few logins on the server. I want to see when was the last time I logged in and if there were any other logins in between. I'm ignacy by the way.",
+      "criteria": "The server/sessions_agent gathers active sessions and reports SSH connections. A good response uses the 'last' command output to show recent login history, filters or highlights entries for user 'ignacy', notes any logins from other users or unusual sources, and formats it all clearly for Telegram delivery.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 20 (revealing the username ignacy.daszkiewicz) and the agent's responsibility to report login history via 'last'."
+    }
+  ]
+}

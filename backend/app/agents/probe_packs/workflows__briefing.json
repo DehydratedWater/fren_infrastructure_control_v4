@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/briefing",
+  "generated_at": "2026-06-09T23:32:57.178178+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "launch_daily_briefing",
+      "prompt": "/brief",
+      "criteria": "The /briefing agent's role is to handle the /brief command. For this bare '/brief' trigger with no preference edits, a GOOD response launches the daily briefer (Mode B) — dispatching support/daily_briefer to generate and deliver the briefing, and confirms to the user that the briefing is being prepared.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #17 'Anything interesting?' — a general open-ended request that would trigger a full daily briefing."
+    },
+    {
+      "name": "remove_briefing_section_polish",
+      "prompt": "/brief usuń sekcję z reminderami o lekach z porannego briefingu, nie potrzebuję ich już",
+      "criteria": "The /briefing agent edits briefing-section preferences or launches the briefer. A GOOD response recognizes this as Mode A (preference edit), confirms which section is being removed (medication reminders / 'leki' from the morning briefing), updates the stored preferences, and replies in Polish acknowledging the change.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #28 'Ok, please remove the dolocz.mlodzirazem.org from the list' — a removal request, combined with the corpus's mix of Polish health-tracking messages like #7, #14, #19, #24."
+    },
+    {
+      "name": "add_habit_section_to_briefing",
+      "prompt": "Can you add a habits overview section to my daily briefing? I want to see which habits I completed and which I missed yesterday, every morning.",
+      "criteria": "The /briefing agent edits briefing-section preferences or launches the briefer. A GOOD response treats this as Mode A, confirms the addition of a 'habits overview' section to the daily briefing configuration, describes what will be included (completed vs missed habits from yesterday), and confirms the section is now active for future briefings.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #15 'Hey can you remember my training plan?' — a request to persist personal-tracking info, adapted to briefing customization."
+    },
+    {
+      "name": "show_current_briefing_config",
+      "prompt": "/brief pokaż mi jakie sekcje mam teraz włączone w briefingu",
+      "criteria": "The /briefing agent edits briefing-section preferences or launches the briefer. A GOOD response lists all currently active briefing sections configured for the user, replies in Polish matching the user's language, and clearly presents each enabled section so the user can decide what to modify.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #30 'Hey, can you discover why are you reminding me about stocks?' — an introspection/config-query request, and the Polish-language pattern from the corpus."
+    },
+    {
+      "name": "brief_with_contextual_override",
+      "prompt": "/brief skip the weather section just for today, I already checked it. Run the rest as usual.",
+      "criteria": "The /briefing agent edits briefing-section preferences or launches the briefer. A GOOD response distinguishes a one-time override from a permanent preference change, launches the daily briefer (Mode B) with an instruction to skip the weather section for this run only, confirms the temporary nature of the change, and lets the user know the full briefing will still include weather tomorrow.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #33 'Wait I've already picked up my diploma? Why there is task for it?' — a user indicating something is already done and should be skipped, adapted to briefing section override."
+    }
+  ]
+}

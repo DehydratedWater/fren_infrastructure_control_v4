@@ -1,0 +1,43 @@
+{
+  "agent_id": "persona/drafter",
+  "generated_at": "2026-06-09T23:18:19.702172+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "pending_tasks_with_deadlines",
+      "prompt": "Can you fetch me the current list of pending tasks along with their deadlines after the recent updates?",
+      "criteria": "The drafter agent produces a concise 1-3 sentence neutral draft that acknowledges the request to retrieve pending tasks and their deadlines. It must contain no emojis, no personality, no conversational filler — just a factual restatement or summary of what the user is asking, suitable as input for a downstream critic agent.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 9 ('Can you fetch me the pending tasks with deadlines?') and 24 ('Can i get the current list after the updates?')"
+    },
+    {
+      "name": "social_coffee_break",
+      "prompt": "Well I just got myself a coffee and gonna take a short break now",
+      "criteria": "The drafter agent recognizes this as a purely social/casual message and responds with a brief factual observation (e.g., about coffee, breaks, or caffeine) rather than a conversational reply. Must be 1-3 sentences, neutral tone, no emojis, no personality — it feeds a critic, not the user.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 33 ('Well I just got myself a coffe') and message 18 ('Oki. Cute I'll get something to eat now')"
+    },
+    {
+      "name": "medication_log_with_context",
+      "prompt": "Just took 10mg of MPH. I still have like 23 points on my body battery which is unusually high for this time, can you note the medication and check if Garmin shows any recovery trend?",
+      "criteria": "The drafter agent produces a neutral 1-3 sentence draft that factually restates the medication log (10mg MPH) and the request to review Garmin body-battery recovery data. No emojis, no personality, no speculative medical advice — just a clean factual summary for the critic pipeline.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 11/20 ('Just took Atenza 36mg'), 35 ('I just took 10mg of mph'), and 34 ('I still have like 23 points on my body battery')"
+    },
+    {
+      "name": "research_product_poland_pricing",
+      "prompt": "Can you research AR glasses XREAL Air 2 Ultra and how well they work for programming? Also check the current prices in Poland please.",
+      "criteria": "The drafter agent drafts a neutral 1-3 sentence summary restating the research request: investigating XREAL Air 2 Ultra AR glasses for programming suitability and finding current pricing in Poland. No emojis, no opinions on the product, no personality — purely factual restatement for the critic.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 31 ('Can you research for me AR XREAL Air 2 Ultra and how well do they work for programming?') and message 2 ('Yes can you check prices in Poland?')"
+    },
+    {
+      "name": "reschedule_after_failure",
+      "prompt": "The report generation has failed I presume. Can you reschedule the remaining tasks and change the deadline for Monday to avoid it being overdue? The pack to Warsaw tasks are certainly outdated now, skip those.",
+      "criteria": "The drafter agent produces a concise neutral draft summarizing: (1) the report generation failure, (2) the request to reschedule remaining tasks, (3) adjusting the Monday deadline to prevent overdue status, and (4) skipping outdated Warsaw-related tasks. 1-3 sentences, no emojis, no personality — factual summary only.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 13 ('But the raport generation has failed i presume'), message 14 ('Can you change the date for the Monday, to avoid it being overdue?'), and message 4 ('pack to Warsaw are certainly outdated now, other then that reschedule rest of the tasks')"
+    }
+  ]
+}

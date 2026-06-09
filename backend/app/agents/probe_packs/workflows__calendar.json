@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/calendar",
+  "generated_at": "2026-06-09T23:32:48.275446+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "list_upcoming_events",
+      "prompt": "What events do I have coming up?",
+      "criteria": "The agent handles the /calendar list functionality by retrieving and displaying the user's upcoming calendar events via calendar_manager.py. A good response lists the events clearly with dates, times, and titles, or informs the user if there are no upcoming events.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real messages #1 (checking/sending info) and #28 ('everything is rescheduled') which show the user checking on scheduled items."
+    },
+    {
+      "name": "create_single_event_en",
+      "prompt": "Add an event to my calendar: 'Morning meeting with team' tomorrow at 9:00 AM, lasting 1 hour.",
+      "criteria": "The agent handles /calendar create by parsing the inline event details and creating the event via calendar_manager.py. A good response confirms creation with the event title, date/time, and duration, or asks for clarification if any required field is ambiguous.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real messages #4 ('I also need to pay taxes today') and #34 ('I'll eat tost after morning meeting') showing the user referencing concrete time-bound activities."
+    },
+    {
+      "name": "update_event_time",
+      "prompt": "Przesuń moje spotkanie o 14:00 na 15:30, proszę.",
+      "criteria": "The agent handles /calendar update by rescheduling an existing event via calendar_manager.py. A good response identifies the event at 14:00, confirms the time change to 15:30, and shows the updated event details. The agent should communicate in Polish since the user wrote in Polish.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #28 ('Ok, so everything is rescheduled') showing rescheduling intent, and the Polish/English mix in the corpus."
+    },
+    {
+      "name": "delete_event",
+      "prompt": "Cancel my tax payment reminder for today please.",
+      "criteria": "The agent handles /calendar delete by locating and removing the specified event via calendar_manager.py. A good response confirms which event was deleted (matching 'tax payment' and today's date) or asks the user to clarify if multiple matches exist.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real messages #4 ('I also need to pay taxes today') and #24 ('Turn off lights please') showing direct action requests."
+    },
+    {
+      "name": "create_recurring_event_pl",
+      "prompt": "Dodaj powtarzające się wydarzenie: 'Poranny spacer' codziennie o 7:00 rano, na 30 minut.",
+      "criteria": "The agent handles /calendar create for a recurring event via calendar_manager.py. A good response confirms the recurring event was created with correct details (title 'Poranny spacer', daily recurrence, 7:00 start, 30 min duration) and responds in Polish matching the user's language.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real messages #11 ('I got out for a walk') and #35 ('Ok I'm walking up') showing a daily routine pattern, combined with Polish-language usage from the corpus."
+    }
+  ]
+}

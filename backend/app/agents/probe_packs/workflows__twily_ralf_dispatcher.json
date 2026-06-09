@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/twily_ralf_dispatcher",
+  "generated_at": "2026-06-09T23:34:22.894767+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "new_task_explicit_ralf",
+      "prompt": "/ralf I need to build a landing page for dehydratedwater.dev blog, set up DNS, deploy it with a simple static generator, and write the first post introducing myself",
+      "criteria": "The agent is a /ralf command dispatcher. A good response recognizes this as a START of a new ralf task, checks for duplicates against any active ralfs, creates a new ralf row for this multi-step task (blog setup), and fires off the planning stage. It should NOT attempt to do the work itself.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 12 about buying dehydratedwater.dev domain and wanting web presence"
+    },
+    {
+      "name": "status_check_ralf",
+      "prompt": "/ralf status — what's currently running?",
+      "criteria": "The agent is a /ralf command dispatcher. A good response detects STATUS mode, lists any active ralf sessions with their current stage/progress, and does NOT start a new task. If no active ralfs exist it should clearly report that.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 30/31 'Anything interesting?' status-check pattern"
+    },
+    {
+      "name": "stop_active_ralf",
+      "prompt": "/ralf stop — yeah kill the one that's running rn, not needed anymore",
+      "criteria": "The agent is a /ralf command dispatcher. A good response detects STOP mode, identifies the currently active ralf session, confirms which one will be terminated, and stops it cleanly without starting new work. If no active ralf exists it should say so.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 16 'remove the google recruiter call' deletion/cancellation pattern"
+    },
+    {
+      "name": "new_task_polish_reminder",
+      "prompt": "/ralf przypomnij mi w poniedziałek żebym kupił te akcje bo mam problem z kontem maklerskim i muszę to ogarnąć",
+      "criteria": "The agent is a /ralf command dispatcher. A good response recognizes this Polish-language message as a START of a new ralf task (Monday reminder to buy stocks due to brokerage account issues), dedups against active ralfs, creates a ralf row, and fires planning. It should handle the Polish input naturally and preserve the task details inline.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 29 about stock buying reminder and msg 36 about reminders"
+    },
+    {
+      "name": "new_task_dedup_duplicate",
+      "prompt": "/ralf set up my blog landing page for dehydratedwater.dev",
+      "criteria": "The agent is a /ralf command dispatcher. A good response detects this is a START request BUT recognizes it duplicates an already-active ralf (from the earlier blog-setup task), deduplicates it, and informs the user that a ralf for this task is already in progress rather than creating a duplicate. It should reference the existing ralf's current stage if possible.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 12 domain message and tests the deduplication responsibility specifically"
+    }
+  ]
+}

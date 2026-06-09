@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/disk_monitor",
+  "generated_at": "2026-06-09T23:32:31.887885+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "direct_disk_monitor_trigger",
+      "prompt": "/disk_monitor",
+      "criteria": "Agent acts as /disk_monitor command trigger. It must run df on the system, check each partition's usage, and report back with a clear summary of all partition usage percentages and hostnames. If any partition is over 90%, the response must include a sharp alert naming the partition, usage %, and hostname. If none are over 90%, it should confirm all partitions are within safe limits.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "No single real message inspired this; it is the canonical trigger command for the agent."
+    },
+    {
+      "name": "polish_disk_check_request",
+      "prompt": "sprawdz mi dyski na serwerze",
+      "criteria": "Agent acts as /disk_monitor command trigger. Even though the user wrote in Polish rather than using the exact /disk_monitor command, a good response interprets the intent to check disk/partition usage, runs df, and reports partition usage with hostname. Any partition over 90% must trigger a sharp alert with partition name, usage %, and hostname.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 13 'Can you check events from today?' — natural-language check requests phrased casually in Polish."
+    },
+    {
+      "name": "cleanup_recheck_after_alert",
+      "prompt": "Ok I cleaned up some logs, can you check disk usage again?",
+      "criteria": "Agent acts as /disk_monitor command trigger. A good response re-runs the disk check via df and reports current partition usage with hostname, noting whether the cleanup brought any previously high partitions below the 90% alert threshold. It should give concrete numbers, not vague reassurance.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 1 'Okay, let me clean' — user acknowledging a cleanup action, likely in response to a prior disk alert."
+    },
+    {
+      "name": "specific_partition_concern",
+      "prompt": "Is the root partition on the main server getting full? Last time it was at like 87%",
+      "criteria": "Agent acts as /disk_monitor command trigger. A good response runs df, checks all partitions (with specific attention to root), and reports the current usage percentage for the root partition along with hostname. It should compare against the 90% alert threshold and confirm whether it has crossed into danger zone or is still below.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 31 'Are you sure my body battery is at 5?' — user questioning a previously reported metric and wanting verification."
+    },
+    {
+      "name": "polish_alert_followup",
+      "prompt": "dostalem alert o dysku, co jest zapchane?",
+      "criteria": "Agent acts as /disk_monitor command trigger. The user received a prior disk alert and is asking what is full. A good response runs df, identifies any partitions currently over 90%, and reports them clearly with partition path, exact usage %, and hostname. If nothing is currently over 90%, it should state that and suggest the situation may have been resolved.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 1 and 23 — user reacting to a notification/alert and seeking clarification, phrased in Polish."
+    }
+  ]
+}

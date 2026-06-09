@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/food",
+  "generated_at": "2026-06-09T23:31:19.876864+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "add_recipe_from_text",
+      "prompt": "/food can you add this recipe to my collection? Here it is: \"Kanapka z pastą jajeczną i rzodkiewką. Ugotuj 4 jajka na twardo, ostudź i rozgnieć widelcem. Dodaj 2 łyżki majonezu, sól, pieprz, łyżkę szczypiorku. Wymieszaj. Nałóż na chleb żytni, dodaj pokrojoną rzodkiewkę.\"",
+      "criteria": "Agent acts as /food trigger and recipe parser. A good response confirms the recipe was parsed and stored, extracting structured fields (title, ingredients with quantities, steps) from the inline Polish text, and shows the user what was captured for verification.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message style #13 (long inline text) and #6 (list request), adapted for recipe_parser delegation."
+    },
+    {
+      "name": "suggest_dinner_from_preferences",
+      "prompt": "/food I have no idea what to eat for dinner today, can you suggest something? I've got chicken, rice, broccoli, soy sauce, garlic, and ginger in the fridge. Something quick preferably, under 30 minutes.",
+      "criteria": "Agent acts as /food trigger delegating to food_suggester. A good response proposes at least one concrete meal suggestion using the listed ingredients, respects the time constraint, and ideally asks about spice or cuisine preference to refine further.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by #18 (math not adding up / uncertainty), #14 (does it seem like it's working), adapted for food suggestion with inlined ingredient list."
+    },
+    {
+      "name": "save_new_restaurant",
+      "prompt": "/food save this restaurant for me: \"Bezgluten\" on ul. Mokotowska 52, Warsaw. They do gluten-free baked goods, pierogi, and cakes. Price range is moderate. I'd say 4 out of 5 stars from what I've heard. Good for coeliac friends visiting.",
+      "criteria": "Agent acts as /food trigger delegating to restaurant_intake. A good response parses and stores structured restaurant data (name, address, cuisine type, price range, rating, notes) from the inline text, confirms what was saved, and may ask if the user wants tags like 'gluten-free' or 'coeliac-friendly' attached.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by #9 (providing structured info inline) and #17 (removing/adding items to tracked lists), adapted for restaurant intake."
+    },
+    {
+      "name": "list_saved_recipes",
+      "prompt": "/food can you actually list all my saved recipes and restaurants? I want to see what I've got saved so far, I feel like I forgot half of them xD",
+      "criteria": "Agent acts as /food trigger querying food_manager. A good response retrieves and displays the user's saved recipes and restaurants in a clear, organized list format (categorized), acknowledging the casual tone, and offers to filter or show details on any specific item.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Directly inspired by #6 'Can you actually list them?' and #30 'What is it xD?' casual tone, applied to food listing."
+    },
+    {
+      "name": "set_dietary_preference",
+      "prompt": "/food update my preferences please: I'm trying to eat less carbs, so low-carb options would be great. Also I don't eat shellfish at all, allergy. And generally prefer Polish and Asian cuisine. Oh and I usually cook for one person only.",
+      "criteria": "Agent acts as /food trigger managing preferences via food_manager. A good response acknowledges each stated preference (low-carb, shellfish allergy, cuisine preferences, portion size), confirms they are saved, and explains how these will influence future suggestions and filtering.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by #20 (strategize and use knowledge about me) and #17 (marking/removing preferences), adapted for dietary preference management."
+    }
+  ]
+}

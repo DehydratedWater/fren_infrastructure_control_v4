@@ -1,0 +1,43 @@
+{
+  "agent_id": "persona/orchestrator",
+  "generated_at": "2026-06-09T23:18:03.764409+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "trivial_greeting_routing",
+      "prompt": "Hey, how's it going? Just chilling after lunch.",
+      "criteria": "The orchestrator's role is to classify incoming messages as trivial or substantive and route accordingly. A GOOD response recognizes this as a low-substance social greeting (no task, no info to log, no question) and routes it to quick_ack or responds with a brief, warm acknowledgment without spawning deep analysis.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #6 'Hey how are you?' and #26 'Ok, sure' — trivial social exchanges with no actionable content."
+    },
+    {
+      "name": "medication_log_substantive",
+      "prompt": "I just took 15mg of mph and I'm about to eat some leftovers from yesterday.",
+      "criteria": "The orchestrator must identify this as a substantive message containing a medication log (15mg mph) and a routine status update. A GOOD response routes this to context analysis and thinking — it should acknowledge the medication intake, possibly log it, and give a natural conversational reply. It must NOT treat this as trivial.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #1, #13, #20, #32 which all follow the pattern 'Just took Xmg of mph' — recurring medication reports that the system tracks."
+    },
+    {
+      "name": "multi_intent_task_management",
+      "prompt": "Ok, please mark the groceries shopping as done, and also remind me to call the dentist tomorrow morning. Also I just got back from my evening walk.",
+      "criteria": "The orchestrator must detect THREE distinct intents in one message: (1) complete a todo item (groceries shopping), (2) create a reminder (call dentist tomorrow morning), (3) log a status update (back from walk). A GOOD response routes this as substantive, decomposes the multi-intent message, and confirms each action. It should not drop any of the three requests.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #16 (multi-intent: remove video + finished work + cooking plan) and #38 (mark done + reschedule task)."
+    },
+    {
+      "name": "polish_home_automation_command",
+      "prompt": "Ściemnij lampkę na biurku do 30% i włącz muzykę lo-fi do skupienia, chcę posiedzieć nad kodem.",
+      "criteria": "The orchestrator must recognize this Polish-language message as substantive with concrete home automation and music requests (dim desk lamp to 30%, play lo-fi focus music, user wants to code). A GOOD response routes it to thinking and responding, handles the Polish text naturally, and addresses both the smart-home command and the music request. Language must not be a barrier to proper routing.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #29 'Please also dim those three lights above me a bit, set them to 20%, leave the main one' — a direct home automation command. Polish reflects the corpus's bilingual nature."
+    },
+    {
+      "name": "search_request_with_fallback",
+      "prompt": "Do you remember that article about ADHD masking strategies we talked about? Can you find it again? If not, just search for something similar and remind me to look at it this weekend.",
+      "criteria": "The orchestrator must classify this as substantive — it contains a retrieval request (find a previously discussed article), a fallback instruction (search for similar content if not found), and a task creation (remind me this weekend). A GOOD response routes to context analysis and thinking, attempts retrieval, and if the specific article can't be found, offers a search alternative and sets the reminder. It should not fail silently on any of the three components.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #14 'can you find me the link?', #16 'remove that video from todo list if you are unable to find it', and #17 'Not at the moment but remind me' — search with fallback and reminder patterns."
+    }
+  ]
+}

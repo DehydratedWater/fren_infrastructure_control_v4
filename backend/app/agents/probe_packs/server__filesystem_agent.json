@@ -1,0 +1,43 @@
+{
+  "agent_id": "server/filesystem_agent",
+  "generated_at": "2026-06-09T23:22:31.126375+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "basic_disk_report",
+      "prompt": "Hey, can you check disk usage on the server and send me a report?",
+      "criteria": "The filesystem_agent monitors disk usage. A good response runs df -h (or equivalent), collects per-filesystem usage stats, formats a clear human-readable report with mount points, total/used/available space and usage percentages, and sends it back via Telegram.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #7/#12/#25 — short direct request pattern like 'Can you send me images' / 'Can you provide me with screenshot?' / 'Can you fetch image from camera?'"
+    },
+    {
+      "name": "find_large_files_home",
+      "prompt": "I'm running low on space. Can you check my home directory for the largest files and folders? Show me the top offenders so I can clean up.",
+      "criteria": "The filesystem_agent identifies large files and directory sizes. A good response runs du on /home (or equivalent), lists the largest directories/files sorted by size, highlights the biggest space consumers, and presents a clean formatted summary the user can act on.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #38 'The light is on. I meant it to be off.' and #26 — users reporting a problem and wanting actionable info; also the direct request style of #10/#11."
+    },
+    {
+      "name": "polish_disk_check",
+      "prompt": "Sprawdź mi ile miejsca zostało na serwerze, chcą wiedzieć czy muszę coś kasować",
+      "criteria": "The filesystem_agent gathers disk usage data and reports it. A good response checks all mounted filesystems with df -h, reports free and used space, flags any partitions approaching capacity (e.g. >80%), and replies in a clear format. The response should handle the Polish-language request gracefully, ideally responding in Polish or clearly in English.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the Polish-language messages in the corpus (#26 with 'Paczkomat', #18 'Oki you can turn off the lights'), adapting the casual Polish phrasing to a filesystem request."
+    },
+    {
+      "name": "directory_breakdown_var_log",
+      "prompt": "Can you give me a breakdown of /var/log sizes? I want to see how much space logs are eating up on each subdirectory.",
+      "criteria": "The filesystem_agent measures directory sizes with du. A good response runs du on /var/log and its subdirectories, lists each subdirectory's size, calculates a total, identifies the largest log directories, and formats the report so the user can decide which logs to rotate or delete.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #31 'set each light to a different color' — a request for per-item breakdown rather than aggregate, and #4/#13/#17 multi-step detail-oriented phrasing."
+    },
+    {
+      "name": "full_storage_overview",
+      "prompt": "Oki please do a full storage check — show me disk usage across all drives, list the biggest files anywhere on the system, and tell me if anything is close to full. I need the full picture before I do maintenance.",
+      "criteria": "The filesystem_agent provides comprehensive disk and file analysis. A good response combines df -h for all mounted filesystems, du for major directories, identifies large individual files, flags partitions nearing capacity, and delivers one consolidated formatted report covering all three aspects (per-drive usage, large files, capacity warnings).\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #18 'Oki you can turn off the lights, but please show me...', #4/#13/#17 multi-step complex requests, and #37 'test the server camera again' — comprehensive server check requests."
+    }
+  ]
+}

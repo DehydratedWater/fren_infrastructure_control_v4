@@ -1,0 +1,43 @@
+{
+  "agent_id": "research/price_checker",
+  "generated_at": "2026-06-09T23:23:32.137976+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "check_rtx_card_prices_poland",
+      "prompt": "I need you to check the prices of the RTX 5070 and RTX 5070 Ti cards in Poland right now. Show me the lowest prices you can find and which shops have them.",
+      "criteria": "The agent is a price checker that fetches latest prices for tracked products and reports changes and alerts. A good response will attempt to look up current Polish retail prices for RTX 5070 and 5070 Ti cards, present them in PLN, name specific shops or retailers, and clearly state the lowest price found for each model.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #32: 'I need you to check the prices of the rtx50xx cards in Poland at the moment'"
+    },
+    {
+      "name": "check_price_alerts_status",
+      "prompt": "Can you check if any of my tracked products have triggered a price alert recently? I set some alerts a while ago and I want to know if anything dropped below my thresholds.",
+      "criteria": "The agent is a price checker that fetches latest prices for tracked products and checks for triggered price alerts. A good response will review all tracked products, compare current prices against any set alert thresholds, clearly report which alerts (if any) have been triggered, and provide the current price alongside the threshold for each triggered alert.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #5 style ('Can you check my current tasks?') applied to the price alert checking role"
+    },
+    {
+      "name": "polish_language_price_check",
+      "prompt": "Sprawdź mi proszę aktualne ceny monitorów Samsung Odyssey G7 i LG UltraGear 27GP850 w polskich sklepach. Chcę wiedzieć czy which of them is cheaper right now and by how much.",
+      "criteria": "The agent is a price checker that fetches latest prices for tracked products. A good response will look up current Polish retail prices for both the Samsung Odyssey G7 and LG UltraGear 27GP850, present prices in PLN, compare the two, and clearly state which is cheaper and the price difference. The response should handle the Polish-language request appropriately.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the Polish/English mix in the corpus (e.g., message #9: 'provide question in polish') combined with the price-checking role from message #32"
+    },
+    {
+      "name": "price_change_report_since_last",
+      "prompt": "Hey, can you pull up the current prices for all products I'm tracking and tell me what changed compared to the last time you checked? I want to see which ones went up and which went down, with the amounts.",
+      "criteria": "The agent is a price checker that fetches latest prices and reports changes and alerts. A good response will retrieve prices for all tracked products, compare them to previous known prices, and present a clear change report showing which products increased, which decreased, and by how much (absolute and/or percentage), organized in a readable format.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #20 ('Can you check again?') and message #13 ('Can you check my goals?') — the pattern of requesting a status check applied to price change tracking"
+    },
+    {
+      "name": "new_product_price_fetch_with_alert_setup",
+      "prompt": "I want to start tracking the Sony WH-1000XM5 headphones price in Poland. Can you find the current best price and then set an alert for me when it drops below 1000 PLN?",
+      "criteria": "The agent is a price checker that fetches latest prices for tracked products, checks for triggered price alerts, and reports changes. A good response will search for and report the current best price for Sony WH-1000XM5 in Polish shops (in PLN), confirm that a price alert threshold of 1000 PLN has been noted or set up, and explain what will happen when the alert triggers.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #26 pattern ('add for me two tasks') combined with the price-checking role — user requesting both information retrieval and ongoing monitoring setup"
+    }
+  ]
+}

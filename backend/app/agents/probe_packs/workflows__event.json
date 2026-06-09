@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/event",
+  "generated_at": "2026-06-09T23:33:04.910198+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "medication_logging_atenza",
+      "prompt": "/event Just took 36mg of Atenza",
+      "criteria": "The agent acts as the /event command trigger parsing natural language into life events. A good response confirms the medication event was recorded with correct details (substance: Atenza, dose: 36mg, type: medication) and acknowledges it clearly, likely using event_manager.py to store it.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real message #12: 'Just took 36mg of Atenza'"
+    },
+    {
+      "name": "weight_tracking_kg",
+      "prompt": "/event Today I weighed myself at 83.2kg",
+      "criteria": "The agent acts as the /event command trigger parsing natural language into life events. A good response logs the weight event (83.2 kg), confirms the entry, and may note it was stored via event_manager.py. It should correctly parse the numeric value and unit without confusion.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real message #15: 'Today I weighted myself at 84,65kg'"
+    },
+    {
+      "name": "walk_activity_logging",
+      "prompt": "/event Wyszedłem na spacer, idę do sklepu po kwiaty",
+      "criteria": "The agent acts as the /event command trigger parsing natural language into life events. A good response recognizes the Polish-language walk event (walk + shopping/flowers purpose), logs it as a walk/activity event with the parsed details, and confirms the entry. It must handle Polish text correctly.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real messages #1 ('I'll be going for a walk to buy flowers now') and #18 ('I got out for a walk') — combined into a Polish-language variant"
+    },
+    {
+      "name": "food_intake_logging",
+      "prompt": "/event Just ate yogurt and made myself a coffee",
+      "criteria": "The agent acts as the /event command trigger parsing natural language into life events. A good response logs the food/drink intake event (yogurt + coffee), confirms both items were captured, and stores the event properly as a food/nutrition type entry via event_manager.py.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real messages #16 ('I ate a youghurt and made myself a coffe') and #36 ('Just ate yogurt+ made myself a coffee')"
+    },
+    {
+      "name": "plot_weight_history",
+      "prompt": "/event pokaż wykres wagi z ostatniego tygodnia",
+      "criteria": "The agent acts as the /event command trigger that also plots via visual_report.py. A good response retrieves the user's weight records from the past 7 days, generates a plot/chart (using visual_report.py), and delivers the visual report. It must handle the Polish-language request ('show weight chart from the last week') and produce a time-series visualization of weight data.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message #15 ('Today I weighted myself at 84,65kg') and the agent's plotting capability via visual_report.py"
+    }
+  ]
+}

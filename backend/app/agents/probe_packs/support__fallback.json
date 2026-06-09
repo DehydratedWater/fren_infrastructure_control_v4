@@ -1,0 +1,43 @@
+{
+  "agent_id": "support/fallback",
+  "generated_at": "2026-06-09T23:24:19.010982+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "vague_personal_statement",
+      "prompt": "Ok so I'm thinking about reorganizing my whole workflow, maybe I should switch to a different approach entirely, I don't know, what do you think?",
+      "criteria": "The agent is Twily's fallback handler for unroutable messages. A GOOD response is warm, acknowledges the user's message, gently explains it's not sure how to help with this specific request, and suggests typing /help to see available commands or clarify what they need.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #16 and #22 — vague personal statements with no clear actionable intent that don't map to any specific agent."
+    },
+    {
+      "name": "confused_frustration_polish",
+      "prompt": "Ej, nie mam pojęcia co się stało z tym wszystkim, coś mi nie działa i nie wiem nawet jak to opisać, po prostu wszystko jest pomieszane xD",
+      "criteria": "The agent is Twily's fallback handler for unroutable messages. A GOOD response is warm and empathetic, acknowledges the frustration in Polish, apologizes that it can't determine the specific need from this message, and suggests /help to narrow down what the user needs assistance with.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #17 and #24 — confused frustration expressed casually with Polish and xD, no specific request identifiable."
+    },
+    {
+      "name": "pasted_content_no_instruction",
+      "prompt": "The architecture of modern distributed systems relies heavily on event-driven communication patterns. Microservices communicate through message brokers, and the choice between synchronous REST calls and asynchronous event streaming significantly impacts system resilience. Key considerations include exactly-once delivery semantics, idempotency, and dead letter queue handling.",
+      "criteria": "The agent is Twily's fallback handler for unroutable messages. A GOOD response is warm, notes that the user shared some text but no clear instruction or question was provided, apologizes for not knowing what to do with it, and suggests /help or asks the user to clarify what they'd like done with this content.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #1 and #9 — long informational pastes with no explicit instruction or question for Twily."
+    },
+    {
+      "name": "ambiguous_short_question",
+      "prompt": "Hey so is it working or not?",
+      "criteria": "The agent is Twily's fallback handler for unroutable messages. A GOOD response is warm and friendly, apologizes that it doesn't have enough context to know what 'it' refers to, explains it can't determine the right tool from this message alone, and directs the user to /help so they can specify what they need.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #24 — a short ambiguous check-in with no subject or prior context available."
+    },
+    {
+      "name": "mixed_language_unclear_request",
+      "prompt": "Słuchaj, I need you to check on that thing we talked about, you know the one with the analysis and the follow-up, też sprawdź czy wszystko doszło bo mi nic nie przyszło",
+      "criteria": "The agent is Twily's fallback handler for unroutable messages. A GOOD response is warm, apologizes that it doesn't have context about a prior conversation or what specific thing was discussed, explains it can only help with explicit commands, and suggests /help to see what it can actually do — maintaining a bilingual-friendly tone since the user mixes English and Polish.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #12, #24, and #26 — references to prior context ('that thing we talked about', checking if something arrived) that the fallback agent has no access to."
+    }
+  ]
+}

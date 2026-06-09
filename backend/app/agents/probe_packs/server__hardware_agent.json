@@ -1,0 +1,43 @@
+{
+  "agent_id": "server/hardware_agent",
+  "generated_at": "2026-06-09T23:22:32.935459+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "general_hardware_checkup",
+      "prompt": "Hey, my server feels a bit unstable when I'm logged into the UI, can you pull up a full hardware health report? I want to see CPU, memory, temperature, uptime, and docker container status all in one go.",
+      "criteria": "The server/hardware_agent gathers host hardware health via commands like top, free -h, sensors, uptime, and docker ps, then formats a clear monitoring report. A good response runs all relevant checks and presents a structured summary covering CPU load, RAM usage, temperatures, uptime, and running containers, highlighting anything abnormal.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real message #34: 'My server is bit unstable when I'm logged into ui'"
+    },
+    {
+      "name": "docker_container_audit",
+      "prompt": "Can you check which docker containers are running right now and which ones are stopped? Give me a quick status of all containers with their uptime.",
+      "criteria": "The server/hardware_agent monitors docker container status as part of its hardware health role. A good response runs docker ps (and docker ps -a or equivalent) and reports each container's name, status (running/stopped), and uptime in a readable format.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real message #35 references a failed job that 'might need attention' — inspired checking container/job health proactively"
+    },
+    {
+      "name": "memory_and_disk_check_pl",
+      "prompt": "Hej, mogę dostać raport zużycia RAM i dysku? Chcę sprawdzić czy nie kończy mi się miejsce na serwerze.",
+      "criteria": "The server/hardware_agent gathers host hardware health including memory usage. A good response runs free -h and df -h (or equivalent), then formats a concise Polish-friendly report showing RAM usage (total/used/free) and disk partition usage, flagging any partitions near capacity.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Polish-language probe inspired by the mixed EN/PL corpus; message #21 and #34 reference server concerns"
+    },
+    {
+      "name": "temperature_alert_check",
+      "prompt": "Can you check the server temperatures and overall load? I want to make sure nothing is overheating, especially since it's been running heavy jobs. A job failed 5 times in a row recently and got paused — might be a hardware issue.",
+      "criteria": "The server/hardware_agent reads sensor data and system load. A good response runs sensors and top (or equivalent), reports CPU/GPU temperatures and current load averages, and comments on whether temperatures are within safe range given the workload context.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real message #35: 'Job has failed 5 times in a row. Pausing it for 1h. Might need attention!' — reframed as a hardware health concern"
+    },
+    {
+      "name": "full_status_with_context",
+      "prompt": "Oki, I need a quick server health snapshot — uptime, top processes by CPU, free memory, and sensor readings. Just the highlights, nothing too verbose. Something I can glance at on my phone via Telegram.",
+      "criteria": "The server/hardware_agent formats monitoring reports for Telegram delivery. A good response runs uptime, top (batch mode), free -h, and sensors, then formats a compact Telegram-friendly summary with only the most relevant highlights (e.g., top 5 CPU hogs, RAM summary, key temps, uptime duration), avoiding wall-of-text output.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Real message #23 style ('Oki, please turn off lights and also prepare me a picture') — casual multi-part request tone adapted for hardware monitoring"
+    }
+  ]
+}

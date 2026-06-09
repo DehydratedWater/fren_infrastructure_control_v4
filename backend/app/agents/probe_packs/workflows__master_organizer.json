@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/master_organizer",
+  "generated_at": "2026-06-09T23:33:01.285127+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "multi_domain_planning_trigger",
+      "prompt": "Hey, can you launch the master organizer? I've got thesis defense prep, a recruiter task I need to move, CV finishing, and I should fit in a walk and proper sleep. I need a holistic plan that ties all of this together.",
+      "criteria": "The agent's role is to check the master_organizer lock and, if free, launch support/master_organizer detached with the lock. A GOOD response confirms it is launching (or has launched) the master organizer subsystem, checks or references the lock status, and does NOT attempt to do the planning itself.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 3, 15, 27, 32 — user juggling thesis, recruiter, CV tasks and life routines simultaneously."
+    },
+    {
+      "name": "polish_chaos_coordination",
+      "prompt": "Odpal master organizer proszę, muszę ogarnąć ten tydzień. Mam powtórkę do obrony magisterki, cv do skończenia, rekrutera obsłużyć, i w międzyczasie chciałbym też iść na spacer i normalnie się wyspać.",
+      "criteria": "The agent's role is to check the master_organizer lock and launch support/master_organizer if free. A GOOD response acknowledges the request in Polish, checks/initiates the lock mechanism, launches the master organizer, and does NOT produce a plan or schedule itself — it delegates entirely to the launched agent.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 15, 32, 34, 37 — Polish phrasing with 'obrona magisterki', 'spacer', mixed with task management."
+    },
+    {
+      "name": "explicit_launch_request",
+      "prompt": "Can you run the master organizer? I need everything pulled together — my todos, habits, calendar events, and the research pipeline all need to be coordinated into one actionable plan.",
+      "criteria": "The agent's role is a launcher that checks a lock and starts support/master_organizer. A GOOD response verifies the lock is available (or informs if busy), launches the master organizer as a detached process, and clearly communicates that the planning work is being delegated — it must NOT generate any plan content itself.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 28 style ('what ralf is there running') — user explicitly requesting a subsystem launch, plus messages 3, 32 showing multi-domain coordination needs."
+    },
+    {
+      "name": "overwhelmed_trigger_english",
+      "prompt": "Ok I'm overwhelmed, too many things at once. Thesis, job stuff, health routines, research — can you just start the master organizer and have it figure out a coherent plan for me?",
+      "criteria": "The agent's role is solely to gate-keep and launch the master_organizer. A GOOD response checks the lock, launches the subsystem if available (or reports if already running), and reassures the user that the organizer will handle it — without attempting any planning, prioritization, or scheduling on its own.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 15, 22, 33, 34 — user expressing being overwhelmed with overlapping responsibilities."
+    },
+    {
+      "name": "quick_launcher_check_polish",
+      "prompt": "Hej, uruchom master organizer, potrzebuję ogarnąć dzisiaj zadania, nawyki i harmonogram dnia, żeby wszystko się spięło w całość.",
+      "criteria": "The agent's role is to act as a lock-checked launcher for support/master_organizer. A GOOD response in Polish confirms it is starting the organizer, handles the lock appropriately (acquires if free, or notes it's already held), and does not attempt to plan or organize anything directly — it only triggers the subsystem.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 2, 16, 25, 30 — casual Polish daily-life messages combined with task management intent."
+    }
+  ]
+}

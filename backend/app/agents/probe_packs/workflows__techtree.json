@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/techtree",
+  "generated_at": "2026-06-09T23:33:40.851158+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "basic_techtree_trigger",
+      "prompt": "/techtree src/api/auth",
+      "criteria": "The agent is a /techtree command handler that drives techtree_manager.py over relative paths. A good response should: (1) interpret the relative path 'src/api/auth', (2) check active PRs touching that path first, (3) if no recent PR or stale data, trigger research/techtree_orchestrator for deep analysis of that path, and (4) report back what was found or that the analysis has been kicked off.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the pattern of direct action requests like msg 1 ('Test model switching implementation') and msg 31 ('check my todo list') — simple imperative triggers."
+    },
+    {
+      "name": "techtree_check_pr_status",
+      "prompt": "hey can you /techtree src/models/ and tell me if there are any open PRs that touch those files?",
+      "criteria": "The agent is a /techtree command handler that checks active PRs before running analysis. A good response should: (1) accept the relative path 'src/models/', (2) explicitly check for active/open PRs affecting that path, (3) report which PRs exist (or that none were found), and (4) only then decide whether to trigger techtree_orchestrator or inform the user the data is current.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 12 (detailed technical concern about architecture) and msg 19/22/25 ('Anything interesting on your side?') — probing for status."
+    },
+    {
+      "name": "techtree_force_deep_analysis",
+      "prompt": "/techtree --deep src/services/notifications the last analysis is probably outdated, can you force a fresh deep dive?",
+      "criteria": "The agent is a /techtree handler that triggers research/techtree_orchestrator for deep analysis when data is stale. A good response should: (1) recognize the explicit request to bypass staleness checks and force a deep analysis, (2) trigger research/techtree_orchestrator on the path 'src/services/notifications', and (3) confirm the deep analysis has been initiated rather than returning cached data.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 13 ('run ralf to first collect information…') and msg 5 ('I mean the one I needed to return') — explicit task routing with context."
+    },
+    {
+      "name": "techtree_polish_status",
+      "prompt": "/techtree src/utils/ — sprawdź czy dane są aktualne czy trzeba odpalić głębszą analizę",
+      "criteria": "The agent is a /techtree handler operating on relative paths and checking staleness. A good response should: (1) handle the Polish-language request to check if techtree data for 'src/utils/' is current, (2) verify staleness of existing analysis, (3) either report the data is fresh or trigger research/techtree_orchestrator for deep analysis, and (4) respond clearly even though the query was in Polish.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "The corpus mixes English and Polish (e.g., msg 14, 15 use Polish context). Inspired by msg 29 ('Tommorow i will be going to visit Kolasa') and msg 27 for technical staleness concerns."
+    },
+    {
+      "name": "techtree_multi_path_comparison",
+      "prompt": "/techtree src/api/auth and /techtree src/api/users — I want to compare the techtree status of both, are there overlapping PRs or shared dependencies?",
+      "criteria": "The agent is a /techtree handler that drives techtree_manager.py and checks active PRs. A good response should: (1) process both relative paths ('src/api/auth' and 'src/api/users'), (2) check active PRs for each path, (3) identify any overlapping PRs or shared dependencies between the two paths, and (4) trigger research/techtree_orchestrator for whichever path has stale data, providing a comparative summary.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by msg 13 ('compare them to qwen3.6-35b') which asks for a comparison, and msg 40 ('Would it work with 5 tok by settling memory on card to like 0.85 instead o 0.9') — a multi-faceted technical question."
+    }
+  ]
+}

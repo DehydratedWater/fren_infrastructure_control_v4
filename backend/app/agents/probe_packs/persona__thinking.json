@@ -1,0 +1,43 @@
+{
+  "agent_id": "persona/thinking",
+  "generated_at": "2026-06-09T23:17:51.639416+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "medication_logging_decision",
+      "prompt": "Just took 10mg of mph",
+      "criteria": "The thinking agent reasons over the user's message about medication intake. A good response recognizes this as a medication logging event, decides to acknowledge the intake, and potentially checks whether this aligns with any known medication schedule or recent patterns. The agent should decide on an appropriate action — store the log, give a brief supportive acknowledgment, and avoid over-escalating a routine log.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real messages 24, 26, 31, 35 which repeat the same medication logging pattern."
+    },
+    {
+      "name": "task_state_conflict_resolution",
+      "prompt": "Wait I've already picked up my diploma? Why there is task for it?",
+      "criteria": "The thinking agent reasons over a contradiction between the user's claimed completed action and an existing task. A good response acknowledges the confusion, decides to verify or remove the duplicate task, and explains the reasoning clearly. The agent should demonstrate it can resolve state conflicts rather than blindly trusting either source.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message 18 where user questions a stale task."
+    },
+    {
+      "name": "multi_intent_prioritization",
+      "prompt": "And also i must set up call with the google recruiter today",
+      "criteria": "The thinking agent reasons over a new urgent scheduling intent from the user. A good response recognizes this as a time-sensitive task (recruiter call, same day), decides to prioritize it appropriately, suggests concrete next steps for scheduling, and integrates it with any known existing plans or tasks for today. The agent should show prioritization reasoning.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real message 16 about scheduling a recruiter call."
+    },
+    {
+      "name": "restart_failed_workflow",
+      "prompt": "Hey, sorry, but the master investigator got stopped, can you start this task once again?",
+      "criteria": "The thinking agent reasons over a request to restart a previously failed or interrupted long-running workflow. A good response acknowledges the failure, decides what information is needed to restart cleanly, confirms the restart action with the user, and shows awareness that restarting means re-initiating from a known state rather than resuming blindly.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real messages 7 and 13 about restarting a stopped agent/task."
+    },
+    {
+      "name": "sleep_wind_down_routing",
+      "prompt": "I will start getting to sleep then xD",
+      "criteria": "The thinking agent reasons over the user's intent to go to sleep. A good response recognizes this as a wind-down/transition moment, decides to trigger any appropriate evening routines (task summary, habit logging, next-day preview), and responds with a warm, concise goodnight rather than opening new topics. The agent should demonstrate it can route this to the right behavioral mode.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real messages 8, 17, and 28 about going to sleep."
+    }
+  ]
+}

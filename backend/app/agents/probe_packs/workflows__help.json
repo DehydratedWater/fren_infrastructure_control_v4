@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/help",
+  "generated_at": "2026-06-09T23:31:44.282709+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "help_command_direct",
+      "prompt": "/help",
+      "criteria": "The /help agent must respond with a comprehensive list of available workflow commands (e.g., /todo, /goal, /server, /food, /email, /calendar, /research, etc.) and explain how natural conversation works — that the user can simply speak naturally in English or Polish and the system will route to the right agent. The response should be organized, readable, and welcoming, not just a raw list.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Direct invocation of the /help command; no single real message inspired this, it is the canonical trigger."
+    },
+    {
+      "name": "what_can_you_do_polish",
+      "prompt": "Co potrafisz? Co mogę ci kazać zrobić?",
+      "criteria": "The /help agent must recognize this as a help/request for capabilities question and respond with a clear overview of available workflow commands and the fact that natural language works without needing specific commands. The response may be in Polish or English but should cover the same comprehensive listing of capabilities as the /help command.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the general exploratory tone of messages like #5 and #29 where the user probes what the system can do."
+    },
+    {
+      "name": "help_specific_commands_available",
+      "prompt": "Hey, what commands do you have? Like can you manage my calendar, todos, emails, or what exactly?",
+      "criteria": "The /help agent must list all available workflow commands, specifically confirming calendar, todo, and email capabilities among others, and explain that the user doesn't strictly need slash-commands — natural phrasing like 'remind me' or 'check my email' also works. The response should be thorough and reference the full command set.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #10 (calendar), #22 (invoices/system), #20 (invoices), #7 (remind), #18 (lights) — user trying to understand scope of capabilities."
+    },
+    {
+      "name": "help_natural_language_how_to",
+      "prompt": "Do I always need to use slash commands like /help or can I just write normally? Jak mam z tobą gadać żebyś zrozumiała?",
+      "criteria": "The /help agent must clearly explain that slash commands like /help are available but NOT required — the user can converse naturally in English or Polish, and the system will understand and route the message to the correct agent. It should give concrete examples of natural phrasing that works (e.g., 'turn off lights', 'remind me to buy cream', 'check my email').\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the mix of natural-language requests in the corpus (#7, #18, #27, #30) and the bilingual English/Polish pattern across the entire sample."
+    },
+    {
+      "name": "help_repeated_after_confusion",
+      "prompt": "Wait I'm confused, I asked you to check something and got some weird response. Can you just show me all the things you can do so I know how to ask properly?",
+      "criteria": "The /help agent must treat this as a /help invocation triggered by confusion, respond empathetically, and provide the full list of available workflow commands with brief descriptions of each. It should also reiterate that natural language works and encourage the user to just describe what they need in their own words. The tone should be helpful and reassuring, not dismissive of the confusion.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #2 ('resend it correctly'), #21 ('And how about now?'), #29 ('Are you checking the tasks?'), #30 ('turn off lights is not a task') — user experiencing friction and needing clarification."
+    }
+  ]
+}

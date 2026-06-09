@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/meal_plan",
+  "generated_at": "2026-06-09T23:34:02.205863+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "suggest_meal_short",
+      "prompt": "I'll eat something, can you suggest a quick meal?",
+      "criteria": "The agent is the /meal_plan handler. A good response suggests a short, concise meal idea (1-2 options), keeps it brief as per role constraints, and does not output a lengthy recipe or multi-course plan.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real msg #36: 'I'll eat something' — user announces hunger and implicitly wants ideas."
+    },
+    {
+      "name": "log_meal_entry",
+      "prompt": "I just ate two scrambled eggs with bread and a tomato for breakfast",
+      "criteria": "The agent is the /meal_plan handler responsible for logging meals via food_manager.py. A good response confirms the meal was logged, repeats back the logged items (scrambled eggs, bread, tomato) and meal type (breakfast) for verification, and does not add unsolicited suggestions.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real msgs #4/#16 style of reporting intake ('Just took 10mg of mph', 'Just took atenza 36mg') adapted to food logging."
+    },
+    {
+      "name": "todays_meals_summary",
+      "prompt": "Co dzisiaj jadłem? Pokaż mi moje posiłki z dziś.",
+      "criteria": "The agent is the /meal_plan handler that can show today's meals. A good response lists all meals logged today for the user, in Polish since the query is in Polish, with meal names/times, or states clearly if no meals are recorded yet.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real msg #27: 'Can you also list them in Polish?' and general task-query msgs like #12/#14."
+    },
+    {
+      "name": "suggest_nearby_food",
+      "prompt": "I'm near the city centre in Kraków, any ideas where I could grab something warm for lunch?",
+      "criteria": "The agent is the /meal_plan handler that can provide location-based suggestions. A good response gives 1-2 concise food suggestions appropriate for a warm lunch in Kraków city centre, keeps suggestions short, and may note that escalation to a fuller search is possible if the user wants more detail.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real msg #36: 'I'll eat something' combined with the agent's location responsibility; casual phrasing matches corpus tone."
+    },
+    {
+      "name": "log_and_suggest_combo",
+      "prompt": "Zjadłem na obiad pierogi ruskie z cebulką i śmietaną, a na kolację zaplanuj mi coś lekkiego bo nie chce mi sie tylu kalorii wieczorem",
+      "criteria": "The agent is the /meal_plan handler that both logs meals and suggests food. A good response (1) confirms logging the pierogi ruskie with onion and sour cream as dinner/obiad, (2) gives a brief light evening meal suggestion low in calories, and (3) keeps the suggestion short as mandated by the role. Response should be in Polish to match the query language.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by real msg #36 'I'll eat something' for logging + the agent's dual suggest/log responsibility; Polish phrasing matches corpus bilingual mix (msg #27)."
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "agent_id": "persona/quick_ack",
+  "generated_at": "2026-06-09T23:17:47.451287+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "medication_intake_ack",
+      "prompt": "Just took 36mg of atenza",
+      "criteria": "The agent's role is to emit a brief warm acknowledgement for trivial messages. A good response gives a short, warm, supportive nod to the medication update (e.g., noting it, wishing well) without launching into any action plan, analysis, or lengthy output.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 3, 5, 22, 25, 31 — repeated medication intake reports."
+    },
+    {
+      "name": "coffee_break_ack",
+      "prompt": "Sure u will go make myself a coffee",
+      "criteria": "The agent's role is to emit a brief warm acknowledgement for trivial messages. A good response is a cozy, short acknowledgement of the coffee break (e.g., enjoy, hope it's good) without trying to action anything or ask follow-up questions.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 1 and 12 about getting/making coffee."
+    },
+    {
+      "name": "ok_chill_ack",
+      "prompt": "Ok chill",
+      "criteria": "The agent's role is to emit a brief warm acknowledgement for trivial messages. A good response is a laid-back, brief warm note matching the casual tone (e.g., sounds good, will be here) without over-explaining or becoming verbose.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 11 'Ok chill' and message 39 'Ok, nice'."
+    },
+    {
+      "name": "food_and_sleep_ack",
+      "prompt": "Well, good, I need to eat something and get some sleep",
+      "criteria": "The agent's role is to emit a brief warm acknowledgement for trivial messages. A good response is a caring, short send-off acknowledging the need for food and rest (e.g., sweet words about resting well) without generating tasks, reminders, or long messages.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 16 and 17 about eating and sleeping."
+    },
+    {
+      "name": "walk_and_dinner_ack",
+      "prompt": "I was on the walk with Marta we bought food, then got to spa place and then dinner in Grill and Pepper next to palace of science and culture in Warsaw",
+      "criteria": "The agent's role is to emit a brief warm acknowledgement for trivial messages. A good response is a warm, conversational little acknowledgement of the nice day out (e.g., sounds lovely, glad you had a good time) without attempting to log events, create memories, or produce a structured summary.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 23 recounting a full day out."
+    }
+  ]
+}

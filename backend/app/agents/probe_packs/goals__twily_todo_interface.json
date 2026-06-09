@@ -1,0 +1,43 @@
+{
+  "agent_id": "goals/twily_todo_interface",
+  "generated_at": "2026-06-09T23:19:40.640364+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "complete_finished_task",
+      "prompt": "Hey, I've already sent the invoice registration paperwork and finished the ePIT filing. Please mark the invoice-related tasks as done.",
+      "criteria": "The agent's role is to execute todo operations including completing tasks when the user reports finishing them. A good response identifies the matching tasks from the todo list (invoice registration, ePIT), marks them as completed, and confirms which specific tasks were completed with a clear workflow_result summary.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 36 (scanning invoices, ePIT tasks) and 9 (marking goals as done)."
+    },
+    {
+      "name": "create_new_reminder",
+      "prompt": "Add a task for me: I need to set up the automated caloric tracking integration with my food logging agent, and also remind me to buy ingredients for meal prep this Sunday. No specific deadline, just this weekend.",
+      "criteria": "The agent's role is to create new todos from natural language requests, checking for duplicates before creating. A good response creates two distinct tasks (caloric tracking setup, buying meal prep ingredients) with the Sunday/weekend timeframe noted, confirms creation, and returns a workflow_result with the new task details.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 37 (caloric tracking reminder) and 30 (buy ingredients for dinner)."
+    },
+    {
+      "name": "list_pending_tasks",
+      "prompt": "Co mam na liście zadań? Pokaż mi wszystkie pending taski, chyba że jest ich za dużo to tylko te z najwyższym priorytetem.",
+      "criteria": "The agent's role is to execute todo operations including listing pending tasks. A good response retrieves all pending tasks (or high-priority ones if the list is very long), presents them clearly with titles and deadlines, and returns a structured workflow_result. The response should handle the Polish-English mix naturally.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 6, 17, 20, 34 (various ways of asking to see pending tasks) and 19 (priority filtering)."
+    },
+    {
+      "name": "complete_and_create_followup",
+      "prompt": "Ok I'm done with the unsloth finetuning notebooks, you can mark that complete. But now I need a new task to run evaluation benchmarks on the fine-tuned model and document the results. Set deadline for end of next week.",
+      "criteria": "The agent's role is to complete existing todos and create new ones when requested. A good response (1) marks the unsloth finetuning notebooks task as completed, (2) creates a new task for evaluation benchmarks with documentation and the end-of-next-week deadline, and (3) confirms both actions in a workflow_result summary.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 36 (mark current task done and create a more precise follow-up) and 35 (unsloth references)."
+    },
+    {
+      "name": "create_task_with_priority",
+      "prompt": "Dodaj zadanie o wysokiej ważności: muszę do końca miesiąca przygotować się do obrony pracy magisterskiej — poprawić slajdy, przećwiczyć prezentację i zarezerwować salę. To są osobne punkty na liście.",
+      "criteria": "The agent's role is to create todos from natural language, including priority handling. A good response creates three separate high-priority tasks (fix slides, practice presentation, book a room) all related to thesis defense preparation, sets the end-of-month deadline, assigns high importance, and confirms each created task in a workflow_result.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages 12 (Polish, adding goal with specifics), 19 (high importance priority), and 16/26 (thesis defense tasks)."
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "agent_id": "research/video_fetcher",
+  "generated_at": "2026-06-09T23:23:18.258377+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "fetch_all_channels_report",
+      "prompt": "Hey, can you fetch any new videos from all tracked channels and give me a quick report on how many new ones showed up and how many transcripts were missing?",
+      "criteria": "The agent's role is to fetch new videos from tracked channels and download missing transcripts. A GOOD response lists each tracked channel with the count of new videos found, identifies which of those are missing transcripts (and ideally triggers or reports that transcript download was attempted), and summarizes totals clearly.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by messages #11 (watch videos on channels), #14 (interesting video from Petro), and the agent's core fetch-and-report responsibility."
+    },
+    {
+      "name": "transcript_gap_check_polish",
+      "prompt": "Pobież transkrypty dla filmów które ich nie mają z wszystkich kanałów i powiedz mi ile było do pobrania i ile się udało.",
+      "criteria": "The agent's role is to download transcripts for videos missing them. A GOOD response attempts to identify all videos without transcripts across tracked channels, triggers transcript downloads for each, and reports concrete numbers: how many were missing, how many succeeded, and how many (if any) failed.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the agent's transcript-download responsibility and the Polish-language pattern seen in message #36 and others."
+    },
+    {
+      "name": "specific_channel_fetch_petro",
+      "prompt": "Can you check the Petro channel specifically for any new videos since the last check? I want the titles of anything new and whether transcripts are available for each.",
+      "criteria": "The agent's role is to fetch new videos from tracked channels and report on transcript status. A GOOD response queries the Petro channel, lists every new video title found since the last fetch, and clearly marks which ones have transcripts and which are still missing them.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Directly inspired by message #14: 'Can you give me link to potentially most interesting video from Petro?'"
+    },
+    {
+      "name": "youtube_link_process",
+      "prompt": "https://youtube.com/shorts/XL08znDti-o I found this short, can you fetch it and download the transcript if it's missing from our tracked videos?",
+      "criteria": "The agent's role is to fetch videos and download missing transcripts. A GOOD response acknowledges the specific YouTube link, confirms whether this video is already in the tracked set or is newly added, attempts to download its transcript if absent, and reports the outcome (transcript found/downloaded or unavailable).\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Directly inspired by message #6 which contains an identical YouTube Shorts link, and messages #16/#33 about recognizing/viewing videos."
+    },
+    {
+      "name": "full_sync_status_en_pl",
+      "prompt": "Zrób pełny sync — pobierz nowe filmy ze wszystkich kanałów, pobierz brakujące transkrypty, i daj mi raport po polsku z nazwami kanałów, liczbą nowych filmów i statusem transkryptów.",
+      "criteria": "The agent's role is to fetch new videos from all tracked channels, download missing transcripts, and report counts. A GOOD response performs a full sync cycle across every tracked channel, then delivers a Polish-language report listing each channel name, the number of new videos found, how many transcripts were missing versus successfully downloaded, and an overall summary.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the Polish/English mix in the corpus (messages #36, #5, #38) and the agent's core responsibility of fetching, transcripting, and reporting."
+    }
+  ]
+}

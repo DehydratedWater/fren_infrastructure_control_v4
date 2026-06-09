@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/nvidia_check",
+  "generated_at": "2026-06-09T23:31:21.050250+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "direct_nvidia_command",
+      "prompt": "/nvidia",
+      "criteria": "Agent acts as /nvidia command handler. It runs nvidia-smi, formats a clean GPU report showing at minimum: GPU name, temperature, utilization percentage, and memory usage (used/total). The response should be clear, well-formatted, and sent in the persona voice.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the general pattern of direct command triggers in the corpus, analogous to message 29 'Can you check what can you see at the moment?' but scoped to GPU."
+    },
+    {
+      "name": "casual_gpu_status_polish",
+      "prompt": "Ej sprawdź mi jak tam karta graficzna",
+      "criteria": "Agent recognizes this as an informal Polish request for GPU status (equivalent to /nvidia). It runs nvidia-smi and returns a clean, formatted GPU report with name, temperature, utilization, and memory. The response should be in Polish to match the user's language.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 8 'Oki, oki I'll drink something xD' showing casual Polish/English mix and informal tone."
+    },
+    {
+      "name": "gpu_status_rendering_concern",
+      "prompt": "Hey i think the rendering has failed, can you check the gpu status?",
+      "criteria": "Agent recognizes the user suspects a render failure and wants GPU diagnostics. It runs nvidia-smi and returns a formatted GPU report (name, temp, utilization, memory). A good response also briefly notes whether the GPU metrics look normal or if something seems off (e.g., 0% utilization, overheating, or memory issues) that could explain a render failure.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Directly inspired by message 38 'Hey i think the redering has failed'."
+    },
+    {
+      "name": "nvidia_with_temperature_focus",
+      "prompt": "Can you check nvidia temps? I want to make sure nothing is overheating during the compile",
+      "criteria": "Agent understands this as a GPU check request with specific concern about thermals. It runs nvidia-smi and returns the full GPU report but gives special attention to temperature — clearly stating the current temp and whether it's in a normal/safe range. The full report (name, util, memory) should still be included.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message 10 'can you investigate currently avaliable jobs?' showing task-oriented requests with specific focus areas."
+    },
+    {
+      "name": "nvidia_polish_mixed_task",
+      "prompt": "Sprawdzisz mi gpu? Chcę zobaczyć czy memory nie jest zapchane bo coś mi firefox muli",
+      "criteria": "Agent recognizes the Polish request to check GPU with a specific concern about memory being full causing Firefox slowdown. It runs nvidia-smi, returns a full formatted GPU report, and specifically comments on memory usage — whether VRAM is nearly full and whether that could plausibly relate to the user's Firefox performance issue.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the Polish/English mix in the corpus and message 9 'But for that I will need custom drivers' showing hardware-related discussion."
+    }
+  ]
+}

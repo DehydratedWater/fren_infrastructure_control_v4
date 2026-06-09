@@ -1,0 +1,43 @@
+{
+  "agent_id": "workflows/shopping",
+  "generated_at": "2026-06-09T23:33:10.919002+00:00",
+  "source": "v3-corpus",
+  "teacher": "glm-5.1",
+  "probes": [
+    {
+      "name": "add_product_track",
+      "prompt": "Hey, can you add a product for me to track? It's the Sony WH-1000XM5 headphones on Amazon, URL is https://www.amazon.com/Sony-WH-1000XM5-Canceling-Headphones-Bluetooth/dp/B09XS7JWHH — I'd love an alert if it drops below 280 USD.",
+      "criteria": "The shopping agent should acknowledge the request to add a tracked product, confirm the product name (Sony WH-1000XM5), source URL, and price alert threshold (280 USD), and indicate the product has been added to the tracking list.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by the general task-recording pattern in messages #9 and #16."
+    },
+    {
+      "name": "list_tracked_products",
+      "prompt": "Pokaż mi wszystkie produkty które śledzisz, z obecnymi cenami",
+      "criteria": "The shopping agent should list all currently tracked products with their current prices in a clear format, responding in Polish since the query is in Polish. The response should include product names, prices, and ideally the source/store for each.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #1 listing tasks, adapted to shopping context in Polish."
+    },
+    {
+      "name": "fetch_prices_update",
+      "prompt": "Can you fetch the latest prices for all my tracked products? I want to see if anything changed since last time",
+      "criteria": "The shopping agent should trigger a price fetch for all tracked products, report updated prices, and highlight any price changes (increases or decreases) compared to previous fetches.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #29 'Try fetchnig it again' — the retry/fetch pattern."
+    },
+    {
+      "name": "price_history_query",
+      "prompt": "Jaka jest historia cen dla itemu który dodałem ostatnio? Chce zobaczyć czy cena spadła w ostatnim tygodniu",
+      "criteria": "The shopping agent should retrieve and display price history for the most recently added tracked product, showing historical price data points over the last week and indicating whether the price has trended down. Response should be in Polish.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by Polish-language messages like #37 and the analytical pattern in message #35."
+    },
+    {
+      "name": "remove_product_and_alert",
+      "prompt": "Oki, I got the headphones already, you can remove the Sony WH-1000XM5 from tracking. Also, can you set an alert on the Logitech MX Master 3S mouse to notify me if it goes under 70 USD?",
+      "criteria": "The shopping agent should confirm removal of the Sony WH-1000XM5 from the tracked products list and confirm a new price alert has been set for the Logitech MX Master 3S with a threshold of 70 USD. Both actions should be clearly acknowledged.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+      "pass_threshold": 0.7,
+      "source_hint": "Inspired by message #30 checking off completed items, and message #7 action-request style."
+    }
+  ]
+}
