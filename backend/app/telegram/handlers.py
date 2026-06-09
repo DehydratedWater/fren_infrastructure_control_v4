@@ -206,9 +206,15 @@ async def _debounce_dispatch() -> None:
         # Classifies tone of the latest user message, nudges palette blend via EMA.
         _fire_and_forget(_drift_vibe_state())
         # Drift the USER emotion state too, off the SAME deterministic palette
-        # classification (no extra LLM call) — otherwise emotional_state never
+        # classification (no extra LLM call) — otherwise user_mood never
         # updates from its default row.
         _fire_and_forget(_drift_user_mood(latest["text"]))
+        # Run the emotional-core model (:5506) on the latest message so the
+        # `emotional_state` snapshot persona_prose injects ("## Current emotional
+        # state") is FRESH. v3 parity: bot._update_personality_core_background.
+        # Fire-and-forget — the LLM round-trip must not block dispatch; the tool
+        # has its own ~10s cooldown.
+        _fire_and_forget(_evaluate_personality_core(latest["text"]))
 
         # ── Fast-path: bypass orchestrator for high-confidence single intents ──
         if mode != "chat" and len(batch) == 1 and not latest.get("yt_url"):
@@ -324,6 +330,29 @@ async def _drift_user_mood(user_msg: str) -> None:
         await UserMoodRepo().drift(chat_id, delta, trigger=palette)
     except Exception:
         logger.exception("user_mood drift failed")
+
+
+async def _evaluate_personality_core(user_msg: str) -> None:
+    """Fire-and-forget: run the emotional-core model (:5506) on the latest user
+    message so the `emotional_state` snapshot is fresh for the next persona_prose
+    render. The PersonalityCoreTool 'evaluate' command calls the personality-core
+    LLM with the message as stimuli, parses the emotions, and writes the
+    emotional_state table (+ aggregates) — with a built-in ~10s cooldown. Run in
+    a worker thread because the tool's execute() is sync (manages its own loop).
+    """
+    try:
+        if not (user_msg or "").strip():
+            return
+        import asyncio
+
+        from app.tools.personality.personality_core import Input, PersonalityCoreTool
+
+        await asyncio.to_thread(
+            PersonalityCoreTool().execute,
+            Input(command="evaluate", stimuli=user_msg),
+        )
+    except Exception:
+        logger.exception("personality_core evaluate failed")
 
 
 async def _save_user_message(message: str, update: Update, *, content_class: str = "public") -> None:
