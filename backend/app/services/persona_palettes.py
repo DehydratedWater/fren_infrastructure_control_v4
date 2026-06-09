@@ -390,3 +390,30 @@ def palette_to_delta(palette_key: str, strength: float = 0.08) -> dict[str, floa
     if opp := opposites.get(weight_key):
         delta[opp] = -strength * 0.5
     return delta
+
+
+# Per-palette nudge to the 5 user-mood axes (energy/valence/stress/engagement/
+# openness). Rides the SAME deterministic trigger-palette classification as the
+# vibe blend — no extra LLM/GPU call. Mirrors v3 vibe_drift's tone→mood mapping
+# but keyed off the regex palette instead of an LLM tone score.
+_PALETTE_MOOD_DELTA: dict[str, dict[str, float]] = {
+    # Sensitive / low-mood signal → lower energy+valence, higher stress, opens up.
+    "caring_edge": {"energy": -0.06, "valence": -0.08, "stress": +0.12, "engagement": +0.04, "openness": +0.10},
+    # Intellectual push-back → engaged + a little stress, slightly lower valence.
+    "debate_socratic": {"energy": +0.06, "valence": -0.03, "stress": +0.05, "engagement": +0.10, "openness": +0.04},
+    # Playful / flirty → high energy + positive valence, low stress.
+    "playful_flirt": {"energy": +0.10, "valence": +0.10, "stress": -0.06, "engagement": +0.06, "openness": +0.06},
+    # Dry meta / casual ack → mild low-engagement drift toward baseline.
+    "dry_ironic": {"energy": -0.03, "valence": +0.0, "stress": -0.02, "engagement": -0.05, "openness": -0.03},
+    # House-style positive flow → gentle positive nudge.
+    "warm_snarky": {"energy": +0.04, "valence": +0.05, "stress": -0.03, "engagement": +0.04, "openness": +0.03},
+}
+
+
+def palette_to_mood_delta(palette_key: str) -> dict[str, float]:
+    """Map a selected trigger-palette → a user-mood delta dict for UserMoodRepo.drift().
+
+    Deterministic (regex-classified palette in, mood delta out) — no LLM call.
+    Returns {} for an unknown palette so the caller can skip a no-op drift.
+    """
+    return dict(_PALETTE_MOOD_DELTA.get(palette_key, {}))

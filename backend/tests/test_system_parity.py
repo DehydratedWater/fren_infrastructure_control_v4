@@ -375,13 +375,6 @@ def test_user_mood_repo_has_a_drift_writer():
     assert hasattr(UserMoodRepo, "get") and hasattr(UserMoodRepo, "history")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="EMOTION GAP: nothing in the running system calls UserMoodRepo.drift(). "
-    "The tool (user_mood_manager) + dashboard are READ-ONLY; emotional_state stays "
-    "at its default row forever (no scheduler job, no chat hook writes it). Fix: "
-    "wire a drift() caller (tone classifier hook or a scheduled job).",
-)
 def test_user_mood_drift_is_called_somewhere_in_the_codebase():
     """Some non-test module must call UserMoodRepo().drift(...) or the emotion
     state never updates. (VibeStateRepo.drift IS wired — user_mood is not.)

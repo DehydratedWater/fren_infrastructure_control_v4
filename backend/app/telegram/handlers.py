@@ -205,6 +205,10 @@ async def _debounce_dispatch() -> None:
         # Drift the vibe state on EVERY user turn, regardless of routing path.
         # Classifies tone of the latest user message, nudges palette blend via EMA.
         _fire_and_forget(_drift_vibe_state())
+        # Drift the USER emotion state too, off the SAME deterministic palette
+        # classification (no extra LLM call) — otherwise emotional_state never
+        # updates from its default row.
+        _fire_and_forget(_drift_user_mood(latest["text"]))
 
         # ── Fast-path: bypass orchestrator for high-confidence single intents ──
         if mode != "chat" and len(batch) == 1 and not latest.get("yt_url"):
@@ -287,6 +291,39 @@ async def _drift_vibe_state() -> None:
         )
     except Exception:
         logger.exception("vibe_drift kickoff failed")
+
+
+async def _drift_user_mood(user_msg: str) -> None:
+    """Fire-and-forget: drift the user emotion state from the latest message.
+
+    Rides the SAME deterministic regex trigger-palette classification the vibe
+    blend uses (no extra LLM/GPU call), maps it to a 5-axis mood delta, and
+    applies EMA drift via UserMoodRepo. Without this hook emotional_state stays
+    pinned to its default row forever (the v3 vibe_drift.py user-mood port).
+    """
+    try:
+        from app.db.repos.user_mood import UserMoodRepo
+        from app.services.persona_palettes import (
+            palette_to_mood_delta,
+            select_trigger_palette,
+        )
+
+        if not (user_msg or "").strip():
+            return
+        palette = select_trigger_palette(user_msg)
+        delta = palette_to_mood_delta(palette)
+        if not any(abs(v) > 0.01 for v in delta.values()):
+            return
+        # Single-user default: the configured chat_id, else 0 (matches the
+        # user_mood_manager tool + dashboard convention).
+        try:
+            raw = get_settings().chat_id
+            chat_id = int(raw) if raw else 0
+        except (TypeError, ValueError):
+            chat_id = 0
+        await UserMoodRepo().drift(chat_id, delta, trigger=palette)
+    except Exception:
+        logger.exception("user_mood drift failed")
 
 
 async def _save_user_message(message: str, update: Update, *, content_class: str = "public") -> None:
