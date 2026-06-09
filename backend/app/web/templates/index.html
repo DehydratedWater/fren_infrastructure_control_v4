@@ -9,6 +9,7 @@
   <a class="tab" role="tab" href="#runs" data-tab="runs">Runs</a>
   <a class="tab" role="tab" href="#chat" data-tab="chat">Chat</a>
   <a class="tab" role="tab" href="#context" data-tab="context">Context</a>
+  <a class="tab" role="tab" href="#images" data-tab="images">Images</a>
 </nav>
 {% endblock %}
 
@@ -46,6 +47,13 @@
     <h2 id="context">Context fed to agents</h2>
     <div id="context-body" hx-get="/partials/context" hx-trigger="every 10s" hx-swap="innerHTML">
       {% include "partials/context.html" %}
+    </div>
+  </section>
+
+  <section class="panel panel-wide tabpanel" id="panel-images" data-tab="images" role="tabpanel" aria-labelledby="images">
+    <h2 id="images">Images <span class="muted">(rendered + captures · newest first)</span></h2>
+    <div id="images-body" hx-get="/partials/images" hx-trigger="every 30s" hx-swap="innerHTML">
+      {% include "partials/images.html" %}
     </div>
   </section>
 

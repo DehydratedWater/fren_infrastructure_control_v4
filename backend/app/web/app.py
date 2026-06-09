@@ -13,8 +13,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -46,6 +46,7 @@ def create_app() -> FastAPI:
             "emotional": await data.emotional_state(),
             "blocks": await data.recent_activity_blocks(),
             "chat": await data.recent_chat(),
+            "images": await data.recent_images(),
         }
         return _render(request, "index.html", ctx)
 
@@ -88,6 +89,26 @@ def create_app() -> FastAPI:
     @app.get("/partials/chat", response_class=HTMLResponse)
     async def partial_chat(request: Request) -> HTMLResponse:
         return _render(request, "partials/chat.html", {"chat": await data.recent_chat()})
+
+    @app.get("/partials/images", response_class=HTMLResponse)
+    async def partial_images(request: Request) -> HTMLResponse:
+        return _render(request, "partials/images.html", {"images": await data.recent_images()})
+
+    # ── media bytes (read-only, path-traversal-safe) ─────────────────────────
+    @app.get("/media/{kind}/{name}")
+    async def media(kind: str, name: str) -> FileResponse:
+        """Serve a single image from an allowed media dir, safely.
+
+        ``data.safe_media_path`` enforces the whole policy: ``kind`` must be a
+        known media kind, ``name`` must be a bare image filename (no traversal,
+        no separators, image extension only) that resolves to a direct child of
+        ``settings.data_dir``/<kind>. Anything else → 404 (we never reveal which
+        rule failed, and never touch the filesystem outside the allowed dir).
+        """
+        path = data.safe_media_path(kind, name)
+        if path is None or not path.is_file():
+            raise HTTPException(status_code=404, detail="not found")
+        return FileResponse(path)
 
     @app.get("/healthz")
     async def healthz() -> dict[str, Any]:
