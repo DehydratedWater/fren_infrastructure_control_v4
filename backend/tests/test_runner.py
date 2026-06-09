@@ -143,7 +143,7 @@ async def test_direct_backend_calls_provider(tmp_path, monkeypatch):
     # write a minimal compiled agent .md
     md = tmp_path / ".opencode" / "agents" / "x.md"
     md.parent.mkdir(parents=True)
-    md.write_text("---\nmodel: zai-coding-plan/glm-4.5-air\n---\nYou are helpful.\n")
+    md.write_text("---\nmodel: zai-coding-plan/glm-4.7\n---\nYou are helpful.\n")
 
     class _Resp:
         def raise_for_status(self):  # noqa: D401
