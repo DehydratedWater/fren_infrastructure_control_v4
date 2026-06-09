@@ -1,39 +1,92 @@
 {% extends "base.html" %}
+
+{% block topnav %}
+{# Real tabs. Without JS these are plain in-page anchors and ALL panels show
+   (the .has-tabs class that enables tab mode is added by JS below), so the
+   dashboard degrades gracefully. With JS, clicking a tab shows only its panel. #}
+<nav class="tabbar" role="tablist" aria-label="dashboard sections">
+  <a class="tab" role="tab" href="#proactive" data-tab="proactive">Proactive</a>
+  <a class="tab" role="tab" href="#runs" data-tab="runs">Runs</a>
+  <a class="tab" role="tab" href="#chat" data-tab="chat">Chat</a>
+  <a class="tab" role="tab" href="#context" data-tab="context">Context</a>
+</nav>
+{% endblock %}
+
 {% block body %}
 
+{# Health strip — always visible, above the tabs/panels. #}
 <div id="health" hx-get="/partials/health" hx-trigger="every 10s" hx-swap="innerHTML">
   {% include "partials/health.html" %}
 </div>
 
 <main class="grid">
 
-  <section class="panel panel-wide">
-    <h2>Proactive messages <span class="muted">(persona_response)</span></h2>
-    <div id="proactive" hx-get="/partials/proactive" hx-trigger="every 10s" hx-swap="innerHTML">
+  <section class="panel panel-wide tabpanel" id="panel-proactive" data-tab="proactive" role="tabpanel" aria-labelledby="proactive">
+    <h2 id="proactive">Proactive messages <span class="muted">(persona_response)</span></h2>
+    <div id="proactive-body" hx-get="/partials/proactive" hx-trigger="every 10s" hx-swap="innerHTML">
       {% include "partials/proactive.html" %}
     </div>
   </section>
 
-  <section class="panel">
-    <h2>Agent runs <span class="muted">(execution_runs)</span></h2>
-    <div id="runs" hx-get="/partials/runs" hx-trigger="every 10s" hx-swap="innerHTML">
+  <section class="panel panel-wide tabpanel" id="panel-runs" data-tab="runs" role="tabpanel" aria-labelledby="runs">
+    <h2 id="runs">Agent runs <span class="muted">(execution_runs)</span></h2>
+    <div id="runs-body" hx-get="/partials/runs" hx-trigger="every 10s" hx-swap="innerHTML">
       {% include "partials/runs.html" %}
     </div>
   </section>
 
-  <section class="panel">
-    <h2>Chat <span class="muted">(chat_messages)</span></h2>
-    <div id="chat" hx-get="/partials/chat" hx-trigger="every 10s" hx-swap="innerHTML">
+  <section class="panel panel-wide tabpanel" id="panel-chat" data-tab="chat" role="tabpanel" aria-labelledby="chat">
+    <h2 id="chat">Chat <span class="muted">(chat_messages)</span></h2>
+    <div id="chat-body" hx-get="/partials/chat" hx-trigger="every 10s" hx-swap="innerHTML">
       {% include "partials/chat.html" %}
     </div>
   </section>
 
-  <section class="panel panel-wide">
-    <h2>Context fed to agents</h2>
-    <div id="context" hx-get="/partials/context" hx-trigger="every 10s" hx-swap="innerHTML">
+  <section class="panel panel-wide tabpanel" id="panel-context" data-tab="context" role="tabpanel" aria-labelledby="context">
+    <h2 id="context">Context fed to agents</h2>
+    <div id="context-body" hx-get="/partials/context" hx-trigger="every 10s" hx-swap="innerHTML">
       {% include "partials/context.html" %}
     </div>
   </section>
 
 </main>
+
+<script>
+// Progressive enhancement: turn the section anchors into real tabs. With JS
+// off, none of this runs — .has-tabs is never set, so every panel stays visible
+// (the no-JS fallback). Default active tab: Proactive (or the URL #hash).
+(function () {
+  var DEFAULT = "proactive";
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab[data-tab]"));
+  var panels = Array.prototype.slice.call(document.querySelectorAll(".tabpanel[data-tab]"));
+  if (!tabs.length || !panels.length) return;
+  document.body.classList.add("has-tabs");
+
+  function show(name) {
+    var found = false;
+    panels.forEach(function (p) {
+      var on = p.getAttribute("data-tab") === name;
+      p.classList.toggle("active", on);
+      if (on) found = true;
+    });
+    if (!found) { name = DEFAULT; show(name); return; }
+    tabs.forEach(function (t) {
+      var on = t.getAttribute("data-tab") === name;
+      t.classList.toggle("active", on);
+      t.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    try { history.replaceState(null, "", "#" + name); } catch (e) {}
+  }
+
+  tabs.forEach(function (t) {
+    t.addEventListener("click", function (e) {
+      e.preventDefault();
+      show(t.getAttribute("data-tab"));
+    });
+  });
+
+  var initial = (location.hash || "").replace(/^#/, "");
+  show(initial || DEFAULT);
+})();
+</script>
 {% endblock %}

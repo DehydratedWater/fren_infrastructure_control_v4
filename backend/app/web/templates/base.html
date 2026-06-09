@@ -13,12 +13,7 @@
 <body>
   <header class="topbar">
     <a class="brand" href="/">fren v4 · monitor</a>
-    <nav class="topnav">
-      <a href="/#proactive">Proactive</a>
-      <a href="/#runs">Runs</a>
-      <a href="/#chat">Chat</a>
-      <a href="/#context">Context</a>
-    </nav>
+    {% block topnav %}{% endblock %}
     <span class="muted">read-only · auto-refresh 10s</span>
   </header>
   {% block body %}{% endblock %}
