@@ -21,6 +21,7 @@ from app.agents.domains import (
     retrieval,
     rp,
     server,
+    study,
     support,
     vis_simulation,
     workflow_master,
@@ -44,6 +45,7 @@ ALL_DOMAINS: list[ModuleType] = [
     investigation,
     retrieval,
     workflows,
+    study,
 ]
 
 
