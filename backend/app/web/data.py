@@ -12,7 +12,8 @@ counts) so the dashboard renders even on a fresh DB.
 from __future__ import annotations
 
 import contextlib
-from datetime import date
+from datetime import date, datetime
+from pathlib import Path
 from typing import Any
 
 from app.db.repos.activity_blocks import ActivityBlocksRepo
@@ -263,6 +264,152 @@ async def recent_chat(limit: int = 30) -> list[dict[str, Any]]:
     """Recent chat messages, oldest→newest (timeline order)."""
     rows = await ChatMessagesRepo().get_recent(limit=limit)
     return list(reversed(rows))
+
+
+# ── image gallery (rendered selfies/renders + camera captures) ────────────────
+
+# The media kinds the gallery serves, mapped to their sub-dir under data_dir.
+# Both live on the persistent fren_v4_data volume (mounted at /data) so they
+# survive container recreates. Anything not in this map is rejected by the route.
+MEDIA_KINDS: dict[str, str] = {
+    "rendered": "rendered",   # ComfyUI selfies/renders copied here by render workers
+    "captures": "captures",   # camera captures
+}
+
+# Only these extensions are ever listed or served — no arbitrary files leak out.
+IMAGE_EXTS: frozenset[str] = frozenset({".png", ".jpg", ".jpeg", ".webp"})
+
+
+def media_root(kind: str) -> Path | None:
+    """Resolved absolute dir for a media ``kind`` under ``settings.data_dir``.
+
+    Returns ``None`` for an unknown kind (the route turns that into a 404). The
+    returned path is resolved so the route can verify served files stay within.
+    """
+    sub = MEDIA_KINDS.get(kind)
+    if sub is None:
+        return None
+    from app.settings import get_settings
+
+    return (Path(get_settings().data_dir) / sub).resolve()
+
+
+def safe_media_path(kind: str, name: str) -> Path | None:
+    """Resolve ``<data_dir>/<kind>/<name>`` SAFELY, or ``None`` if rejected.
+
+    Rejects anything that isn't a plain image filename living directly inside the
+    allowed media dir: path-traversal (``..``, absolute paths, nested dirs/
+    separators) and non-image extensions all return ``None``. The final resolved
+    path is re-checked to be a direct child of the resolved media root, so even a
+    symlink/``..`` that slips past the string checks can't escape the dir.
+    """
+    root = media_root(kind)
+    if root is None:
+        return None
+    # No separators, no traversal, no absolute paths — a bare filename only.
+    if not name or "/" in name or "\\" in name or "\x00" in name:
+        return None
+    if name != Path(name).name or name in (".", ".."):
+        return None
+    if Path(name).suffix.lower() not in IMAGE_EXTS:
+        return None
+    candidate = (root / name).resolve()
+    # Belt-and-suspenders: the resolved file must sit DIRECTLY under the root.
+    if candidate.parent != root:
+        return None
+    return candidate
+
+
+async def _context_meta_by_filename(
+    limit: int = 200,
+) -> dict[str, dict[str, Any]]:
+    """Map basename → {summary, created_at} from selfie/generated context_cache.
+
+    Read-only best-effort enrichment: pulls recent context_cache rows tagged
+    ``selfie``/``generated`` (or of those artifact_types) and indexes them by the
+    basename of their ``file_path`` so the gallery can show a prompt preview next
+    to a matching rendered/captured file. Returns ``{}`` on any DB error so the
+    gallery still renders from the filesystem alone.
+    """
+    sql = """
+        SELECT file_path, summary, created_at
+        FROM context_cache
+        WHERE (tags ?| ARRAY['selfie','generated','render','selfies']
+               OR artifact_type IN ('selfie','generated','render','image'))
+          AND file_path <> ''
+          AND (expires_at IS NULL OR expires_at > NOW())
+        ORDER BY created_at DESC
+        LIMIT :limit
+    """
+    out: dict[str, dict[str, Any]] = {}
+    with contextlib.suppress(Exception):
+        async with get_async_session() as s:
+            rows = await fetch_all(s, sql, {"limit": limit})
+        for row in rows:
+            fp = (row.get("file_path") or "").strip()
+            if not fp:
+                continue
+            base = Path(fp).name
+            # newest first → keep the first (most recent) seen per filename
+            if base not in out:
+                out[base] = {
+                    "summary": (row.get("summary") or "").strip(),
+                    "created_at": row.get("created_at"),
+                }
+    return out
+
+
+def _list_dir_images(root: Path, kind: str) -> list[dict[str, Any]]:
+    """List image files directly under ``root`` as gallery entries (no recurse).
+
+    Each entry: ``{kind, name, mtime, size}``. Missing dir → ``[]``. Hidden files
+    and non-image extensions are skipped. Pure filesystem, no DB.
+    """
+    items: list[dict[str, Any]] = []
+    with contextlib.suppress(FileNotFoundError, NotADirectoryError, PermissionError):
+        for entry in root.iterdir():
+            if not entry.is_file() or entry.name.startswith("."):
+                continue
+            if entry.suffix.lower() not in IMAGE_EXTS:
+                continue
+            with contextlib.suppress(OSError):
+                st = entry.stat()
+                items.append(
+                    {
+                        "kind": kind,
+                        "name": entry.name,
+                        "mtime": datetime.fromtimestamp(st.st_mtime),
+                        "size": st.st_size,
+                    }
+                )
+    return items
+
+
+async def recent_images(limit: int = 60) -> dict[str, Any]:
+    """Newest-first gallery listing across all media kinds, capped at ``limit``.
+
+    Lists images on the filesystem (rendered + captures), sorts by mtime newest
+    first, caps at ``limit``, then enriches each with a matching context_cache
+    prompt/summary by filename when available. Degrades to a pure-filesystem
+    listing (no prompts) if the DB is unreachable, and to an empty list if no
+    media dirs exist yet. Read-only throughout.
+    """
+    all_items: list[dict[str, Any]] = []
+    for kind in MEDIA_KINDS:
+        root = media_root(kind)
+        if root is not None:
+            all_items.extend(_list_dir_images(root, kind))
+
+    all_items.sort(key=lambda i: i["mtime"], reverse=True)
+    truncated = len(all_items) > limit
+    all_items = all_items[:limit]
+
+    meta = await _context_meta_by_filename()
+    for item in all_items:
+        m = meta.get(item["name"])
+        item["prompt"] = m["summary"] if m else ""
+
+    return {"images": all_items, "cap": limit, "truncated": truncated}
 
 
 # ── health strip ──────────────────────────────────────────────────────────────
