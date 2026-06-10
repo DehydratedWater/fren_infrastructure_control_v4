@@ -17,6 +17,12 @@ PROD_DB="${POSTGRES_DB:-frenv4}"
 LOOP_DB="${PROD_DB}_autoloop"
 DBC=fren-v4-db-1
 
+WITH_CAPTURE=0
+if [ "${1:-}" = "--with-capture" ]; then
+  shift
+  WITH_CAPTURE=1
+fi
+
 if [ "${1:-}" = "--refresh" ]; then
   shift
   echo "[autoloop] refreshing $LOOP_DB from $PROD_DB (prod is only READ) ..."
@@ -27,15 +33,26 @@ export DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@
 export PYTHONPATH="/home/dw/programing/OpenCodeCompilerV2:$PWD"
 
 # SANDBOX: autoloop agents run on the HOST with real tools. Capture tools
-# (scrot/X attach, ffmpeg /dev/video*) hard-locked the machine on 2026-06-10
-# — kill-switch them, mark the run as autoloop for other side-effect guards,
-# and strip any display access so nothing can attach to the user's session.
-export FREN_DISABLE_CAPTURE=1
+# (scrot/X attach, ffmpeg /dev/video*) coincided with the 2026-06-10 host
+# hard-locks (root cause since traced to a degrading PCIe chipset link on
+# 0000:20:01.1 — capture load raises the dice-roll rate, it isn't the disease)
+# — default: kill-switch them, mark the run as autoloop for other side-effect
+# guards, and strip any display access so nothing attaches to the session.
+# `--with-capture` (first arg) opts back in: screen/camera agents exercise
+# their real tools using the caller's DISPLAY/XAUTHORITY. Explicit user
+# decision only — the marginal link means capture runs can still freeze the
+# box until the hardware is fixed.
 export FREN_AUTOLOOP=1
-unset DISPLAY WAYLAND_DISPLAY
-# Poison X auth outright: even if a child process re-derives DISPLAY, the
-# connection fails authentication cleanly instead of attaching to the session.
-export XAUTHORITY=/dev/null
+if [ "$WITH_CAPTURE" = "1" ]; then
+  unset FREN_DISABLE_CAPTURE   # .env may set it; the flag overrides for this run
+  echo "[autoloop] --with-capture: screen/camera tools LIVE (DISPLAY=${DISPLAY:-unset})"
+else
+  export FREN_DISABLE_CAPTURE=1
+  unset DISPLAY WAYLAND_DISPLAY
+  # Poison X auth outright: even if a child process re-derives DISPLAY, the
+  # connection fails authentication cleanly instead of attaching to the session.
+  export XAUTHORITY=/dev/null
+fi
 
 echo "[autoloop] DATABASE_URL -> $LOOP_DB  (prod '$PROD_DB' is untouched)"
 exec /home/dw/programing/OpenCodeCompilerV2/.venv/bin/python -m app improve "$@"
