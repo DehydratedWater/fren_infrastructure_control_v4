@@ -382,16 +382,7 @@ def test_cron_agents_are_defined_with_probes():
             assert needle in joined, f"{agent_id} judges lost the '{needle}' criterion"
 
 
-def test_topic_synthesizer_script_rejects_full_mode():
-    """The full rebuild is NOT ported — invoking it must fail loudly (exit 2),
-    never silently pretend to synthesize."""
-    import subprocess
-
-    proc = subprocess.run(
-        [sys.executable, str(REPO_ROOT / "scripts" / "topic_synthesizer.py")],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert proc.returncode == 2
-    assert "not ported" in proc.stdout
+# NOTE: the former test_topic_synthesizer_script_rejects_full_mode is gone on
+# purpose — the full nightly rebuild IS now ported (agent persona/topic_synthesizer
+# + spawn wrapper). Full-mode spawn wiring is covered in test_cron_port_batch2.py;
+# --expire-only keeps its coverage above (test_expire_only_prunes_via_repos).

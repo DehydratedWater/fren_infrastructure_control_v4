@@ -38,6 +38,7 @@ from app.agents._tools import (
     habit_manager_tool,
     lesson_manager_tool,
     lock_manager_tool,
+    memory_manager_tool,
     night_analysis_tool,
     priority_manager_tool,
     profile_manager_tool,
@@ -706,6 +707,53 @@ and must never re-process already-seen messages.
 """
 
 
+_NIGHT_ANALYST_PROMPT = """\
+# Night Analyst — Deep Overnight Cross-Domain Analysis
+
+You run once nightly (job night_analysis, 02:00 UTC) and perform the deep
+cross-domain analysis v3's night_analyst script did: correlate activity ×
+events × goals × habits × chat themes × health into evidence-grounded
+findings, persist them, and deliver a short summary.
+
+## Flow
+1. Gather (read tools): recent events (event-manager), activity blocks
+   (activity-blocks), active + stagnant goals (goal-manager), habits and
+   streaks (habit-manager), recent chat themes (chat-history), Garmin health
+   trends (garmin-health), and aggregate counts via db-query where useful.
+   Read the previous run's findings (night-analysis latest-report /
+   list-findings) so you NEVER repeat yesterday's findings.
+2. Per-domain analysis: for each domain (health, productivity, habits, goals,
+   emotions, activity_patterns) note 0-3 findings — trends, anomalies,
+   stagnation — each with a unique title, 2-4 sentence content, confidence
+   0-1, and the concrete data points supporting it.
+3. Cross-domain correlation: look for connections ACROSS domains (e.g. late
+   screen activity → next-morning habit misses; stress spikes → task slippage).
+   A correlation requires repeated co-occurrence in the data, not a single
+   coincidence.
+4. Persist (mirror v3's persistence — the night-analysis query tool is
+   read-only):
+   - context-cache add: artifact type `night_analysis_report`, the full
+     markdown report as the summary, tags ["night_analysis", <date>],
+     source_agent night_analyst.
+   - memory-manager create: category `night_analysis`, title
+     "Night Analysis — <date>", content = the top findings, tags
+     ["night_analysis", <date>].
+5. Deliver: emit_guidance with intent "night analysis summary", the top 3-5
+   findings as key_points, prefixed `<<night_analysis>>`.
+
+## Rules — graded by probes
+- EVIDENCE-GROUNDED: every finding must cite the specific data points
+  (dates, counts, values) that support it. A correlation asserted without
+  repeated supporting evidence in the gathered data scores ZERO.
+- ABSENCE IS A VALID RESULT: if the data shows no strong cross-domain
+  pattern, say exactly that ("no strong patterns tonight") and skip the
+  delivery — NEVER invent a correlation to have something to report.
+- Never repeat a finding already present in the previous run's findings.
+- Confidence honestly: 3+ co-occurrences ≈ 0.7-0.9; 2 ≈ 0.5; never report
+  anything below 0.4.
+"""
+
+
 # ── Probe helpers: inline-context replay probes for the cron agents ──────────
 # (No tools/DB needed: the probe inlines the data the live agent would fetch.)
 
@@ -928,6 +976,124 @@ def _lesson_extractor_probes() -> list[AgentTest]:
             name="probe-lessons-stale-state-resolved",
             prompt=_lesson_probe_prompt(_LESSON_STALE_STATE_TRANSCRIPT),
             evaluators=(stale_state_judge,),
+            timeout_s=_PROBE_TIMEOUT_S,
+        ),
+    ]
+
+
+def _night_probe_prompt(sections: list[tuple[str, str]]) -> str:
+    """Self-contained probe prompt: inline multi-domain data, no tool calls."""
+    lines = [
+        "PROBE MODE — the overnight data is inlined below; do NOT call any "
+        "tools. Output the findings you would persist (title, evidence, "
+        "confidence per finding), or state clearly that there are no strong "
+        "patterns.",
+    ]
+    for title, body in sections:
+        lines += ["", f"## {title}", body]
+    return "\n".join(lines)
+
+
+# One REAL correlation planted: late screen-activity nights (Mon/Wed/Fri) are
+# exactly the nights before the missed morning walks (Tue/Thu/Sat).
+_NIGHT_CORRELATED_DATA = [
+    (
+        "Activity blocks — screen activity, last 6 nights",
+        "Mon: screen active until 01:40\n"
+        "Tue: screen off at 23:10\n"
+        "Wed: screen active until 02:05\n"
+        "Thu: screen off at 23:30\n"
+        "Fri: screen active until 01:55\n"
+        "Sat: screen off at 23:00",
+    ),
+    (
+        "Habit occurrences — 'morning walk' (the following mornings)",
+        "Tue morning (after Mon): MISSED\n"
+        "Wed morning (after Tue): completed 08:40\n"
+        "Thu morning (after Wed): MISSED\n"
+        "Fri morning (after Thu): completed 08:35\n"
+        "Sat morning (after Fri): MISSED\n"
+        "Sun morning (after Sat): completed 08:50",
+    ),
+    (
+        "Goals",
+        "- 'Walk 5x per week' — progress 40%, no progress in 2 weeks.",
+    ),
+    (
+        "Chat themes (this week)",
+        "- Thu 09:12 user: 'totally wrecked this morning, skipped the walk again'\n"
+        "- Sat 10:03 user: 'mornings after long coding nights are rough'",
+    ),
+]
+
+# Deliberately UNCORRELATED data: steady habits, varied activity, nothing co-occurs.
+_NIGHT_UNCORRELATED_DATA = [
+    (
+        "Activity blocks — last 5 days",
+        "Mon: coding 09:00-17:00\nTue: errands + reading\nWed: coding 10:00-16:00\n"
+        "Thu: gym 18:00, reading evening\nFri: coding 09:30-15:00",
+    ),
+    (
+        "Habit occurrences — 'morning walk'",
+        "Mon: completed\nTue: completed\nWed: completed\nThu: completed\nFri: completed",
+    ),
+    (
+        "Goals",
+        "- 'Ship side project' — progress 55%, +5% this week (steady).",
+    ),
+    (
+        "Chat themes (this week)",
+        "- Tue: asked for a pasta recipe\n- Thu: shared a meme about compilers",
+    ),
+]
+
+
+def _night_analyst_probes() -> list[AgentTest]:
+    grounded_correlation_judge = LLMJudgeEvaluator(
+        name="surfaces-planted-correlation-with-evidence",
+        criteria=(
+            "GROUNDED-CORRELATION GATE. The inlined data plants exactly ONE real "
+            "cross-domain correlation: the three late screen-activity nights "
+            "(Mon/Wed/Fri, screen active past 01:30) are precisely the nights "
+            "before the three MISSED morning walks (Tue/Thu/Sat), and the chat "
+            "confirms it ('skipped the walk again' after a long night). Score 0 "
+            "if the output asserts ANY correlation not supported by this data — "
+            "invented stress/heart-rate/meal/weather/mood links are the exact "
+            "failure being gated. Score HIGH if it surfaces the late-night-screen "
+            "→ skipped-morning-walk correlation AND cites the supporting "
+            "evidence (the matching nights/mornings, 3-for-3 pattern, the chat "
+            "quotes). Mentioning the stagnant walking goal as impacted is a "
+            "bonus. Vague findings without cited data points score low."
+        ),
+        pass_threshold=_PROBE_PASS_THRESHOLD,
+    )
+    absence_judge = LLMJudgeEvaluator(
+        name="says-no-strong-patterns-for-uncorrelated-data",
+        criteria=(
+            "GROUNDED-ABSENCE GATE. The inlined data is deliberately "
+            "uncorrelated: the morning-walk habit is 5-for-5, the goal "
+            "progresses steadily, activities vary, chat is trivial. There is NO "
+            "strong cross-domain pattern. Score HIGH only if the output "
+            "explicitly states that no strong patterns / correlations were "
+            "found tonight (a brief note that things are steady/healthy is "
+            "fine, and skipping delivery is fine). Score 0 if it invents ANY "
+            "correlation, anomaly, or concerning trend from this data — "
+            "fabricating findings to fill the report is the exact failure "
+            "being gated."
+        ),
+        pass_threshold=_PROBE_PASS_THRESHOLD,
+    )
+    return [
+        AgentTest(
+            name="probe-night-grounded-correlation",
+            prompt=_night_probe_prompt(_NIGHT_CORRELATED_DATA),
+            evaluators=(grounded_correlation_judge,),
+            timeout_s=_PROBE_TIMEOUT_S,
+        ),
+        AgentTest(
+            name="probe-night-absence-no-invention",
+            prompt=_night_probe_prompt(_NIGHT_UNCORRELATED_DATA),
+            evaluators=(absence_judge,),
             timeout_s=_PROBE_TIMEOUT_S,
         ),
     ]
@@ -1850,6 +2016,48 @@ def agents() -> list[AgentDefinition]:
                 # lessons score 0; benign chat yields none; stale-state probe
                 # ('user already resolved X — do not re-remind') is captured.
                 *_lesson_extractor_probes(),
+            ],
+        ),
+        define_agent(
+            "support/night_analyst",
+            model_class="analytical",
+            short="nightly deep cross-domain correlation analysis",
+            long=(
+                "Nightly analyst (job night_analysis): correlates activity ×"
+                " events × goals × habits × chat themes × health into"
+                " evidence-grounded findings, persists the report via the"
+                " context cache + a memory (the night-analysis query tool is"
+                " read-only), and delivers a <<night_analysis>> summary."
+                " Absence of patterns is a valid result — never invents."
+            ),
+            prompt=_NIGHT_ANALYST_PROMPT,
+            tools=[
+                event_manager_tool(),
+                activity_blocks_tool(),
+                goal_manager_tool(),
+                habit_manager_tool(),
+                chat_history_tool(),
+                garmin_health_tool(),
+                db_query_tool(),
+                night_analysis_tool(),
+                context_cache_tool(),
+                memory_manager_tool(),
+                emit_guidance_tool(),
+            ],
+            capability_tests=[
+                CapabilityTest(
+                    name="night-analyst-no-file-writes",
+                    description="The analyst persists via context-cache/memory-manager only.",
+                    must_not_have_tools=("write", "edit"),
+                    must_have_tools=("context-cache", "memory-manager"),
+                ),
+            ],
+            agent_tests=[
+                # LLM-judge replay probes with inline multi-domain data: the
+                # planted late-screen-night → skipped-morning-walk correlation
+                # must be surfaced WITH evidence; uncorrelated data must yield
+                # 'no strong patterns', never invented findings.
+                *_night_analyst_probes(),
             ],
         ),
     ]

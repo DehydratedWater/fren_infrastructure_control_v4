@@ -54,38 +54,33 @@ UP_ENDPOINT = "http://192.168.0.42:8082/v1"
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-# The script jobs still DISABLED after the 2026-06 priority-batch port. Five
-# reference v3 cron scripts not yet ported; topic_synthesizer's script exists
-# but only its --expire-only mode is ported (the full nightly MemTree rebuild
-# is not), so the full-rebuild job stays off. ralf_ping is additionally
-# SUPERSEDED by the framework workflow DAG executor (the ralf state-machine
-# tick is subsumed by src workflow primitives) — if it is ever re-enabled it
-# should be re-thought, not just re-ported.
+# The script jobs still DISABLED after the 2026-06 final cron-port batch.
+# Everything else is ported and enabled (night_analyst, relationship_initiator,
+# relationship_reflector, thought_forger and the full topic_synthesizer rebuild
+# landed as agents + thin spawn wrappers — see test_cron_port_batch2.py).
+# ralf_ping stays PERMANENTLY excluded: it is SUPERSEDED by the framework
+# workflow DAG executor (the ralf state-machine tick is subsumed by src
+# workflow primitives) — if it is ever re-enabled it should be re-thought,
+# not re-ported.
 REMAINING_DISABLED_SCRIPT_JOBS = {
-    "night_analysis",            # scripts/night_analyst.py not ported
-    "ralf_ping",                 # superseded by the framework workflow DAG
-    "relationship_initiator",    # scripts/relationship_initiator.py not ported
-    "topic_synthesizer",         # full rebuild not ported (only --expire-only is)
-    "thought_forger",            # scripts/thought_forger.py not ported
-    "relationship_reflector",    # scripts/relationship_reflector.py not ported
+    "ralf_ping",  # superseded by the framework workflow DAG (permanent)
 }
 
 
 @pytest.mark.xfail(
     strict=True,
-    reason="PORT GAP: 5 disabled schedule jobs still reference v3 cron scripts "
-    "never ported to v4/scripts/ (night_analyst, ralf_ping, relationship_initiator, "
-    "thought_forger, relationship_reflector). ralf_ping is superseded by the "
-    "framework workflow DAG; the others await porting. The 2026-06 priority batch "
-    "ported activity_summarizer, lesson_extractor, event_habit_bridge, "
-    "goal_progress_auto_updater_cron, ralf_cleanup and topic_synthesizer "
-    "(--expire-only) — those jobs are enabled and their scripts exist.",
+    reason="PERMANENT, BY DESIGN: the disabled ralf_ping job references "
+    "scripts/ralf_ping.py, which is intentionally NOT ported — the ralf "
+    "state-machine tick is superseded by the framework workflow DAG executor. "
+    "The job entry stays in schedule.yml (disabled) to document the v3 "
+    "feature; every other script job exists on disk and is enabled.",
 )
 def test_every_schedule_script_job_targets_an_existing_script():
     """Every ``agent: script:scripts/X.py`` in schedule.yml must exist on disk.
 
     Catches the "re-enable a job, get a silent 404" class. Disabled jobs are
-    included on purpose — they document the v3 cron scripts not yet ported.
+    included on purpose — the one remaining miss (ralf_ping) documents the
+    v3 feature superseded by the workflow DAG.
     """
     missing: dict[str, str] = {}
     for job, script in schedule_script_jobs().items():
@@ -100,9 +95,9 @@ def test_every_schedule_script_job_targets_an_existing_script():
 def test_disabled_script_jobs_are_exactly_the_unported_set():
     """The disabled script-job set must equal REMAINING_DISABLED_SCRIPT_JOBS.
 
-    Two-way truthfulness: a job from the ported priority batch flipping back
-    to disabled fails this (regression), and porting one of the remaining six
-    without updating the expectation (and the xfail above) also fails it.
+    Two-way truthfulness: a ported job flipping back to disabled fails this
+    (regression), and enabling/porting ralf_ping without re-thinking it (and
+    updating the pin + the xfail above) also fails it.
     """
     from tests._parity_helpers import schedule_jobs
 

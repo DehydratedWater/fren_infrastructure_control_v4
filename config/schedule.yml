@@ -1,7 +1,7 @@
 # Ported from fren_v3 config/schedule.yml. Agent jobs validated against v4's
-# compiled fleet. script:scripts/*.py jobs whose v3 cron scripts are not yet
-# ported to v4/scripts/ stay DISABLED (see backend/tests/test_system_parity.py
-# for the authoritative remaining-disabled list).
+# compiled fleet. All v3 cron features are ported; the only script job still
+# DISABLED is ralf_ping (superseded by the framework workflow DAG — see
+# backend/tests/test_system_parity.py for the authoritative pin).
 jobs:
   morning:
     cron: 0 8 * * *
@@ -155,7 +155,7 @@ jobs:
     prompt: ''
     description: Deep overnight data analysis — cross-domain correlation and insight
       discovery
-    enabled: false
+    enabled: true
     timeout: 3600
   task_triage:
     cron: 0 10 * * *
@@ -293,7 +293,7 @@ jobs:
     agent: script:scripts/relationship_initiator.py
     prompt: ''
     description: Proactive relationship-building conversation starters (4x daily)
-    enabled: false
+    enabled: true
     timeout: 120
   topic_synthesizer:
     cron: 30 3 * * *
@@ -301,7 +301,7 @@ jobs:
     prompt: ''
     description: Rebuild user-interest topic tree nightly (MemTree-style) at 05:30
       Warsaw
-    enabled: false
+    enabled: true
     timeout: 900
   thought_forger:
     cron: '*/30 7-23 * * *'
@@ -309,7 +309,7 @@ jobs:
     prompt: ''
     description: Forge motivation-scored pending thoughts bridging persona × user
       topics
-    enabled: false
+    enabled: true
     timeout: 300
   persona_curator:
     cron: 30 6 * * *
@@ -332,5 +332,5 @@ jobs:
     agent: script:scripts/relationship_reflector.py
     prompt: ''
     description: Weekly relationship reflection and strategy update
-    enabled: false
+    enabled: true
     timeout: 1800

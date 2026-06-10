@@ -3,9 +3,9 @@
   "version": {
     "component_id": "goals/nudge_strategist",
     "kind": "agent",
-    "content_hash": "4c45fae887e8656862bb65dc7be090ce6100d8ad66de9ecdc663f490c04475bf",
+    "content_hash": "2d33fa954368b1cc287fa2edd01319126445fbebd460abfbae35168861b22328",
     "parent_hash": null,
-    "timestamp": "2026-06-09T04:46:09",
+    "timestamp": "2026-06-10T01:55:44",
     "author": "human",
     "definition": {
       "header": {
@@ -869,6 +869,81 @@
             {
               "kind": "regex",
               "name": "grounding-gate-skip",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            }
+          ],
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-stale-resolved-stocks-pl",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: NONE — say nothing about health.\n\n## Conversation digest (rolling situational summary)\n### Active Tasks (task list — may LAG the chat by up to an hour; cross-check the chat history before reminding)\n- [todo] Kup akcje pod IKE (due today)\n- [todo] Review the server backup config (new, untouched)\n### Current Situation\n- Tue 13:30 local; user at his desk.\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Tue 09:15] twily: Przypominajka: kup akcje pod IKE — termin mija dziś.\n[Tue 10:42] user: Kupiłem już akcje, done. Nie przypominaj mi o tym więcej.\n[Tue 10:43] twily: Super, odhaczam zakup akcji ✅\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "no-rereminder-resolved-stocks",
+              "criteria": "STALE-STATE GATE. The chat history PLAINLY shows the user already completed: the stock purchase ('Kupiłem już akcje, done' — he bought the IKE stocks and asked not to be reminded again). The task list in the digest still carries it only because it lags the chat. Score 0 if the message reminds, nags, nudges, or asks about that completed item AS IF IT WERE STILL PENDING in ANY way — this is the exact trust-destroying failure being gated ('why are you reminding me? I've already done it'). Score HIGH if the message either (a) skips entirely (message_kind='skip'), (b) briefly acknowledges the item is DONE without re-asking for it, or (c) ignores the stale entry and surfaces the genuinely fresh item instead: reviewing the server backup config. Merely mentioning the completed item while clearly treating it as done is acceptable; treating it as open is an automatic 0.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            },
+            {
+              "kind": "regex",
+              "name": "grounding-gate-stale-state",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            }
+          ],
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-stale-resolved-apartment-en",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: NONE — say nothing about health.\n\n## Conversation digest (rolling situational summary)\n### Active Tasks (task list — may LAG the chat; cross-check history)\n- [todo] Pay apartment installment (due Friday)\n- [todo] Call the dentist to reschedule Thursday's appointment (new)\n### Current Situation\n- Wed 18:00 local; user wrapping up work.\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Wed 08:30] twily: Heads-up: the apartment payment is due Friday.\n[Wed 16:05] user: I've already paid for the apartment this morning, you can drop that one.\n[Wed 16:06] twily: Got it — apartment payment marked done.\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "no-rereminder-resolved-apartment",
+              "criteria": "STALE-STATE GATE. The chat history PLAINLY shows the user already completed: the apartment payment ('I've already paid for the apartment this morning, you can drop that one'). The task list in the digest still carries it only because it lags the chat. Score 0 if the message reminds, nags, nudges, or asks about that completed item AS IF IT WERE STILL PENDING in ANY way — this is the exact trust-destroying failure being gated ('why are you reminding me? I've already done it'). Score HIGH if the message either (a) skips entirely (message_kind='skip'), (b) briefly acknowledges the item is DONE without re-asking for it, or (c) ignores the stale entry and surfaces the genuinely fresh item instead: calling the dentist to reschedule Thursday's appointment. Merely mentioning the completed item while clearly treating it as done is acceptable; treating it as open is an automatic 0.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            },
+            {
+              "kind": "regex",
+              "name": "grounding-gate-stale-state",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            }
+          ],
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-stale-resolved-call-mixed",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: NONE — say nothing about health.\n\n## Conversation digest (rolling situational summary)\n### Active Tasks (task list — may LAG the chat; cross-check history)\n- [todo] Zadzwonić do taty (weekend plans)\n- [todo] Hackathon submission — deadline Sunday 23:59 (new, not started)\n### Current Situation\n- Thu 15:20 local.\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Thu 11:00] twily: Pamiętaj żeby zadzwonić do taty w sprawie weekendu.\n[Thu 12:10] user: btw zadzwoniłem do taty, załatwione — done with that call\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "no-rereminder-resolved-call",
+              "criteria": "STALE-STATE GATE. The chat history PLAINLY shows the user already completed: calling his dad ('zadzwoniłem do taty, załatwione — done with that call'). The task list in the digest still carries it only because it lags the chat. Score 0 if the message reminds, nags, nudges, or asks about that completed item AS IF IT WERE STILL PENDING in ANY way — this is the exact trust-destroying failure being gated ('why are you reminding me? I've already done it'). Score HIGH if the message either (a) skips entirely (message_kind='skip'), (b) briefly acknowledges the item is DONE without re-asking for it, or (c) ignores the stale entry and surfaces the genuinely fresh item instead: the hackathon submission due Sunday 23:59. Merely mentioning the completed item while clearly treating it as done is acceptable; treating it as open is an automatic 0.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            },
+            {
+              "kind": "regex",
+              "name": "grounding-gate-stale-state",
               "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
               "flags": 0
             }

@@ -18,7 +18,7 @@ class Input(BaseModel):
         description=(
             "create-interest|list-interests|top-interests|search-interests|mark-interest-surfaced"
             "|prune-interests|delete-interest"
-            "|peek-thought|consume-thought|expire-thoughts|trim-thoughts|list-thoughts|count-thoughts"
+            "|create-thought|peek-thought|consume-thought|expire-thoughts|trim-thoughts|list-thoughts|count-thoughts"
             "|list-feeds|get-feed|create-feed|update-feed|toggle-feed|delete-feed|mark-feed-fetched|feeds-due"
         )
     )
@@ -147,6 +147,33 @@ class PersonaMemoryManagerTool(ScriptTool[Input, Output]):
                 return Output(success=ok)
 
             # ── pending_thoughts ──
+            if inp.command == "create-thought":
+                # Write path for the persona/thought_forger agent (v3's
+                # thought_forger.py inserted directly; the agent goes through
+                # this CLI).
+                if not inp.content.strip():
+                    return Output(success=False, error="content required")
+                breakdown = None
+                if inp.motivation_breakdown.strip():
+                    import json
+
+                    try:
+                        breakdown = json.loads(inp.motivation_breakdown)
+                    except json.JSONDecodeError as e:
+                        return Output(
+                            success=False,
+                            error=f"motivation_breakdown is not valid JSON: {e}",
+                        )
+                row = await thoughts.create(
+                    content=inp.content.strip(),
+                    kind=(inp.kind.strip() or "share"),
+                    motivation_score=inp.motivation_score,
+                    motivation_breakdown=breakdown,
+                    topic_node_id=inp.topic_node_id or None,
+                    persona_interest_id=inp.persona_interest_id or None,
+                )
+                return Output(thought=row)
+
             if inp.command == "peek-thought":
                 kinds = [k.strip() for k in inp.kinds.split(",") if k.strip()] or None
                 rows = await thoughts.peek_top(kinds=kinds, limit=inp.limit, min_motivation=inp.min_motivation)
@@ -173,9 +200,6 @@ class PersonaMemoryManagerTool(ScriptTool[Input, Output]):
 
             if inp.command == "count-thoughts":
                 return Output(count=await thoughts.count_unconsumed())
-
-            # Note: thought creation is done directly by thought_forger.py (uses embeddings
-            # + motivation math), not through this CLI.
 
             # ── rss_feeds ──
             if inp.command == "list-feeds":
