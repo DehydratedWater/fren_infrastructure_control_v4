@@ -25,5 +25,14 @@ fi
 
 export DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${DB_PORT}/${LOOP_DB}"
 export PYTHONPATH="/home/dw/programing/OpenCodeCompilerV2:$PWD"
+
+# SANDBOX: autoloop agents run on the HOST with real tools. Capture tools
+# (scrot/X attach, ffmpeg /dev/video*) hard-locked the machine on 2026-06-10
+# — kill-switch them, mark the run as autoloop for other side-effect guards,
+# and strip any display access so nothing can attach to the user's session.
+export FREN_DISABLE_CAPTURE=1
+export FREN_AUTOLOOP=1
+unset DISPLAY WAYLAND_DISPLAY XAUTHORITY
+
 echo "[autoloop] DATABASE_URL -> $LOOP_DB  (prod '$PROD_DB' is untouched)"
 exec /home/dw/programing/OpenCodeCompilerV2/.venv/bin/python -m app improve "$@"

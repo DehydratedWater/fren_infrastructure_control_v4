@@ -43,6 +43,17 @@ class ScreenshotTool(ScriptTool[Input, Output]):
         if inp.command != "capture":
             return Output(success=False, error=f"Unknown command: {inp.command}")
 
+        # HARD KILL-SWITCH: attaching to the display (scrot/grim) hard-locked
+        # the host twice on 2026-06-10 (the v3 xorg-attach crash mode). When
+        # set, refuse WITHOUT touching X — agents proceed without the capture
+        # (the grounded-absence probes train exactly that behavior).
+        import os
+        if os.getenv("FREN_DISABLE_CAPTURE"):
+            return Output(
+                success=False,
+                error="screen capture disabled (FREN_DISABLE_CAPTURE) — proceed without it",
+            )
+
         captures_dir = _captures_dir()
         captures_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")

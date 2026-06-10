@@ -95,6 +95,16 @@ class CameraCaptureTool(ScriptTool[Input, Output]):
     output_note = "NEXT STEPS: 1) Read the returned path(s) to view the image. 2) Send your description to the user via send_message.py."
 
     def execute(self, inp: Input) -> Output:
+        # HARD KILL-SWITCH: ffmpeg grabbing /dev/video* (uvcvideo) is implicated
+        # in the 2026-06-10 host hard-locks alongside the X grab. When set,
+        # refuse WITHOUT opening any video device.
+        import os
+        if os.getenv("FREN_DISABLE_CAPTURE"):
+            return Output(
+                success=False,
+                error="camera capture disabled (FREN_DISABLE_CAPTURE) — proceed without it",
+            )
+
         captures_dir = _captures_dir()
         captures_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
