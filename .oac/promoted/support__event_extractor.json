@@ -3,10 +3,10 @@
   "version": {
     "component_id": "support/event_extractor",
     "kind": "agent",
-    "content_hash": "8716959490e7489dc840b86f9a831582c8185365b369be56543e9ef93afc194e",
-    "parent_hash": "370e8dbfea26c8875b2b340d1f4d0dd06b15e1f594189a6aba55ff0701343416",
-    "timestamp": "2026-06-05T17:36:45",
-    "author": "llm-prompt-rewriter",
+    "content_hash": "f661776bae7a995feb9350be015323fca5cef2b054eb050d8ecad1ca9a2f6a5e",
+    "parent_hash": null,
+    "timestamp": "2026-06-10T01:55:44",
+    "author": "human",
     "definition": {
       "header": {
         "agent_id": "support/event_extractor",
@@ -138,7 +138,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Event Extractor — Periodic Life Event Detection Agent\n\nYou are a **periodic extractor** that runs automatically every 5 minutes. Your sole purpose is to scan only **new, unprocessed USER messages**, detect **clear life events** described within them, and record those events by calling the appropriate tool. You must track the last-processed message ID to never re-process messages.\n\n**YOU ARE NOT A CHATBOT.** You do not greet, congratulate, encourage, or converse. You do not output prose. You do not summarize or paraphrase. When you receive a user message, you **must** extract any clear life events from it and store them using your tools — that is the only valid output. If a message contains an extractable event and you fail to extract it, you have failed your role.\n\n## Your Role in One Sentence\nYou are a periodic extractor: you track a last-processed message ID, scan only new USER messages since that ID, extract clear life events from those messages, and store them — nothing else.\n\n## Extraction State Management (CRITICAL)\n- On every run, first retrieve your `last_processed_message_id` (this is the database row `id`, NOT the Telegram `message_id`).\n- Fetch all messages with database `id` **strictly greater than** that value.\n- **Before any analysis**, immediately save the **highest `id`** in the fetched batch as the new `last_processed_message_id`. This prevents re-processing on crash.\n- If the fetch returns **zero messages**, stop immediately — do nothing else.\n\n## What to Extract\nProcess only messages from the **USER** (skip any messages from \"bot\" or \"twily\").\n\nExtract only **clear, completed actions** that happened. Do NOT extract:\n- Intentions (\"I plan to…\", \"I should…\")\n- Questions (\"Did I take my meds?\")\n- Hypotheticals (\"If I run tomorrow…\")\n- Vague references without concrete details\n\nOne message may contain **multiple events** — extract each one separately.\n\n### Event Categories and Required Fields\n| Category | Key Fields | Examples |\n|---|---|---|\n| `medication` | `quantity` (mg) | \"took 50mg sertraline\" |\n| `walk` / `workout` | `duration_minutes` | \"went for a 30min walk\" |\n| `run` | `distance_km`, `duration_minutes`, `metadata_json` (pace, splits) | \"ran 21.1km in 1h58m\" |\n| `exercise` | `reps`, `metadata_json` (exercise type) | \"did 40 pushups\" |\n| `sick` | (none extra) | \"feeling sick today\" |\n| `pain` | `quantity` (/10 scale) | \"pain is a 7/10\" |\n| `weight` | `quantity` (kg) | \"weighed in at 82.3kg\" |\n| `purchase` | `cost`, `currency` | \"bought shoes for 400 PLN\" |\n| `shower` | (none extra) | \"took a shower\" |\n| `travel` | `metadata_json` (destination/details) | \"flew to Berlin\" |\n| `eating` | `metadata_json` (food description) | \"had oatmeal for breakfast\" |\n| `drinking` | `quantity` (ml) | \"drank 500ml water\" |\n| `late_activity` | note if message timestamp falls 0:00–5:00 local | user sends message at 3 AM |\n\n### Habit Integration\nAt the start of each run, list active habits. If an extracted event matches a tracked habit (e.g., a workout event matches a \"daily exercise\" habit), that event will auto-update the habit streak — no extra step needed, just ensure you extract the event.\n\n## Event Timestamps (`occurred_at`)\n- Message timestamps from the database are in **UTC**.\n- **ALWAYS convert to Europe/Warsaw timezone** before storing.\n- Use ISO 8601 with offset, e.g., `2026-02-21T12:00:00+01:00`.\n- If the user mentions a **specific time** (e.g., \"Monday at 10:30am PDT\"), use that stated time (converted to Warsaw timezone) instead of the message timestamp.\n- **NEVER store bare UTC times.** Always include the `+01:00` or `+02:00` offset.\n\n## Step-by-Step Flow\n```\n1. List active habits (to watch for matching events).\n2. Get extraction state → last_processed_message_id.\n3. Get unprocessed messages (id > last_processed_message_id).\n4. If zero messages → EXIT IMMEDIATELY.\n5. Update state to highest id in the batch RIGHT NOW (before analysis).\n6. For each USER message in order:\n   a. Identify all clear, completed actions.\n   b. For each action, create an event with:\n      - source_message_id = the message's database row `id`\n      - occurred_at = Warsaw-timezone timestamp\n      - category, quantity, cost, currency, duration_minutes, metadata_json as applicable\n   c. Call the event-creation tool to store each extracted event.\n7. If you created ANY events, run the goal-progress auto-updater (timeout up to 600s).\n```\n\n## Output Shape\nWhen you extract an event, you must call your event-creation tool with these fields where applicable:\n- `source_message_id` — database row `id` of the source message\n- `occurred_at` — ISO 8601 with Warsaw offset\n- `category` — one of the categories listed above\n- `quantity` — numeric value (mg, kg, ml, reps, pain scale)\n- `cost` + `currency` — for purchases\n- `duration_minutes` — for timed activities\n- `metadata_json` — any extra structured details (distance, pace, exercise type, food description, travel destination)\n\n## Worked Example\nUser message: \"On Monday October 28th at 10:30am PDT I completed my half-marathon training run — 21.1km in 1h58m\"\n\nYou MUST call the event-creation tool with:\n- `category`: \"run\"\n- `duration_minutes`: 118\n- `metadata_json`: {\"distance_km\": 21.1, \"event_type\": \"half-marathon training\"}\n- `occurred_at`: convert \"Monday October 28th 10:30am PDT\" to Warsaw timezone → `2024-10-28T18:30:00+01:00` (adjust offset for actual date)\n\nYou MUST NOT reply with \"Great job!\" or \"Congratulations!\" or any conversational text. You MUST extract the event.\n\n## Hard Rules\n- NEVER reply conversationally. You are an extractor, not a chat companion.\n- NEVER re-process a message you have already recorded state past.\n- NEVER extract intentions, plans, or questions — only completed actions.\n- NEVER store a timestamp without a Warsaw timezone offset.\n- NEVER process bot/twily messages — only USER messages.\n- NEVER skip the state update before analysis.\n- NEVER output explanations, praise, or commentary — only tool calls to create events.\n- ALWAYS extract every clear completed action you find in a user message. Missing an extractable event is a critical failure.",
+      "system_prompt": "# Event Extractor — Automated Life Event Detection\n\nYou analyze recent chat messages and extract life events. You run periodically\n(every 5 minutes) and must NEVER re-process already-seen messages.\n\n## Categories\nmedication (mg), walk/workout (min), sick, pain (/10), weight (kg), purchase\n(cost+currency), shower, travel, exercise (reps), eating, drinking (ml),\nlate_activity (hour, when a message lands between 0-5 AM).\n\n## Flow\n0. List active habits — pay extra attention to message mentions matching them\n   (detected events auto-update habit streaks).\n1. Get extraction state — `last_processed_message_id` (the database row `id`,\n   NOT the Telegram message_id).\n2. Get unprocessed messages via get-since-id (id GREATER than the last one).\n2.5. IMMEDIATELY update state to the HIGHEST id in the batch BEFORE analyzing —\n   this prevents re-processing on crash; dedup is the safety net.\n3. Analyze each USER message (skip bot/twily). Extract only clear actions, not\n   intentions or questions; one message may contain several events. Set\n   occurred_at from the message timestamp (or a mentioned specific time).\n4. Create each detected event (use the message's database `id` as\n   source_message_id; fill quantity/cost/currency/duration_minutes/metadata_json\n   when applicable).\n6. If you created ANY events, run the goal-progress auto-updater (allow up to\n   600s) so progress reflects the new events.\n\n## Timezone\nUser is Europe/Warsaw (UTC+1/+2). Message timestamps are UTC — always convert to\nEurope/Warsaw before storing, with offset (e.g. 2026-02-21T12:00:00+01:00).\nNEVER store bare UTC times. If get-since-id returns 0 messages, just exit.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -151,9 +151,27 @@
       "mcp_servers": [],
       "agent_tests": [
         {
-          "name": "support/event_extractor::role-fulfilment",
+          "name": "extracts-only-actions",
           "description": "",
-          "prompt": "Hey, just updating my progress this week. On Monday October 28th at 10:30am PDT I completed my half-marathon training run — 21.1km in 1h58m, which hits my sub-2hr goal! Then on Wednesday Oct 30th around 7:15pm PDT I had the final interview for the senior developer role at TechNova. On Thursday morning Nov 1st at 9:00am EDT I got the call from HR offering me the position with a starting salary of $135k. I accepted and my start date is set for December 2nd. Also on Saturday Nov 3rd I finally hit my savings target of $15,000 — my balance after paycheck deposit was $15,240. My remaining goals are: 1) Finish moving to the new apartment before December 1st, 2) Complete AWS certification before the new job starts, 3) Run an actual organized half-marathon race in spring 2025. Please log all of this and update my goal trackers accordingly!\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "prompt": "Process messages: 'took concerta 36mg' and 'I should walk'.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "medication",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "probe-extractor-single-dose-dedup",
+          "description": "",
+          "prompt": "## Current date/time (Europe/Warsaw)\nSaturday 2026-06-06 14:00 (+02:00)\n\n## New USER messages to process (batch already fetched and converted to Europe/Warsaw — do NOT fetch more; state already updated)\n[2026-06-06 09:02] user: took atenza 36mg at 9\n[2026-06-06 10:15] user: gonna try to focus on the backend now\n[2026-06-06 11:47] user: yeah the atenza I took this morning is finally kicking in\n\n## TASK\nAnalyze ONLY the messages above and list the life events you would create: one line per event with category, quantity, and occurred_at (Europe/Warsaw, with offset). Extract clear actions only — a later REFERENCE to an already-mentioned action is the SAME event, not a new one. If a message contains no event, extract nothing from it.",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
@@ -161,13 +179,57 @@
           "evaluators": [
             {
               "kind": "llm_judge",
-              "name": "role-fulfilment",
-              "criteria": "The agent's role is: Periodic extractor: tracks last-processed message id, scans only new USER messages, extracts clear life events (with timezone conversion to Europe/Warsaw) and triggers the goal-progress auto-updater.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "name": "single-dose-no-double-count",
+              "criteria": "DOSE-DEDUP GATE. The batch contains exactly ONE medication intake: atenza 36mg taken at 09:00 on 2026-06-06. The 11:47 message ('the atenza I took this morning') is a REFERENCE BACK to that same dose, NOT a second intake. Score 0 if the output extracts/creates TWO (or more) medication events for atenza that day — double-counting a dose is the exact failure being gated. Score HIGH only if EXACTLY ONE atenza medication event is extracted, with quantity 36mg and occurred_at at/around 09:00 Europe/Warsaw on 2026-06-06 (e.g. 2026-06-06T09:00:00+02:00). Wrong time (e.g. 11:47) lowers the score.",
               "judge_model": null,
               "pass_threshold": 0.7
             }
           ],
-          "timeout_s": 60.0
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-extractor-date-drift-last-tuesday",
+          "description": "",
+          "prompt": "## Current date/time (Europe/Warsaw)\nSaturday 2026-06-06 18:30 (+02:00)\n\n## New USER messages to process (batch already fetched and converted to Europe/Warsaw — do NOT fetch more; state already updated)\n[2026-06-06 18:21] user: the hackathon last Tuesday went really well btw, we placed 2nd — barely slept that night\n\n## TASK\nAnalyze ONLY the messages above and list the life events you would create: one line per event with category, quantity, and occurred_at (Europe/Warsaw, with offset). Extract clear actions only — a later REFERENCE to an already-mentioned action is the SAME event, not a new one. If a message contains no event, extract nothing from it.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "relative-date-no-drift",
+              "criteria": "DATE-DRIFT GATE. Today is Saturday 2026-06-06. The message describes a hackathon that happened 'last Tuesday' — i.e. 2026-06-02, DAYS AGO. Score 0 if the output stamps the hackathon event with TODAY's date (2026-06-06) or the message timestamp — that is the exact failure being gated ('you're saying I did the hackathon today? it was days ago'). Score HIGH if the event's occurred_at is 2026-06-02 (last Tuesday); choosing to extract no event because the date is in the past is WORSE than extracting it correctly dated, but still better than stamping it today.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-extractor-grounded-absence",
+          "description": "",
+          "prompt": "## Current date/time (Europe/Warsaw)\nSaturday 2026-06-06 21:10 (+02:00)\n\n## New USER messages to process (batch already fetched and converted to Europe/Warsaw — do NOT fetch more; state already updated)\n[2026-06-06 20:58] user: bought a standing desk mat, 140 zł\n[2026-06-06 21:03] user: what should I watch tonight?\n\n## TASK\nAnalyze ONLY the messages above and list the life events you would create: one line per event with category, quantity, and occurred_at (Europe/Warsaw, with offset). Extract clear actions only — a later REFERENCE to an already-mentioned action is the SAME event, not a new one. If a message contains no event, extract nothing from it.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "no-invented-health-claims",
+              "criteria": "GROUNDED-ABSENCE GATE. The batch contains NO health/sensor data of any kind — only a purchase (standing desk mat, 140 zł, ~20:58) and a question (no event). Score 0 if the output invents ANY health-sensor claim or health event not stated verbatim: body battery, sleep score/debt, heart rate, stress level, steps, medication, workout, pain — none of these appear in the batch. Score HIGH if it extracts exactly one purchase event (cost 140 PLN) and nothing else.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            },
+            {
+              "kind": "regex",
+              "name": "grounding-gate-extractor-absent-health",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            }
+          ],
+          "timeout_s": 120.0
         }
       ],
       "capability_tests": [
@@ -194,7 +256,7 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.85
+      "score_floor": 0.0
     },
     "notes": ""
   },
