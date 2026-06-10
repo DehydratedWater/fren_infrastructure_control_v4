@@ -958,8 +958,61 @@ async def trigger_bug_report(prompt: str, model: str | None = None) -> None:
     await _post_run_persona_delivery(agent, run_id)
 
 
+# --- event-loop watchdog ----------------------------------------------------
+# The bot froze (silent, zero getUpdates) twice on 2026-06-09/10 — an event-loop
+# stall of unknown cause (init:true reaper did NOT prevent the recurrence). This
+# self-heals it: an asyncio task touches a heartbeat file every 30s; a DAEMON
+# THREAD (runs independently of the frozen loop) os._exit(1)s if the heartbeat
+# goes stale, so Docker's `restart: unless-stopped` recovers the bot in seconds
+# instead of a multi-hour silent outage. os._exit also dumps a py-spy stack (if
+# available) first, so the next stall reveals WHERE it hangs.
+_WATCHDOG_HB = Path("/tmp/bot_loop_hb")
+_WATCHDOG_STALL_SECS = 180
+
+
+async def _loop_heartbeat() -> None:
+    import time as _time
+
+    while True:
+        try:
+            _WATCHDOG_HB.write_text(str(_time.time()))
+        except Exception:
+            logger.exception("loop heartbeat write failed")
+        await asyncio.sleep(30)
+
+
+def _start_loop_watchdog() -> None:
+    import threading
+    import time as _time
+
+    def _watch() -> None:
+        _time.sleep(120)  # startup grace (compile/migrations)
+        while True:
+            _time.sleep(30)
+            try:
+                age = _time.time() - float(_WATCHDOG_HB.read_text())
+            except Exception:
+                age = 0.0  # file not written yet — never kill on a missing HB
+            if age > _WATCHDOG_STALL_SECS:
+                logger.error("event loop stalled %.0fs — dumping + exiting for restart", age)
+                try:
+                    import subprocess
+
+                    subprocess.run(
+                        ["py-spy", "dump", "--pid", str(os.getpid())],
+                        timeout=20, check=False,
+                    )
+                except Exception:
+                    pass
+                os._exit(1)
+
+    threading.Thread(target=_watch, daemon=True, name="loop-watchdog").start()
+
+
 async def _post_init(_app: Application) -> None:
     global _scheduler
+    # Self-healing watchdog: heartbeat the loop so a frozen-loop stall restarts.
+    _app.create_task(_loop_heartbeat())
     # The dedicated `scheduler` service owns cron in the v4 split deployment.
     # Running the in-bot scheduler too would double-fire every job (per-container
     # state, same schedule.yml). Off by default; set RUN_INTERNAL_SCHEDULER=1 for
@@ -1153,6 +1206,10 @@ def run() -> None:
 
     signal.signal(signal.SIGTERM, cleanup)
     signal.signal(signal.SIGINT, cleanup)
+
+    # Durable self-heal: daemon thread (independent of the asyncio loop) restarts
+    # the process if the event loop stalls (see _loop_heartbeat / _start_loop_watchdog).
+    _start_loop_watchdog()
 
     app.run_polling(drop_pending_updates=False)
 

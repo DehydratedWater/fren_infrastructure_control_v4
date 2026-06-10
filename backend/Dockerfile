@@ -21,7 +21,7 @@ RUN pip install --upgrade pip && \
         tinytuya 'pymupdf>=1.24' python-docx openai \
         google-api-python-client google-auth google-auth-oauthlib \
         pillow matplotlib yt-dlp beautifulsoup4 \
-        'loguru>=0.7.3' \
+        'loguru>=0.7.3' py-spy \
         pytest pytest-asyncio
 
 COPY backend /app/backend
