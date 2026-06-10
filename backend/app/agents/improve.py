@@ -727,11 +727,24 @@ def build_agent_evaluator(
             ctx = RunContext(output=judge_output, tool_calls=list(calls), judge=judge)
             evs = list(t.evaluators)
             results = [evaluate(e, ctx) for e in evs] if evs else []
-            ok = all(r.passed for r in results) if results else True
+            # SKIPPED results (e.g. an LLMJudge with no judge wired) carry
+            # passed=True/score=0.0. Counting them as passes let agents get
+            # "promoted at 1.000" on regex gates alone while judged probes
+            # were never graded; counting their 0.0 into the mean corrupted
+            # floors the other way. Rule: grade only on non-skipped checks,
+            # and a probe whose EVERY check skipped is ungraded → it FAILS
+            # (promotion must never ride on ungraded probes).
+            considered = [r for r in results if not r.skipped]
+            if results and not considered:
+                ok = False
+                scores.append(0.0)
+            else:
+                ok = all(r.passed for r in considered) if considered else True
+                scores.append(
+                    statistics.fmean([r.score for r in considered])
+                    if considered else 1.0
+                )
             passes += 1 if ok else 0
-            scores.append(
-                statistics.fmean([r.score for r in results]) if results else 1.0
-            )
             if failures_sink is not None:
                 # Capture evidence for any check that didn't fully pass (score < 1)
                 # so the rewriter learns WHAT to fix and WHY (judge reasoning).

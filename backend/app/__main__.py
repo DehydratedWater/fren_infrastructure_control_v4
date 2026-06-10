@@ -196,7 +196,13 @@ def _run_improve(argv: list[str]) -> None:
     snaps = PROJECT_ROOT / ".oac" / "snapshots"
     snaps.mkdir(parents=True, exist_ok=True)
 
-    judge = None if args.substring_tests else ZaiJudge()
+    # ALWAYS wire the judge. Authored/substring mode used to pass judge=None,
+    # which made every LLMJudgeEvaluator in authored tests SKIP (passed=True,
+    # score=0.0) — the proactive/stale suites are judge-heavy, so agents got
+    # "promoted at 1.000" on regex gates alone while the judged probes were
+    # never graded. The judge is only invoked when a test carries an LLMJudge
+    # evaluator, so pure-regex suites cost nothing extra.
+    judge = ZaiJudge()
     criterion = run_improvement_criterion = (
         GRADED if use_judge_test else None
     )
