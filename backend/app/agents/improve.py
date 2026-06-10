@@ -754,10 +754,16 @@ def build_agent_evaluator(
                             "blocked_attempts": len(blocked),
                             "error": str(run_error)[:300] if run_error else None,
                         })
-        return {
+        metrics = {
             "pass_rate": passes / len(tests),
             "score_floor": min(scores) if scores else 1.0,
         }
+        # Per-test floors (branch-evaluator convention): without these, a
+        # floor-gated agent shows score=0.000 in the summary with no way to
+        # tell WHICH probe zeroed it from the snapshots alone.
+        for t, s in zip(tests, scores):
+            metrics[f"score_floor:by_name:{t.name}"] = s
+        return metrics
 
     return evaluator
 
