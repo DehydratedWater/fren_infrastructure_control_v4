@@ -32,7 +32,10 @@ export PYTHONPATH="/home/dw/programing/OpenCodeCompilerV2:$PWD"
 # and strip any display access so nothing can attach to the user's session.
 export FREN_DISABLE_CAPTURE=1
 export FREN_AUTOLOOP=1
-unset DISPLAY WAYLAND_DISPLAY XAUTHORITY
+unset DISPLAY WAYLAND_DISPLAY
+# Poison X auth outright: even if a child process re-derives DISPLAY, the
+# connection fails authentication cleanly instead of attaching to the session.
+export XAUTHORITY=/dev/null
 
 echo "[autoloop] DATABASE_URL -> $LOOP_DB  (prod '$PROD_DB' is untouched)"
 exec /home/dw/programing/OpenCodeCompilerV2/.venv/bin/python -m app improve "$@"
