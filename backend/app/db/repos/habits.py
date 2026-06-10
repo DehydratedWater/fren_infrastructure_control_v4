@@ -194,6 +194,24 @@ class HabitsRepo:
             """,
             )
 
+    async def completion_stats(self, *, days: int = 30) -> list[dict[str, Any]]:
+        """Per-habit scheduled vs completed occurrence counts over the last
+        ``days`` days. Read-only aggregate for the dashboard completion-rate
+        display."""
+        async with get_async_session() as s:
+            return await fetch_all(
+                s,
+                """
+                SELECT habit_id,
+                       COUNT(*) AS scheduled,
+                       COUNT(*) FILTER (WHERE status = 'completed') AS completed
+                FROM habit_occurrences
+                WHERE scheduled_date >= CURRENT_DATE - CAST(:days AS integer)
+                GROUP BY habit_id
+            """,
+                {"days": days},
+            )
+
     async def get_occurrences(self, habit_id: str, *, limit: int = 30) -> list[dict[str, Any]]:
         async with get_async_session() as s:
             return await fetch_all(

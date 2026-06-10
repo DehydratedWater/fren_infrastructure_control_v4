@@ -1,0 +1,66 @@
+{# Events — self-polling root so the active category filter survives the
+   refresh (same pattern as partials/images.html: the poll URL carries the
+   current filter; outerHTML swap replaces the whole div, buttons included). #}
+{% set cat = events.category if events and events.category else 'all' %}
+<div id="events-body"
+     hx-get="/partials/events{% if cat != 'all' %}?category={{ cat|urlencode }}{% endif %}"
+     hx-trigger="every 60s" hx-swap="outerHTML">
+
+  <div class="imgfilters">
+    <a class="imgfilter {{ 'active' if cat == 'all' else '' }}"
+       href="/events" hx-get="/partials/events" hx-target="#events-body" hx-swap="outerHTML">all</a>
+    {% for c in events.categories %}
+    <a class="imgfilter {{ 'active' if cat == c else '' }}"
+       href="/events?category={{ c|urlencode }}"
+       hx-get="/partials/events?category={{ c|urlencode }}"
+       hx-target="#events-body" hx-swap="outerHTML">{{ c }}</a>
+    {% endfor %}
+  </div>
+
+  <h3 class="sub">by category <span class="muted">(last {{ events.chart_days }} days)</span></h3>
+  {% if events.bars %}
+  <div class="bars">
+    {% for b in events.bars %}
+    <div class="bar-row">
+      <span class="bar-label" title="{{ b.category }}">{{ b.category }}</span>
+      <span class="bar-track"><span class="bar-fill" style="width: {{ b.pct }}%"></span></span>
+      <span class="bar-count">{{ b.count }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty">No events in the last {{ events.chart_days }} days.</p>
+  {% endif %}
+
+  {% if events.strip %}
+  <h3 class="sub">daily counts · {{ cat }} <span class="muted">({{ events.strip.total }} in {{ events.chart_days }}d, max {{ events.strip.max }}/day)</span></h3>
+  <div class="strip">
+    {% for d in events.strip.days %}
+    <span class="strip-col" title="{{ d.date }} · {{ d.count }}"><span class="strip-fill" style="height: {{ d.pct }}%"></span></span>
+    {% endfor %}
+  </div>
+  {% elif cat == 'all' %}
+  <p class="muted">pick a category to see its daily strip.</p>
+  {% endif %}
+
+  <h3 class="sub">timeline <span class="muted">(last {{ events.days }} days{% if cat != 'all' %} · {{ cat }}{% endif %})</span></h3>
+  {% if events.events %}
+  <table class="tbl">
+    <tr>
+      <th>when</th><th>category</th><th>title</th><th>detail</th><th>source</th>
+    </tr>
+    {% for e in events.events %}
+    <tr>
+      <td class="muted">{{ e.occurred_at.strftime('%m-%d %H:%M') if e.occurred_at else '—' }}</td>
+      <td><span class="tag kind">{{ e.category }}</span>{% if e.subcategory %} <span class="muted">{{ e.subcategory }}</span>{% endif %}</td>
+      <td class="event-title" title="{{ e.title }}">{{ e.title }}</td>
+      <td class="muted">{{ e.detail }}</td>
+      <td class="muted">{{ e.source }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p class="muted">showing newest {{ events.events|length }} (cap {{ events.cap }})</p>
+  {% else %}
+  <p class="empty">No events in the last {{ events.days }} days{% if cat != 'all' %} (category: {{ cat }}){% endif %}.</p>
+  {% endif %}
+</div>

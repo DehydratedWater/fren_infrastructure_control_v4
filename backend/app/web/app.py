@@ -13,7 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -48,6 +48,7 @@ def create_app() -> FastAPI:
             "chat": await data.recent_chat(),
             "images": await data.recent_images(),
             "mind": await data.mind(),
+            "life": await data.life(),
         }
         return _render(request, "index.html", ctx)
 
@@ -62,6 +63,26 @@ def create_app() -> FastAPI:
         return _render(
             request, "trace_detail.html",
             {"run_id": run_id, "trace": detail, "missing": detail is None},
+        )
+
+    # ── events (extracted life events: timeline + category charts) ──────────
+    @app.get("/events", response_class=HTMLResponse)
+    async def events_page(request: Request, category: str = "all") -> HTMLResponse:
+        # `category` is validated inside data.events_page against the
+        # categories actually present in the DB; unknown → "all".
+        return _render(request, "events.html", {"events": await data.events_page(category)})
+
+    # ── artifacts (context_cache gallery, read-only) ─────────────────────────
+    @app.get("/artifacts", response_class=HTMLResponse)
+    async def artifacts_page(
+        request: Request,
+        atype: str = Query("all", alias="type"),
+        q: str = "",
+    ) -> HTMLResponse:
+        # `type` and `q` are validated/normalised inside data.artifacts_page.
+        return _render(
+            request, "artifacts.html",
+            {"artifacts": await data.artifacts_page(atype, q)},
         )
 
     # ── run detail (view the session) ────────────────────────────────────────
@@ -120,6 +141,28 @@ def create_app() -> FastAPI:
     @app.get("/partials/traces", response_class=HTMLResponse)
     async def partial_traces(request: Request) -> HTMLResponse:
         return _render(request, "partials/traces.html", {"traces": await data.prose_traces()})
+
+    @app.get("/partials/life", response_class=HTMLResponse)
+    async def partial_life(request: Request) -> HTMLResponse:
+        return _render(request, "partials/life.html", {"life": await data.life()})
+
+    @app.get("/partials/events", response_class=HTMLResponse)
+    async def partial_events(request: Request, category: str = "all") -> HTMLResponse:
+        return _render(
+            request, "partials/events.html",
+            {"events": await data.events_page(category)},
+        )
+
+    @app.get("/partials/artifacts", response_class=HTMLResponse)
+    async def partial_artifacts(
+        request: Request,
+        atype: str = Query("all", alias="type"),
+        q: str = "",
+    ) -> HTMLResponse:
+        return _render(
+            request, "partials/artifacts.html",
+            {"artifacts": await data.artifacts_page(atype, q)},
+        )
 
     # ── media bytes (read-only, path-traversal-safe) ─────────────────────────
     @app.get("/media/{kind}/{name}")

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import zlib
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -20,10 +21,16 @@ from typing import Any
 from app.db.repos.activity_blocks import ActivityBlocksRepo
 from app.db.repos.agent_notes import AgentNotesRepo
 from app.db.repos.chat import ChatMessagesRepo
+from app.db.repos.context_cache import ContextCacheRepo
 from app.db.repos.emotional_state import EmotionalStateRepo
+from app.db.repos.events import EventsRepo
+from app.db.repos.goals import GoalsRepo
+from app.db.repos.habits import HabitsRepo
 from app.db.repos.memories import MemoriesRepo
 from app.db.repos.persona_memory import PendingThoughtsRepo, PersonaInterestsRepo
 from app.db.repos.persona_vibe import StyleEventsRepo, VibeStateRepo
+from app.db.repos.priorities import PrioritiesRepo
+from app.db.repos.todos import TodosRepo
 from app.db.repos.user_mood import UserMoodRepo
 from app.db.session import fetch_all, fetch_one, get_async_session
 
@@ -89,6 +96,29 @@ def _as_dict(value: Any) -> dict[str, Any]:
             if isinstance(parsed, dict):
                 return parsed
     return {}
+
+
+def _as_list(value: Any) -> list[str]:
+    """JSONB array column → list of strings (handles list, JSON string, None)."""
+    if isinstance(value, str) and value.strip():
+        with contextlib.suppress(Exception):
+            value = json.loads(value)
+    if isinstance(value, (list, tuple)):
+        return [str(v) for v in value if v not in (None, "")]
+    return []
+
+
+def _f(value: Any, default: float | None = None) -> float | None:
+    """Numeric column (incl. Decimal/str) → float, or ``default`` on junk."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _as_utc(ts: datetime) -> datetime:
+    """Naive datetimes are assumed UTC (same policy as ``_age_hours``)."""
+    return ts.replace(tzinfo=UTC) if ts.tzinfo is None else ts
 
 # ── persona_response classification ───────────────────────────────────────────
 
@@ -803,6 +833,535 @@ async def recent_images(limit: int = 60, kind: str = "all") -> dict[str, Any]:
         item["size_h"] = _human_size(item.get("size"))
 
     return {"images": all_items, "cap": limit, "truncated": truncated, "kind": kind}
+
+
+# ── Life tab (goals / todos / habits / priorities) ────────────────────────────
+
+# goals.level is constrained to 1..6 in the schema — indent depth is capped to
+# the same six levels so a malformed tree can't push rows off-screen.
+GOAL_MAX_DEPTH = 5
+
+
+def shape_goal(row: dict[str, Any], now: datetime | None = None) -> dict[str, Any]:
+    """One goals row → template dict (progress meter + overdue flag)."""
+    now = now or _now_utc()
+    status = (row.get("status") or "").lower()
+    deadline = row.get("deadline")
+    overdue = False
+    if isinstance(deadline, datetime) and status == "active":
+        overdue = _as_utc(deadline) < now
+    pct = _f(row.get("progress_percent"), 0.0) or 0.0
+    level = int(_f(row.get("level"), 1.0) or 1.0)
+    return {
+        "goal_id": row.get("goal_id") or "",
+        "parent_goal_id": row.get("parent_goal_id") or "",
+        "level": max(1, min(level, GOAL_MAX_DEPTH + 1)),
+        "title": row.get("title") or "",
+        "status": status or "active",
+        "priority": row.get("priority") or "",
+        "progress": {"pct": int(max(0.0, min(100.0, pct)))},
+        "deadline": deadline,
+        "overdue": overdue,
+        "depth": 0,  # assigned by shape_goal_tree
+    }
+
+
+def shape_goal_tree(
+    rows: list[dict[str, Any]], now: datetime | None = None
+) -> list[dict[str, Any]]:
+    """goals rows → flattened DFS order with ``depth`` for indentation.
+
+    Robust against dirty data: orphans (parent_goal_id pointing at a missing/
+    archived goal) become roots indented by their own level, self-parents are
+    treated as roots, and cycles can't recurse (visited set) — nothing crashes,
+    every goal is rendered exactly once.
+    """
+    now = now or _now_utc()
+    shaped: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for row in rows:
+        s = shape_goal(row, now)
+        gid = s["goal_id"]
+        if not gid or gid in shaped:
+            continue
+        shaped[gid] = s
+        order.append(gid)
+
+    children: dict[str, list[str]] = {}
+    roots: list[str] = []
+    for gid in order:
+        pid = shaped[gid]["parent_goal_id"]
+        if pid and pid != gid and pid in shaped:
+            children.setdefault(pid, []).append(gid)
+        else:
+            roots.append(gid)
+
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def walk(gid: str, depth: int) -> None:
+        if gid in seen:
+            return
+        seen.add(gid)
+        node = shaped[gid]
+        node["depth"] = max(0, min(depth, GOAL_MAX_DEPTH))
+        out.append(node)
+        for child in children.get(gid, []):
+            walk(child, depth + 1)
+
+    for gid in roots:
+        walk(gid, shaped[gid]["level"] - 1)
+    # pure cycles (a→b→a, no root) — emit flat so nothing silently disappears
+    for gid in order:
+        walk(gid, shaped[gid]["level"] - 1)
+    return out
+
+
+TODO_UPCOMING_DAYS = 7
+
+
+def shape_todo(row: dict[str, Any]) -> dict[str, Any]:
+    """One todos row → template dict (due label computed by bucket_todos)."""
+    return {
+        "todo_id": row.get("todo_id") or "",
+        "title": row.get("title") or "",
+        "status": (row.get("status") or "").lower(),
+        "priority": (row.get("priority") or "").lower(),
+        "category": row.get("category") or "",
+        "linked_goal_id": row.get("linked_goal_id") or "",
+        "goal_title": "",  # filled by life() from the goals listing
+        "due_label": "",
+    }
+
+
+def bucket_todos(
+    rows: list[dict[str, Any]], now: datetime | None = None
+) -> dict[str, list[dict[str, Any]]]:
+    """Open todos → overdue / today / upcoming (next 7 days) buckets.
+
+    The due moment is ``deadline`` (TIMESTAMPTZ) when present, else ``date``
+    (DATE, never NULL in the schema). Deadline-carrying todos go overdue the
+    second the deadline passes; date-only todos go overdue the day after.
+    Completed/cancelled rows and anything due beyond the window are dropped.
+    Buckets come back sorted soonest-first.
+    """
+    now = now or _now_utc()
+    today = now.date()
+    horizon = today + timedelta(days=TODO_UPCOMING_DAYS)
+    buckets: dict[str, list[tuple[Any, dict[str, Any]]]] = {
+        "overdue": [], "today": [], "upcoming": [],
+    }
+    for row in rows:
+        status = (row.get("status") or "").lower()
+        if status not in ("pending", "in_progress"):
+            continue
+        deadline = row.get("deadline")
+        ddate = row.get("date")
+        item = shape_todo(row)
+        if isinstance(deadline, datetime):
+            due = _as_utc(deadline)
+            item["due_label"] = due.strftime("%m-%d %H:%M")
+            if due < now:
+                key = "overdue"
+            elif due.date() == today:
+                key = "today"
+            elif due.date() <= horizon:
+                key = "upcoming"
+            else:
+                continue
+            sort_key = (due.date().isoformat(), due.strftime("%H:%M"))
+        elif isinstance(ddate, date) and not isinstance(ddate, datetime):
+            item["due_label"] = ddate.strftime("%m-%d")
+            if ddate < today:
+                key = "overdue"
+            elif ddate == today:
+                key = "today"
+            elif ddate <= horizon:
+                key = "upcoming"
+            else:
+                continue
+            sort_key = (ddate.isoformat(), "")
+        else:
+            continue  # no due information → not shown in the dated buckets
+        buckets[key].append((sort_key, item))
+    return {
+        key: [item for _, item in sorted(pairs, key=lambda p: p[0])]
+        for key, pairs in buckets.items()
+    }
+
+
+HABIT_RATE_DAYS = 30
+
+
+def shape_habits(
+    habit_rows: list[dict[str, Any]],
+    due_today_rows: list[dict[str, Any]],
+    stats_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """habits + due-today occurrences + 30d occurrence stats → template dict."""
+    stats_by_id: dict[str, dict[str, Any]] = {}
+    for r in stats_rows:
+        hid = r.get("habit_id")
+        if hid:
+            stats_by_id[hid] = r
+
+    due_today = [
+        {
+            "habit_id": r.get("habit_id") or "",
+            "title": r.get("habit_title") or r.get("title") or "",
+            "importance_level": int(_f(r.get("importance_level"), 0.0) or 0.0),
+        }
+        for r in due_today_rows
+    ]
+    due_ids = {d["habit_id"] for d in due_today}
+
+    habits = []
+    for r in habit_rows:
+        hid = r.get("habit_id") or ""
+        st = stats_by_id.get(hid)
+        rate = None
+        if st:
+            scheduled = int(_f(st.get("scheduled"), 0.0) or 0.0)
+            completed = int(_f(st.get("completed"), 0.0) or 0.0)
+            if scheduled > 0:
+                rate = {
+                    "pct": int(round(100.0 * completed / scheduled)),
+                    "completed": completed,
+                    "scheduled": scheduled,
+                }
+        habits.append(
+            {
+                "habit_id": hid,
+                "title": r.get("title") or "",
+                "frequency_type": r.get("frequency_type") or "",
+                "streak": int(_f(r.get("current_streak"), 0.0) or 0.0),
+                "best_streak": int(_f(r.get("best_streak"), 0.0) or 0.0),
+                "rate": rate,
+                "due_today": hid in due_ids,
+            }
+        )
+    return {"due_today": due_today, "habits": habits}
+
+
+# Eisenhower quadrants from the priorities table's importance × immediacy
+# (both NUMERIC 0..1 — verified in migrations 001_initial_schema.py).
+PRIORITY_QUADRANTS: tuple[tuple[str, str], ...] = (
+    ("do", "important · immediate"),
+    ("plan", "important · can wait"),
+    ("delegate", "immediate · low importance"),
+    ("drop", "low · later"),
+)
+
+QUADRANT_THRESHOLD = 0.5
+MISALIGN_THRESHOLD = 0.15
+
+
+def assign_quadrant(importance: Any, immediacy: Any) -> str:
+    """importance × immediacy (0..1) → Eisenhower quadrant key."""
+    hi_imp = (_f(importance, 0.0) or 0.0) >= QUADRANT_THRESHOLD
+    hi_imm = (_f(immediacy, 0.0) or 0.0) >= QUADRANT_THRESHOLD
+    if hi_imp and hi_imm:
+        return "do"
+    if hi_imp:
+        return "plan"
+    if hi_imm:
+        return "delegate"
+    return "drop"
+
+
+def shape_priorities(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """priorities rows → quadrant lists with misalignment flags.
+
+    ``misaligned`` = audited ``real_importance`` deviating from the stated
+    importance by ≥ MISALIGN_THRESHOLD (uses the generated ``importance_delta``
+    column when present, recomputes otherwise; never-audited rows are never
+    flagged).
+    """
+    quadrants: dict[str, list[dict[str, Any]]] = {k: [] for k, _ in PRIORITY_QUADRANTS}
+    misaligned_count = 0
+    for r in rows:
+        imp = _f(r.get("importance"))
+        imm = _f(r.get("immediacy"))
+        real = _f(r.get("real_importance"))
+        delta = _f(r.get("importance_delta"))
+        if delta is None and real is not None and imp is not None:
+            delta = real - imp
+        misaligned = delta is not None and abs(delta) >= MISALIGN_THRESHOLD
+        if misaligned:
+            misaligned_count += 1
+        quadrants[assign_quadrant(imp, imm)].append(
+            {
+                "priority_id": r.get("priority_id") or "",
+                "title": r.get("title") or "",
+                "category": r.get("category") or "",
+                "importance": imp,
+                "immediacy": imm,
+                "real_importance": real,
+                "delta": delta,
+                "misaligned": misaligned,
+            }
+        )
+    return {"quadrants": quadrants, "misaligned": misaligned_count, "total": len(rows)}
+
+
+async def life() -> dict[str, Any]:
+    """Everything the Life tab shows. Read-only; each sub-panel independently
+    degrades to empty on a missing table / unreachable DB so the tab always
+    renders."""
+    goals_rows: list[dict[str, Any]] = []
+    todos_rows: list[dict[str, Any]] = []
+    habit_rows: list[dict[str, Any]] = []
+    due_today_rows: list[dict[str, Any]] = []
+    stats_rows: list[dict[str, Any]] = []
+    prio_rows: list[dict[str, Any]] = []
+    with contextlib.suppress(Exception):
+        goals_rows = await GoalsRepo().list_with_children(limit=300)
+    with contextlib.suppress(Exception):
+        todos_rows = await TodosRepo().list(status="pending", limit=300)
+    with contextlib.suppress(Exception):
+        habit_rows = await HabitsRepo().list(status="active", limit=100)
+    with contextlib.suppress(Exception):
+        due_today_rows = await HabitsRepo().get_due_today()
+    with contextlib.suppress(Exception):
+        stats_rows = await HabitsRepo().completion_stats(days=HABIT_RATE_DAYS)
+    with contextlib.suppress(Exception):
+        prio_rows = await PrioritiesRepo().list(status="active", limit=100)
+
+    goals = shape_goal_tree(goals_rows)
+    goal_titles = {g["goal_id"]: g["title"] for g in goals}
+    todos = bucket_todos(todos_rows)
+    for bucket in todos.values():
+        for t in bucket:
+            t["goal_title"] = goal_titles.get(t["linked_goal_id"], "")
+
+    return {
+        "goals": goals,
+        "todos": todos,
+        "habits": shape_habits(habit_rows, due_today_rows, stats_rows),
+        "priorities": shape_priorities(prio_rows),
+    }
+
+
+# ── /events page (event timeline + category bar chart + daily strip) ──────────
+
+EVENT_TIMELINE_DAYS = 7
+EVENT_CHART_DAYS = 30
+EVENT_TIMELINE_CAP = 200
+
+
+def normalize_event_category(value: Any, categories: list[str]) -> str:
+    """Server-side validation of the ``category`` query param.
+
+    Anything that isn't exactly one of the categories present in the DB falls
+    back to ``"all"`` — raw user input never reaches the SQL filter.
+    """
+    if isinstance(value, str) and value in categories:
+        return value
+    return "all"
+
+
+def category_bars(counts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """count_by_category rows → bar-chart entries scaled to the max count."""
+    shaped = []
+    for row in counts:
+        cat = row.get("category")
+        n = int(_f(row.get("count"), 0.0) or 0.0)
+        if not cat or n < 0:
+            continue
+        shaped.append({"category": str(cat), "count": n, "pct": 0})
+    max_n = max((b["count"] for b in shaped), default=0)
+    if max_n > 0:
+        for b in shaped:
+            b["pct"] = int(round(100.0 * b["count"] / max_n))
+    return shaped
+
+
+def daily_strip(
+    rows: list[dict[str, Any]], *, days: int = EVENT_CHART_DAYS,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Sparse daily_counts rows → dense last-``days`` series scaled to the max.
+
+    Missing days are filled with zero so the strip is a fixed-width calendar
+    ending today.
+    """
+    now = now or _now_utc()
+    today = now.date()
+    counts: dict[date, int] = {}
+    for row in rows:
+        d = row.get("date")
+        if isinstance(d, datetime):
+            d = d.date()
+        if isinstance(d, date):
+            counts[d] = int(_f(row.get("count"), 0.0) or 0.0)
+    series = []
+    for offset in range(days, -1, -1):
+        d = today - timedelta(days=offset)
+        series.append({"date": d.isoformat(), "count": counts.get(d, 0), "pct": 0})
+    max_n = max((p["count"] for p in series), default=0)
+    if max_n > 0:
+        for p in series:
+            p["pct"] = int(round(100.0 * p["count"] / max_n))
+    return {"days": series, "max": max_n, "total": sum(p["count"] for p in series)}
+
+
+def shape_event_row(row: dict[str, Any]) -> dict[str, Any]:
+    """One events row → timeline-table dict (value/cost/duration condensed)."""
+    parts: list[str] = []
+    value = row.get("value")
+    if value not in (None, ""):
+        unit = row.get("unit") or ""
+        parts.append(f"{value} {unit}".strip())
+    quantity = _f(row.get("quantity"))
+    if quantity is not None and not value:
+        parts.append(f"×{quantity:g}")
+    cost = _f(row.get("cost"))
+    if cost is not None:
+        parts.append(f"{cost:g} {row.get('currency') or ''}".strip())
+    duration = _f(row.get("duration_minutes"))
+    if duration is not None:
+        parts.append(f"{int(duration)} min")
+    return {
+        "event_id": row.get("event_id") or "",
+        "occurred_at": row.get("occurred_at"),
+        "category": row.get("category") or "",
+        "subcategory": row.get("subcategory") or "",
+        "title": row.get("title") or "",
+        "detail": " · ".join(parts),
+        "source": row.get("source") or "",
+    }
+
+
+async def events_page(category: Any = "all") -> dict[str, Any]:
+    """Everything the /events page shows. Read-only, degrades to empty."""
+    counts: list[dict[str, Any]] = []
+    with contextlib.suppress(Exception):
+        counts = await EventsRepo().count_by_category(days=EVENT_CHART_DAYS)
+    bars = category_bars(counts)
+    categories = [b["category"] for b in bars]
+    category = normalize_event_category(category, categories)
+
+    timeline_rows: list[dict[str, Any]] = []
+    date_from = (_now_utc().date() - timedelta(days=EVENT_TIMELINE_DAYS)).isoformat()
+    with contextlib.suppress(Exception):
+        timeline_rows = await EventsRepo().list(
+            category=None if category == "all" else category,
+            date_from=date_from,
+            limit=EVENT_TIMELINE_CAP,
+        )
+
+    strip: dict[str, Any] | None = None
+    if category != "all":
+        daily_rows: list[dict[str, Any]] = []
+        with contextlib.suppress(Exception):
+            daily_rows = await EventsRepo().daily_counts(category, days=EVENT_CHART_DAYS)
+        strip = daily_strip(daily_rows, days=EVENT_CHART_DAYS)
+
+    return {
+        "category": category,
+        "categories": categories,
+        "bars": bars,
+        "events": [shape_event_row(r) for r in timeline_rows],
+        "strip": strip,
+        "days": EVENT_TIMELINE_DAYS,
+        "chart_days": EVENT_CHART_DAYS,
+        "cap": EVENT_TIMELINE_CAP,
+    }
+
+
+# ── /artifacts page (context_cache gallery) ───────────────────────────────────
+
+ARTIFACTS_CAP = 100
+ARTIFACT_SUMMARY_PREVIEW = 220
+ARTIFACT_PALETTE_SIZE = 6
+SEARCH_Q_MAX_LEN = 80
+
+
+def artifact_type_class(artifact_type: Any) -> str:
+    """Stable per-type CSS color class (art-c0..art-c5). crc32, not hash() —
+    hash() is salted per process, which would reshuffle colors every restart."""
+    name = artifact_type if isinstance(artifact_type, str) else ""
+    return f"art-c{zlib.crc32(name.encode('utf-8')) % ARTIFACT_PALETTE_SIZE}"
+
+
+def normalize_artifact_type(value: Any, types: list[str]) -> str:
+    """Server-side validation of the ``type`` query param — anything that isn't
+    exactly a type present in the DB falls back to ``"all"``."""
+    if isinstance(value, str) and value in types:
+        return value
+    return "all"
+
+
+def normalize_search_q(value: Any) -> str:
+    """Server-side normalisation of the ``q`` search param: non-strings → "",
+    whitespace collapsed, capped at SEARCH_Q_MAX_LEN chars. (ILIKE wildcard
+    escaping happens in the repo; HTML escaping in the autoescaped template.)"""
+    if not isinstance(value, str):
+        return ""
+    cleaned = " ".join(value.split())
+    return cleaned[:SEARCH_Q_MAX_LEN]
+
+
+def shape_artifact(row: dict[str, Any], now: datetime | None = None) -> dict[str, Any]:
+    """One context_cache row → gallery dict (badge class, preview, tags)."""
+    now = now or _now_utc()
+    summary = (row.get("summary") or "").strip()
+    atype = row.get("artifact_type") or ""
+    expires_at = row.get("expires_at")
+    expired = isinstance(expires_at, datetime) and _as_utc(expires_at) < now
+    entity_type = row.get("entity_type") or ""
+    entity_id = row.get("entity_id") or ""
+    return {
+        "cache_id": row.get("cache_id") or "",
+        "artifact_type": atype,
+        "type_class": artifact_type_class(atype),
+        "summary": summary,
+        "preview": summary[:ARTIFACT_SUMMARY_PREVIEW],
+        "has_more": len(summary) > ARTIFACT_SUMMARY_PREVIEW,
+        "tags": _as_list(row.get("tags")),
+        "source_agent": row.get("source_agent") or "",
+        "entity": f"{entity_type}:{entity_id}" if entity_type and entity_id else "",
+        "created_at": row.get("created_at"),
+        "expires_at": expires_at,
+        "expired": expired,
+    }
+
+
+async def artifacts_page(atype: Any = "all", q: Any = "") -> dict[str, Any]:
+    """Everything the /artifacts page shows. Read-only, degrades to empty."""
+    type_rows: list[dict[str, Any]] = []
+    with contextlib.suppress(Exception):
+        type_rows = await ContextCacheRepo().distinct_types()
+    types = []
+    for row in type_rows:
+        name = row.get("artifact_type")
+        if not name:
+            continue
+        types.append(
+            {
+                "name": str(name),
+                "n": int(_f(row.get("n"), 0.0) or 0.0),
+                "type_class": artifact_type_class(str(name)),
+            }
+        )
+    type_names = [t["name"] for t in types]
+    atype = normalize_artifact_type(atype, type_names)
+    q = normalize_search_q(q)
+
+    rows: list[dict[str, Any]] = []
+    with contextlib.suppress(Exception):
+        rows = await ContextCacheRepo().list_newest(
+            artifact_type=None if atype == "all" else atype,
+            q=q or None,
+            limit=ARTIFACTS_CAP,
+        )
+    return {
+        "type": atype,
+        "types": types,
+        "q": q,
+        "artifacts": [shape_artifact(r) for r in rows],
+        "cap": ARTIFACTS_CAP,
+    }
 
 
 # ── health strip ──────────────────────────────────────────────────────────────

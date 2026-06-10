@@ -1,0 +1,61 @@
+{# Artifacts (context_cache gallery) — self-polling root carrying the active
+   type filter AND search query, so both survive the refresh. READ-ONLY: no
+   cleanup/delete controls. #}
+{% set atype = artifacts.type if artifacts and artifacts.type else 'all' %}
+{% set q = artifacts.q if artifacts and artifacts.q else '' %}
+<div id="artifacts-body"
+     hx-get="/partials/artifacts?type={{ atype|urlencode }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+     hx-trigger="every 60s" hx-swap="outerHTML">
+
+  {# plain GET form → works with JS off; server-side ?q= ILIKE filter #}
+  <form class="searchbar" method="get" action="/artifacts">
+    {% if atype != 'all' %}<input type="hidden" name="type" value="{{ atype }}">{% endif %}
+    <input class="search-input" type="search" name="q" value="{{ q }}"
+           maxlength="80" placeholder="search summaries…">
+    <button class="imgfilter" type="submit">search</button>
+    {% if q %}<a class="imgfilter" href="/artifacts{% if atype != 'all' %}?type={{ atype|urlencode }}{% endif %}">clear</a>{% endif %}
+  </form>
+
+  <div class="imgfilters">
+    <a class="imgfilter {{ 'active' if atype == 'all' else '' }}"
+       href="/artifacts{% if q %}?q={{ q|urlencode }}{% endif %}"
+       hx-get="/partials/artifacts?type=all{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+       hx-target="#artifacts-body" hx-swap="outerHTML">all</a>
+    {% for t in artifacts.types %}
+    <a class="imgfilter {{ 'active' if atype == t.name else '' }}"
+       href="/artifacts?type={{ t.name|urlencode }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+       hx-get="/partials/artifacts?type={{ t.name|urlencode }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+       hx-target="#artifacts-body" hx-swap="outerHTML">{{ t.name }} <span class="muted">{{ t.n }}</span></a>
+    {% endfor %}
+  </div>
+
+  {% if not artifacts.artifacts %}
+  <p class="empty">No context_cache artifacts{% if atype != 'all' %} of type {{ atype }}{% endif %}{% if q %} matching “{{ q }}”{% endif %}.</p>
+  {% else %}
+  <p class="muted">showing newest {{ artifacts.artifacts|length }} (cap {{ artifacts.cap }}){% if q %} · search: “{{ q }}”{% endif %}</p>
+  <div class="artlist">
+    {% for a in artifacts.artifacts %}
+    <div class="artifact {{ 'art-expired' if a.expired else '' }}">
+      <div class="mind-row">
+        <span class="art-badge {{ a.type_class }}">{{ a.artifact_type }}</span>
+        {% if a.source_agent %}<span class="muted">by {{ a.source_agent }}</span>{% endif %}
+        {% if a.entity %}<span class="muted">{{ a.entity }}</span>{% endif %}
+        {% for tag in a.tags %}<span class="tag kind">{{ tag }}</span>{% endfor %}
+        <span class="when">{{ a.created_at.strftime('%m-%d %H:%M') if a.created_at else '—' }}</span>
+        {% if a.expires_at %}
+        <span class="pill {{ 'bad' if a.expired else '' }}">{{ 'expired' if a.expired else 'expires' }} {{ a.expires_at.strftime('%m-%d %H:%M') }}</span>
+        {% endif %}
+      </div>
+      {% if a.has_more %}
+      <details class="art-summary">
+        <summary>{{ a.preview }}…</summary>
+        <div class="art-full">{{ a.summary }}</div>
+      </details>
+      {% else %}
+      <div class="art-summary">{{ a.summary or '(no summary)' }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>

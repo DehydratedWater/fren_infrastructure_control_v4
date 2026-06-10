@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block topnav %}
+<nav class="tabbar">
+  <a class="tab" href="/">← dashboard</a>
+  <a class="tab active-page" href="/events">Events</a>
+  <a class="tab" href="/artifacts">Artifacts</a>
+</nav>
+{% endblock %}
+
+{% block body %}
+<main class="grid">
+  <section class="panel panel-wide">
+    <h2>Events <span class="muted">(events · extracted life events, newest first)</span></h2>
+    {# the partial's root div self-polls (and carries the active category filter) #}
+    {% include "partials/events.html" %}
+  </section>
+</main>
+{% endblock %}

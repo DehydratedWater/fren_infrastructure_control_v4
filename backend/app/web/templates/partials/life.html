@@ -1,0 +1,112 @@
+{# Life tab — goals / todos / habits / priorities. All read-only; every panel
+   degrades to an .empty message on a fresh DB. Polled at 60s by the wrapper in
+   index.html. #}
+<div class="lifegrid">
+
+  <div class="ctxbox">
+    <h3>goals <span class="muted">(goals · hierarchy, indent = level)</span></h3>
+    {% if life.goals %}
+      <ul class="goallist">
+        {% for g in life.goals %}
+        <li class="goal-row" style="margin-left: {{ g.depth * 18 }}px">
+          <div class="meter">
+            <span class="goal-level">L{{ g.level }}</span>
+            <span class="goal-title" title="{{ g.title }}">{{ g.title }}</span>
+            <span class="meter-track goal-progress"><span class="meter-fill" style="width: {{ g.progress.pct }}%"></span></span>
+            <span class="meter-val">{{ g.progress.pct }}%</span>
+            <span class="status {{ g.status }}">{{ g.status }}</span>
+            {% if g.deadline %}
+            <span class="when {{ 'overdue' if g.overdue else '' }}">due {{ g.deadline.strftime('%Y-%m-%d') }}</span>
+            {% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">No goals yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="ctxbox">
+    <h3>todos <span class="muted">(todos · open, by due date)</span></h3>
+    {% for label, key in [('overdue', 'overdue'), ('due today', 'today'), ('upcoming 7 days', 'upcoming')] %}
+    <h4 class="mind-sub {{ 'overdue' if key == 'overdue' and life.todos[key] else '' }}">{{ label }} <span class="muted">({{ life.todos[key]|length }})</span></h4>
+    {% if life.todos[key] %}
+      <ul class="mindlist">
+        {% for t in life.todos[key] %}
+        <li>
+          <div class="mind-row">
+            <span class="tag prio {{ t.priority }}">{{ t.priority or '?' }}</span>
+            <span class="tag kind">{{ t.status }}</span>
+            <span class="todo-title" title="{{ t.title }}">{{ t.title }}</span>
+            {% if t.goal_title %}<span class="pill goal-pill" title="{{ t.linked_goal_id }}">goal: {{ t.goal_title }}</span>{% endif %}
+            <span class="when {{ 'overdue' if key == 'overdue' else '' }}">{{ t.due_label }}</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">Nothing {{ label }}.</p>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="ctxbox">
+    <h3>habits <span class="muted">(habits · streaks + 30d completion)</span></h3>
+    <h4 class="mind-sub">due today <span class="muted">({{ life.habits.due_today|length }})</span></h4>
+    {% if life.habits.due_today %}
+      <ul class="mindlist">
+        {% for o in life.habits.due_today %}
+        <li class="mind-row">
+          <span class="habit-box">☐</span>
+          <span class="todo-title">{{ o.title }}</span>
+          <span class="pill">importance {{ o.importance_level }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">Nothing due today.</p>
+    {% endif %}
+    <h4 class="mind-sub">streaks &amp; completion <span class="muted">(last 30d)</span></h4>
+    {% if life.habits.habits %}
+      <div class="meters">
+        {% for h in life.habits.habits %}
+        <div class="meter">
+          <span class="meter-label habit-title" title="{{ h.title }}">{{ h.title }}</span>
+          <span class="meter-track"><span class="meter-fill novelty" style="width: {{ h.rate.pct if h.rate else 0 }}%"></span></span>
+          <span class="meter-val">{{ (h.rate.pct ~ '%') if h.rate else '—' }}</span>
+          <span class="pill" title="best {{ h.best_streak }}">streak {{ h.streak }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No active habits yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="ctxbox">
+    <h3>priorities <span class="muted">(priorities · importance × immediacy{% if life.priorities.misaligned %} · {{ life.priorities.misaligned }} misaligned{% endif %})</span></h3>
+    {% if life.priorities.total %}
+      <div class="quadgrid">
+        {% for key, label in [('do', 'important · immediate'), ('plan', 'important · can wait'), ('delegate', 'immediate · low importance'), ('drop', 'low · later')] %}
+        <div class="quad quad-{{ key }}">
+          <h4 class="quad-head">{{ label }} <span class="muted">({{ life.priorities.quadrants[key]|length }})</span></h4>
+          {% for p in life.priorities.quadrants[key] %}
+          <div class="quad-item">
+            <span class="quad-title" title="importance {{ p.importance }} · immediacy {{ p.immediacy }}">{{ p.title }}</span>
+            {% if p.misaligned %}
+            <span class="tag rep" title="audited real_importance {{ p.real_importance }}">Δ {{ '%+.2f'|format(p.delta) }}</span>
+            {% endif %}
+          </div>
+          {% else %}
+          <p class="empty">—</p>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">No active priorities yet.</p>
+    {% endif %}
+  </div>
+
+</div>

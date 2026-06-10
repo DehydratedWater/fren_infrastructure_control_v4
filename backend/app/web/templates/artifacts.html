@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block topnav %}
+<nav class="tabbar">
+  <a class="tab" href="/">← dashboard</a>
+  <a class="tab" href="/events">Events</a>
+  <a class="tab active-page" href="/artifacts">Artifacts</a>
+</nav>
+{% endblock %}
+
+{% block body %}
+<main class="grid">
+  <section class="panel panel-wide">
+    <h2>Artifacts <span class="muted">(context_cache · background-agent artifact registry, read-only)</span></h2>
+    {# the partial's root div self-polls (and carries the type filter + search) #}
+    {% include "partials/artifacts.html" %}
+  </section>
+</main>
+{% endblock %}

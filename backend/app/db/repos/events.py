@@ -181,6 +181,44 @@ class EventsRepo:
                 {"category": category, "days": days},
             )
 
+    async def count_by_category(self, *, days: int = 30) -> list[dict[str, Any]]:
+        """Per-category event counts over the last ``days`` days, biggest first.
+
+        Read-only aggregate for the dashboard category bar chart.
+        """
+        async with get_async_session() as s:
+            return await fetch_all(
+                s,
+                """
+                SELECT category, COUNT(*) AS count
+                FROM events
+                WHERE date >= CURRENT_DATE - CAST(:days AS integer)
+                GROUP BY category
+                ORDER BY count DESC, category ASC
+            """,
+                {"days": days},
+            )
+
+    async def daily_counts(self, category: str, *, days: int = 30) -> list[dict[str, Any]]:
+        """Per-day event counts for one category over the last ``days`` days.
+
+        Read-only aggregate for the dashboard daily strip (sparse: days with
+        no events are absent; the caller fills the gaps).
+        """
+        async with get_async_session() as s:
+            return await fetch_all(
+                s,
+                """
+                SELECT date, COUNT(*) AS count
+                FROM events
+                WHERE category = :category
+                  AND date >= CURRENT_DATE - CAST(:days AS integer)
+                GROUP BY date
+                ORDER BY date ASC
+            """,
+                {"category": category, "days": days},
+            )
+
     async def update(
         self,
         event_id: str,

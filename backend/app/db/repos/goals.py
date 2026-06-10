@@ -111,3 +111,21 @@ class GoalsRepo:
             return await fetch_all(
                 s, "SELECT * FROM goals WHERE parent_goal_id = :pid ORDER BY level, created_at", {"pid": parent_goal_id}
             )
+
+    async def list_with_children(self, *, limit: int = 300) -> list[dict[str, Any]]:
+        """All non-archived goals (parents AND children), shallow-first.
+
+        Read-only listing used by the dashboard to rebuild the goal hierarchy
+        in Python — ordered by level then created_at so parents come before
+        their children.
+        """
+        async with get_async_session() as s:
+            return await fetch_all(
+                s,
+                """
+                SELECT * FROM goals
+                WHERE status != 'archived'
+                ORDER BY level ASC, created_at ASC LIMIT :limit
+            """,
+                {"limit": limit},
+            )

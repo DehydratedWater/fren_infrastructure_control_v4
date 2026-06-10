@@ -169,6 +169,57 @@ class ContextCacheRepo:
                 {"q": f"%{query}%", "hours": hours, "limit": limit, "cls": content_class},
             )
 
+    async def list_newest(
+        self,
+        *,
+        artifact_type: str | None = None,
+        q: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Newest-first rows for the dashboard artifact gallery (no time cutoff).
+
+        Optional ``artifact_type`` equality filter and ``q`` ILIKE substring
+        filter on summary (``%``/``_``/``\\`` in the query are escaped so they
+        match literally). Read-only.
+        """
+        conds: list[str] = ["1=1"]
+        params: dict[str, Any] = {"limit": limit}
+        if artifact_type:
+            conds.append("artifact_type = :atype")
+            params["atype"] = artifact_type
+        if q:
+            escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            conds.append("summary ILIKE :q ESCAPE '\\'")
+            params["q"] = f"%{escaped}%"
+        async with get_async_session() as s:
+            return await fetch_all(
+                s,
+                f"""
+                SELECT * FROM context_cache
+                WHERE {" AND ".join(conds)}
+                ORDER BY created_at DESC
+                LIMIT :limit
+                """,
+                params,
+            )
+
+    async def distinct_types(self) -> list[dict[str, Any]]:
+        """Distinct artifact_type values with row counts, biggest first.
+
+        Read-only aggregate for the dashboard type-filter buttons.
+        """
+        async with get_async_session() as s:
+            return await fetch_all(
+                s,
+                """
+                SELECT artifact_type, COUNT(*) AS n
+                FROM context_cache
+                GROUP BY artifact_type
+                ORDER BY n DESC, artifact_type ASC
+                """,
+                {},
+            )
+
     async def delete(self, cache_id: str) -> bool:
         async with get_async_session() as s:
             r = await execute_sql(
