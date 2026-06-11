@@ -375,6 +375,10 @@ def _dispatch(service: str, argv: list[str]) -> None:
         from app.agents.retrieval_corpus import main as seed_retrieval_main
 
         seed_retrieval_main(argv)
+    elif service == "ralf-smoke":
+        from app.agents.ralf_smoke import main as ralf_smoke_main
+
+        ralf_smoke_main(argv)
     else:
         print(
             f"unknown service: {service!r} "
