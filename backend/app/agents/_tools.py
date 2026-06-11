@@ -50,6 +50,16 @@ def _raw_command_def(name: str, description: str, command_pattern: str) -> ToolD
     )
 
 
+def ralf_spawn_tool() -> ToolDefinition:
+    return _build(
+        "ralf-spawn",
+        "Hand the RALF chain to the next stage agent (detached spawn). Usage:"
+        " python scripts/ralf_spawn.py <agent_id> ralf_id=<id>"
+        " [stage_number=N attempt_number=M]. Call as your LAST step.",
+        "scripts/ralf_spawn.py",
+    )
+
+
 def workspace_orientation_tool() -> ToolDefinition:
     """Read-only `ls` — kills the blocked-exploration friction at session start.
 
