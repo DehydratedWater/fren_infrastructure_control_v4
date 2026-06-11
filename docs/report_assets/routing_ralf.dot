@@ -1,0 +1,14 @@
+digraph ralf {
+  rankdir=LR; fontname="Helvetica"; label="RALF loop — plan/execute/verify cycle"; labelloc=t;
+  node [shape=box, style="rounded,filled", fillcolor="#ffe9cc", fontname="Helvetica", fontsize=10];
+  "telegram /ralf" [fillcolor="#ddf5dd"];
+  "telegram /ralf" -> "workflows/twily_ralf_dispatcher";
+  "workflows/twily_ralf_dispatcher" -> "workflows/twily_ralf_planning" [label="START: create + spawn"];
+  "workflows/twily_ralf_planning" -> "workflows/twily_ralf_plan_evaluation" [label="stages written"];
+  "workflows/twily_ralf_plan_evaluation" -> "workflows/twily_ralf_planning" [label="P0 issues: reject once", style=dashed, color="#aa3333"];
+  "workflows/twily_ralf_plan_evaluation" -> "workflows/twily_ralf_execution" [label="approved: stage 1"];
+  "workflows/twily_ralf_execution" -> "workflows/twily_ralf_step_evaluator" [label="attempt awaiting_eval"];
+  "workflows/twily_ralf_step_evaluator" -> "workflows/twily_ralf_execution" [label="approved: stage N+1 / retry", color="#2255aa"];
+  "workflows/twily_ralf_step_evaluator" -> "done / report" [label="all stages approved", color="#22aa55"];
+  "workflows/twily_ralf_execution" -> "retrieval/fast_retrieval" [label="context", style=dashed, color="#999999"];
+}

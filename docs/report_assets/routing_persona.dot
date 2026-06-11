@@ -1,0 +1,29 @@
+digraph "routing_persona" {
+  rankdir=LR; fontsize=11;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica", fontsize=10];
+  label="persona/* routing"; labelloc=t; fontname="Helvetica-Bold";
+  "goals/evening_focus" -> "persona/twily_selfie" [color="#2255aa"];
+  "goals/nudge_strategist" -> "persona/twily_selfie" [color="#2255aa"];
+  "goals/nudge_strategist" -> "persona/twily_videographer" [color="#2255aa"];
+  "goals/periodic_checker" -> "persona/twily_selfie" [color="#2255aa"];
+  "goals/periodic_checker" -> "persona/twily_videographer" [color="#2255aa"];
+  "goals/winddown" -> "persona/twily_selfie" [color="#2255aa"];
+  "persona/orchestrator" -> "persona/quick_ack" [color="#2255aa"];
+  "persona/thinking" -> "persona/responding" [color="#2255aa"];
+  "persona/twily_chat" -> "persona/orchestrator" [color="#2255aa"];
+  "persona/twily_chat" -> "persona/twily_selfie" [color="#2255aa"];
+  "persona/twily_chat" -> "persona/twily_videographer" [color="#2255aa"];
+  "workflows/cron_master" -> "persona/twily_chat" [color="#2255aa"];
+  "goals/evening_focus" [fillcolor="#eef4ff"];
+  "goals/nudge_strategist" [fillcolor="#eef4ff"];
+  "goals/periodic_checker" [fillcolor="#eef4ff"];
+  "goals/winddown" [fillcolor="#eef4ff"];
+  "persona/orchestrator" [fillcolor="#ffe9cc"];
+  "persona/quick_ack" [fillcolor="#eef4ff"];
+  "persona/responding" [fillcolor="#eef4ff"];
+  "persona/thinking" [fillcolor="#eef4ff"];
+  "persona/twily_chat" [fillcolor="#eef4ff"];
+  "persona/twily_selfie" [fillcolor="#eef4ff"];
+  "persona/twily_videographer" [fillcolor="#eef4ff"];
+  "workflows/cron_master" [fillcolor="#eef4ff"];
+}

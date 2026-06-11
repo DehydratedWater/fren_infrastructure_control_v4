@@ -1,0 +1,18 @@
+digraph "routing_food" {
+  rankdir=LR; fontsize=11;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica", fontsize=10];
+  label="food/* routing"; labelloc=t; fontname="Helvetica-Bold";
+  "food/orchestrator" -> "food/food_suggester" [color="#2255aa"];
+  "food/orchestrator" -> "food/product_image_indexer" [color="#2255aa"];
+  "food/orchestrator" -> "food/recipe_parser" [color="#2255aa"];
+  "food/orchestrator" -> "food/restaurant_intake" [color="#2255aa"];
+  "workflows/food" -> "food/food_suggester" [color="#2255aa"];
+  "workflows/food" -> "food/recipe_parser" [color="#2255aa"];
+  "workflows/food" -> "food/restaurant_intake" [color="#2255aa"];
+  "food/food_suggester" [fillcolor="#eef4ff"];
+  "food/orchestrator" [fillcolor="#ffe9cc"];
+  "food/product_image_indexer" [fillcolor="#eef4ff"];
+  "food/recipe_parser" [fillcolor="#eef4ff"];
+  "food/restaurant_intake" [fillcolor="#eef4ff"];
+  "workflows/food" [fillcolor="#eef4ff"];
+}

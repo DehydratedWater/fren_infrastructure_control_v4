@@ -1,0 +1,23 @@
+digraph "routing_server" {
+  rankdir=LR; fontsize=11;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica", fontsize=10];
+  label="server/* routing"; labelloc=t; fontname="Helvetica-Bold";
+  "server/orchestrator" -> "server/camera_capture_agent" [color="#2255aa"];
+  "server/orchestrator" -> "server/filesystem_agent" [color="#2255aa"];
+  "server/orchestrator" -> "server/hardware_agent" [color="#2255aa"];
+  "server/orchestrator" -> "server/sessions_agent" [color="#2255aa"];
+  "server/orchestrator" -> "server/vision_analyzer" [color="#2255aa"];
+  "server/orchestrator" -> "server/visualization_agent" [color="#2255aa"];
+  "workflows/server" -> "server/camera_capture_agent" [color="#2255aa"];
+  "workflows/server" -> "server/filesystem_agent" [color="#2255aa"];
+  "workflows/server" -> "server/hardware_agent" [color="#2255aa"];
+  "workflows/server" -> "server/sessions_agent" [color="#2255aa"];
+  "server/camera_capture_agent" [fillcolor="#eef4ff"];
+  "server/filesystem_agent" [fillcolor="#eef4ff"];
+  "server/hardware_agent" [fillcolor="#eef4ff"];
+  "server/orchestrator" [fillcolor="#ffe9cc"];
+  "server/sessions_agent" [fillcolor="#eef4ff"];
+  "server/vision_analyzer" [fillcolor="#eef4ff"];
+  "server/visualization_agent" [fillcolor="#eef4ff"];
+  "workflows/server" [fillcolor="#eef4ff"];
+}

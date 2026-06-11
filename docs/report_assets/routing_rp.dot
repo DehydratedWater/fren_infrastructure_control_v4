@@ -1,0 +1,12 @@
+digraph "routing_rp" {
+  rankdir=LR; fontsize=11;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica", fontsize=10];
+  label="rp/* routing"; labelloc=t; fontname="Helvetica-Bold";
+  "rp/game_master" -> "rp/character_speaker" [color="#2255aa"];
+  "rp/game_master" -> "rp/narrator" [color="#2255aa"];
+  "rp/game_master" -> "rp/world_updater" [color="#2255aa"];
+  "rp/character_speaker" [fillcolor="#eef4ff"];
+  "rp/game_master" [fillcolor="#eef4ff"];
+  "rp/narrator" [fillcolor="#eef4ff"];
+  "rp/world_updater" [fillcolor="#eef4ff"];
+}

@@ -1,0 +1,10 @@
+digraph "routing_study" {
+  rankdir=LR; fontsize=11;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica", fontsize=10];
+  label="study/* routing"; labelloc=t; fontname="Helvetica-Bold";
+  "study/question_master" -> "study/answer_grader" [color="#2255aa"];
+  "study/question_master" -> "study/session_planner" [color="#2255aa"];
+  "study/answer_grader" [fillcolor="#eef4ff"];
+  "study/question_master" [fillcolor="#eef4ff"];
+  "study/session_planner" [fillcolor="#eef4ff"];
+}

@@ -1,0 +1,21 @@
+digraph "routing_research" {
+  rankdir=LR; fontsize=11;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica", fontsize=10];
+  label="research/* routing"; labelloc=t; fontname="Helvetica-Bold";
+  "research/orchestrator" -> "research/price_checker" [color="#2255aa"];
+  "research/orchestrator" -> "research/topic_analyst" [color="#2255aa"];
+  "research/orchestrator" -> "research/video_fetcher" [color="#2255aa"];
+  "research/orchestrator" -> "research/website_checker" [color="#2255aa"];
+  "research/techtree_orchestrator" -> "research/techtree_commit_analyzer" [color="#2255aa"];
+  "research/techtree_orchestrator" -> "research/techtree_suggestion_engine" [color="#2255aa"];
+  "workflows/techtree" -> "research/techtree_orchestrator" [color="#2255aa"];
+  "research/orchestrator" [fillcolor="#ffe9cc"];
+  "research/price_checker" [fillcolor="#eef4ff"];
+  "research/techtree_commit_analyzer" [fillcolor="#eef4ff"];
+  "research/techtree_orchestrator" [fillcolor="#ffe9cc"];
+  "research/techtree_suggestion_engine" [fillcolor="#eef4ff"];
+  "research/topic_analyst" [fillcolor="#eef4ff"];
+  "research/video_fetcher" [fillcolor="#eef4ff"];
+  "research/website_checker" [fillcolor="#eef4ff"];
+  "workflows/techtree" [fillcolor="#eef4ff"];
+}

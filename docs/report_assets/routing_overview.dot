@@ -1,0 +1,13 @@
+digraph overview {
+  rankdir=LR; fontname="Helvetica"; label="Cross-domain routing (edge = N references)"; labelloc=t;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica"];
+  "goals" -> "persona" [label="6", penwidth=4.0];
+  "support" -> "investigation" [label="1", penwidth=1.5];
+  "workflows" -> "food" [label="3", penwidth=2.5];
+  "workflows" -> "funfact" [label="2", penwidth=2.0];
+  "workflows" -> "goals" [label="1", penwidth=1.5];
+  "workflows" -> "persona" [label="1", penwidth=1.5];
+  "workflows" -> "research" [label="1", penwidth=1.5];
+  "workflows" -> "server" [label="4", penwidth=3.0];
+  "workflows" -> "support" [label="6", penwidth=4.0];
+}

@@ -1,0 +1,16 @@
+digraph "routing_profile" {
+  rankdir=LR; fontsize=11;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica", fontsize=10];
+  label="profile/* routing"; labelloc=t; fontname="Helvetica-Bold";
+  "profile/orchestrator" -> "profile/discovery_manager" [color="#2255aa"];
+  "profile/orchestrator" -> "profile/hypothesis_generator" [color="#2255aa"];
+  "profile/orchestrator" -> "profile/hypothesis_validator" [color="#2255aa"];
+  "profile/orchestrator" -> "profile/knowledge_compiler" [color="#2255aa"];
+  "profile/orchestrator" -> "profile/pattern_observer" [color="#2255aa"];
+  "profile/discovery_manager" [fillcolor="#eef4ff"];
+  "profile/hypothesis_generator" [fillcolor="#eef4ff"];
+  "profile/hypothesis_validator" [fillcolor="#eef4ff"];
+  "profile/knowledge_compiler" [fillcolor="#eef4ff"];
+  "profile/orchestrator" [fillcolor="#ffe9cc"];
+  "profile/pattern_observer" [fillcolor="#eef4ff"];
+}

@@ -1,0 +1,13 @@
+digraph "routing_funfact" {
+  rankdir=LR; fontsize=11;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica", fontsize=10];
+  label="funfact/* routing"; labelloc=t; fontname="Helvetica-Bold";
+  "funfact" -> "funfact/data_gatherer" [color="#2255aa"];
+  "funfact" -> "funfact/fact_writer" [color="#2255aa"];
+  "funfact" -> "funfact/pattern_analyst" [color="#2255aa"];
+  "funfact/pattern_analyst" -> "funfact/data_gatherer" [color="#2255aa"];
+  "funfact" [fillcolor="#eef4ff"];
+  "funfact/data_gatherer" [fillcolor="#eef4ff"];
+  "funfact/fact_writer" [fillcolor="#eef4ff"];
+  "funfact/pattern_analyst" [fillcolor="#eef4ff"];
+}

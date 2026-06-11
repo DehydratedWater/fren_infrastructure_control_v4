@@ -1,0 +1,14 @@
+digraph "routing_vis_simulation" {
+  rankdir=LR; fontsize=11;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica", fontsize=10];
+  label="vis_simulation/* routing"; labelloc=t; fontname="Helvetica-Bold";
+  "vis_simulation" -> "vis_simulation/character_analyzer" [color="#2255aa"];
+  "vis_simulation" -> "vis_simulation/conversation_simulator" [color="#2255aa"];
+  "vis_simulation" -> "vis_simulation/quality_scorer" [color="#2255aa"];
+  "vis_simulation" -> "vis_simulation/scenario_generator" [color="#2255aa"];
+  "vis_simulation" [fillcolor="#eef4ff"];
+  "vis_simulation/character_analyzer" [fillcolor="#eef4ff"];
+  "vis_simulation/conversation_simulator" [fillcolor="#eef4ff"];
+  "vis_simulation/quality_scorer" [fillcolor="#eef4ff"];
+  "vis_simulation/scenario_generator" [fillcolor="#eef4ff"];
+}

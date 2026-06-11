@@ -1,0 +1,27 @@
+digraph "routing_goals" {
+  rankdir=LR; fontsize=11;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4ff", fontname="Helvetica", fontsize=10];
+  label="goals/* routing"; labelloc=t; fontname="Helvetica-Bold";
+  "goals/evening_focus" -> "persona/twily_selfie" [color="#2255aa"];
+  "goals/nudge_strategist" -> "persona/twily_selfie" [color="#2255aa"];
+  "goals/nudge_strategist" -> "persona/twily_videographer" [color="#2255aa"];
+  "goals/periodic_checker" -> "persona/twily_selfie" [color="#2255aa"];
+  "goals/periodic_checker" -> "persona/twily_videographer" [color="#2255aa"];
+  "goals/priority_orchestrator" -> "goals/priority_auditor" [color="#2255aa"];
+  "goals/priority_orchestrator" -> "goals/strategy_analyzer" [color="#2255aa"];
+  "goals/priority_orchestrator" -> "goals/strategy_creator" [color="#2255aa"];
+  "goals/winddown" -> "persona/twily_selfie" [color="#2255aa"];
+  "workflows/todo" -> "goals/task_categorizer" [color="#2255aa"];
+  "goals/evening_focus" [fillcolor="#eef4ff"];
+  "goals/nudge_strategist" [fillcolor="#eef4ff"];
+  "goals/periodic_checker" [fillcolor="#eef4ff"];
+  "goals/priority_auditor" [fillcolor="#eef4ff"];
+  "goals/priority_orchestrator" [fillcolor="#ffe9cc"];
+  "goals/strategy_analyzer" [fillcolor="#eef4ff"];
+  "goals/strategy_creator" [fillcolor="#eef4ff"];
+  "goals/task_categorizer" [fillcolor="#eef4ff"];
+  "goals/winddown" [fillcolor="#eef4ff"];
+  "persona/twily_selfie" [fillcolor="#eef4ff"];
+  "persona/twily_videographer" [fillcolor="#eef4ff"];
+  "workflows/todo" [fillcolor="#eef4ff"];
+}
