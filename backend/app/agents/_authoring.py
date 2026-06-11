@@ -56,7 +56,17 @@ def define_agent(
     `tools` are the ToolDefinitions (from app/agents/_tools.py) the agent may
     call — they compile into its scoped bash allowlist + tool docs, turning a
     pure-prompt agent into one that can actually act (v3 parity wiring).
+
+    Every tool-carrying agent also gets the workspace-orientation tool (plain
+    `ls`): session forensics showed ~1.2k blocked `ls`/`find` calls per night —
+    models orient by listing before settling into their scripts. A read-only
+    `ls` is harmless; allowing it removes the 1–3 denied calls that opened
+    most sessions. Pure-prompt agents stay bash-free.
     """
+    if tools:
+        from app.agents._tools import workspace_orientation_tool
+
+        tools = list(tools) + [workspace_orientation_tool()]
     return AgentDefinition(
         header=AgentHeader(
             agent_id=agent_id,

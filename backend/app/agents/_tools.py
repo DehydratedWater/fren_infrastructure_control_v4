@@ -50,6 +50,23 @@ def _raw_command_def(name: str, description: str, command_pattern: str) -> ToolD
     )
 
 
+def workspace_orientation_tool() -> ToolDefinition:
+    """Read-only `ls` — kills the blocked-exploration friction at session start.
+
+    Forensics over the opencode session store (2026-06-11): the most common
+    blocked calls were `ls`/`find` on the workspace — models orienting before
+    using their scripts (354+192+151+142+120 occurrences for the top ls
+    variants alone). Listing is harmless; `find`/`cat`/reads stay blocked.
+    """
+    return _raw_command_def(
+        "list-workspace",
+        "List files in the workspace (orientation only — your callable tools"
+        " are exactly the scripts documented above; run them with"
+        " `python scripts/<name>.py`).",
+        "ls*",
+    )
+
+
 # ── Telegram ──
 
 

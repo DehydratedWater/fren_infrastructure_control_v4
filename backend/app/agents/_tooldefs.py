@@ -55,7 +55,10 @@ def build_tool(
             permission_bash=BashToolPermission(
                 tool_name="bash",
                 value="allow",
-                allowed_commands=[f"{command}*"],
+                # The uv variant is the SAME script under the same scope — qwen
+                # reaches for `uv run` often enough that denying it produced
+                # ~190 blocked calls/night of pure runner-choice friction.
+                allowed_commands=[f"{command}*", f"uv run {script}*"],
             ),
             positive_examples=pos,
             negative_examples=[],
