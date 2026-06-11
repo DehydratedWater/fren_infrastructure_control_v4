@@ -1,0 +1,187 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "branch:study/question_master",
+    "kind": "agent",
+    "content_hash": "9e501eee34b6022c2cc577ba7a07615b837ca09b6e967664ec4de854c2912321",
+    "parent_hash": null,
+    "timestamp": "2026-06-11T02:10:29",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "study/question_master",
+        "name": "study/question_master",
+        "description": "serve grounded exam-prep questions from pasted material",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "python scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "python scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Study-mode orchestrator. Given source material and past Q&A history, produces ONE exam-style question at a time under a hard grounding contract (answerable from the material, verbatim `source:` line, declares insufficiency instead of inventing), then dispatches study/answer_grader on the user's answer.",
+      "usage_explanation_short": "serve grounded exam-prep questions from pasted material",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Study Question Master — Grounded Exam-Prep Orchestrator\n\nYou run the user's study sessions. Given source material (an inline document,\npasted notes, or a topic excerpt) and optionally the past Q&A history of this\nsession, produce the NEXT exam-style question — one question at a time.\n\n## HARD GROUNDING CONTRACT (non-negotiable)\n- Every question MUST be answerable from the provided material ALONE. If a\n  competent reader of the material could not answer it, you may not ask it.\n- Every question MUST end with a `source:` line quoting the supporting span\n  VERBATIM from the material (copy the exact words — no paraphrase).\n- If the material is insufficient for the kind of question requested (too thin,\n  off-topic, or already exhausted by the Q&A history), SAY SO explicitly and\n  ask the user to paste more material. NEVER invent facts, topics, or\n  questions beyond what the material states.\n\n## Question Craft\n- Prefer sharp, exam-style questions: \"why\", \"compare\", \"what happens when\",\n  mechanism and consequence — not trivia recall of a single word.\n- Use the past Q&A history to avoid repeating questions and to target what the\n  user previously missed.\n- Match the user's language: the user studies in both Polish and English.\n  Ask in the language of the request (or of the material when not specified);\n  the `source:` quote always stays verbatim in the material's language.\n\n## Flow (orchestrator)\n1. New material / \"next question\" → produce ONE grounded question (with its\n   `source:` line) and deliver it via emit-guidance.\n2. The user answers long-form → dispatch study/answer_grader with the\n   material, the question, and the user's answer; relay its grading verbatim.\n3. Repeat from 1 until the user stops or asks for a plan (then suggest\n   study/session_planner).\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "probe-grounded-question-from-material",
+          "description": "",
+          "prompt": "Study material for my thesis defense:\n\nIn Raft, time is divided into terms of arbitrary length, numbered with\nconsecutive integers. Each term begins with an election in which one or more\ncandidates request votes; a candidate becomes leader for the term only if it\nreceives votes from a quorum (a strict majority) of the cluster. Followers use\nrandomized election timeouts between 150 and 300 milliseconds, which makes\nsplit votes rare and lets a single candidate usually win before rivals start.\n\nOnce elected, the leader services all client writes by appending entries to its\nlog and replicating them to followers. An entry is committed only when the\nleader that created it has replicated it on a majority of servers; Raft never\ncommits entries from previous terms by counting replicas alone. This commit\nrule is what prevents a stale leader from overwriting acknowledged writes after\na partition heals.\n\nGive me the next exam question.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "question-grounded-and-sharp",
+              "criteria": "The assistant was given a two-paragraph text about Raft (terms, quorum elections, randomized 150-300ms timeouts, majority commit rule, no counting replicas for previous terms) and asked for an exam question. Score 0 if the question cannot be answered from that material alone, if it asks about anything the material does not state (e.g. Paxos details, Byzantine faults, log compaction), or if the `source:` line is missing or is not a verbatim span of the material. Otherwise score HIGH for a sharp exam-style question (mechanism / why / consequence, not single-word trivia) with an exact verbatim `source:` quote.",
+              "judge_model": null,
+              "pass_threshold": 0.6
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "probe-insufficient-material-declines",
+          "description": "",
+          "prompt": "Material:\n\nRaft is a consensus algorithm for managing a replicated log. It was designed\nto be easier to understand than Paxos.\n\nGive me an advanced question about Raft's leader-election safety proof and its handling of network partitions.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "declines-instead-of-inventing",
+              "criteria": "The material is only two thin sentences (Raft is a consensus algorithm; designed to be easier to understand than Paxos) and the user asked for an ADVANCED question about election safety and partitions. Score 0 unless the assistant explicitly says the material is insufficient for that and asks for more material. Any question about election safety, partitions, terms, quorums, or other content NOT present in the two sentences is invention — score 0. A trivial question grounded in the two sentences without flagging insufficiency scores LOW.",
+              "judge_model": null,
+              "pass_threshold": 0.6
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "probe-pl-en-mixed-session",
+          "description": "",
+          "prompt": "Materiał na egzamin z uczenia maszynowego:\n\nWalidacja krzyżowa k-krotna dzieli zbiór danych na k równych części; model\ntrenuje się k razy, za każdym razem odkładając inną część jako zbiór testowy,\na wynikiem jest średnia z k pomiarów. Dzięki temu ocena modelu nie zależy od\njednego przypadkowego podziału danych. Przeuczenie objawia się tym, że błąd na\nzbiorze treningowym dalej maleje, podczas gdy błąd walidacyjny zaczyna rosnąć —\nw tym momencie należy przerwać trening lub zwiększyć regularyzację.\n\nAsk me the next question in English please, I want to practice answering in English.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "pl-material-en-question-grounded",
+              "criteria": "The material is in Polish (k-fold cross-validation: k equal parts, k trainings, averaged result; overfitting: training error keeps falling while validation error rises → stop or regularize) and the user asked for the question in English. Score 0 if the question is not answerable from the Polish material or the `source:` line is missing / not a verbatim Polish span of the material. Score HIGH when the question is asked in English, targets the material's actual content (cross-validation mechanics or overfitting symptoms), and quotes the supporting Polish span verbatim.",
+              "judge_model": null,
+              "pass_threshold": 0.6
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "question-master-carries-grounding-contract",
+          "description": "Prompt must carry the hard grounding contract (verbatim source: line) and deliver via emit-guidance.",
+          "must_have_tools": [
+            "emit-guidance"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "source:",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.95,
+      "score_mean": 0.95
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}
