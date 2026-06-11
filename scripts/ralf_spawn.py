@@ -138,6 +138,28 @@ async def _infer(ralf_id: str) -> tuple[str, dict[str, str]]:
         await conn.close()
 
 
+async def _executor_already_running(ralf_id: str, stage: str) -> bool:
+    """Freshness guard for EXPLICIT executor spawns: the tool-layer auto-chain
+    and the agent's own backup spawn both fire on a hand-off — without this,
+    every stage ran twice (observed live as attempts 4.1 + 4.2)."""
+    import asyncpg
+
+    dsn = os.environ.get("DATABASE_URL", "").replace("postgresql+asyncpg://", "postgresql://")
+    try:
+        conn = await asyncpg.connect(dsn)
+    except Exception:  # noqa: BLE001 — no DB, no guard; spawning is the priority
+        return False
+    try:
+        age = await conn.fetchval(
+            "SELECT EXTRACT(EPOCH FROM (now() - started_at))"
+            " FROM ralf_step_attempts WHERE ralf_id=$1 AND stage_number=$2"
+            " AND outcome='in_progress' ORDER BY attempt_number DESC LIMIT 1",
+            ralf_id, int(stage))
+        return age is not None and float(age) < 1500
+    finally:
+        await conn.close()
+
+
 def main() -> int:
     agent, params = _parse(sys.argv[1:])
     ralf_id = params.get("ralf_id", "")
@@ -148,6 +170,12 @@ def main() -> int:
             return 2
         agent, extra = asyncio.run(_infer(ralf_id))
         params.update(extra)
+    elif agent.endswith("twily_ralf_execution") and ralf_id and params.get("stage_number"):
+        if asyncio.run(_executor_already_running(ralf_id, params["stage_number"])):
+            print(json.dumps({"ok": True,
+                              "skipped": "an executor for this stage is already"
+                              " running — not spawning a duplicate"}))
+            return 0
 
     prompt = " ".join(f"{k}={v}" for k, v in params.items())
 
