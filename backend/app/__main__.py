@@ -162,8 +162,22 @@ def _run_improve(argv: list[str]) -> None:
                         "probe suite (variety / anti-repetition / grounded / skip). "
                         "Runs authored tests on nudge_strategist, periodic_checker, "
                         "winddown. Equivalent to --substring-tests --agent <each>.")
+    p.add_argument("--retrieval-probes", action="store_true",
+                   help="optimise the retrieval path against the multi-source "
+                        "QA suite (exact canaries / open-ended / seeded "
+                        "transcripts / journal / self-exam) in "
+                        "app/agents/retrieval_probes.py. Requires the seeded "
+                        "autoloop corpus: python -m app seed-retrieval.")
     p.add_argument("--list", action="store_true", help="list improvable agents and exit")
     args = p.parse_args(argv)
+
+    # --retrieval-probes: target the retrieval suite agents in judge-test mode
+    # (the suite merges into _judge_test_suite next to the role-fulfilment
+    # test + corpus packs, so the graded criterion applies across all of it).
+    if args.retrieval_probes and not args.agent:
+        from app.agents.retrieval_probes import RETRIEVAL_SUITE_AGENTS
+
+        args.agent = list(RETRIEVAL_SUITE_AGENTS)
 
     # --proactive-probes: target exactly the proactive agents that carry the
     # context-signal probe suite, in authored-tests mode so the probes run.
@@ -357,11 +371,15 @@ def _dispatch(service: str, argv: list[str]) -> None:
         _run_probe_packs(argv)
     elif service == "improve-gate":
         _run_improve_gate(argv)
+    elif service == "seed-retrieval":
+        from app.agents.retrieval_corpus import main as seed_retrieval_main
+
+        seed_retrieval_main(argv)
     else:
         print(
             f"unknown service: {service!r} "
             "(use bot|scheduler|checker|web|compile|improve|probe-packs"
-            "|improve-gate)",
+            "|improve-gate|seed-retrieval)",
             file=sys.stderr,
         )
         sys.exit(2)

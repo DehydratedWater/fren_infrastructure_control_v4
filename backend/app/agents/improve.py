@@ -603,16 +603,22 @@ def make_judge_test(agent: AgentDefinition) -> AgentTest:
 
 
 def _judge_test_suite(agent: AgentDefinition) -> list[AgentTest]:
-    """The graded role-fulfilment judge test PLUS any corpus-grounded pack tests.
+    """The graded role-fulfilment judge test PLUS any corpus-grounded pack tests
+    PLUS the retrieval suite (for the agents it targets).
 
     Probe packs (app/agents/probe_packs.py) are generated offline from the real
     v3 chat corpus (`python -m app probe-packs`); when an agent has one, its
     probes ADD graded judge tests so optimisation targets what the user actually
     asks. A missing pack degrades to exactly the old single-test behaviour.
+    The retrieval suite (app/agents/retrieval_probes.py) adds exact-ground-truth
+    multi-source QA for retrieval/fast_retrieval and persona/responding —
+    it requires the seeded autoloop corpus (`python -m app seed-retrieval`).
     """
     from app.agents.probe_packs import pack_tests  # local: avoid import cycle
+    from app.agents.retrieval_probes import retrieval_tests
 
-    return [make_judge_test(agent)] + pack_tests(agent.header.agent_id)
+    return ([make_judge_test(agent)] + pack_tests(agent.header.agent_id)
+            + retrieval_tests(agent.header.agent_id))
 
 
 def _test_expectations(agent: AgentDefinition) -> list[dict[str, Any]]:
