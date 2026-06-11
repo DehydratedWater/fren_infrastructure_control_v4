@@ -37,11 +37,10 @@ SMOKE_QUESTION = (
 SMOKE_FACTS = ["NF-A12x25", "7351"]
 
 
-async def _run(question: str, timeout_min: float) -> int:
+async def _run(question: str, timeout_min: float, ws) -> int:
     from src import FactRecallEvaluator, FactSpec
     from src.testing.evaluation import RunContext, evaluate
 
-    from app.agents.improve_live import _ensure_fleet_compiled
     from app.db.repos.ralf import (
         RalfProcessesRepo,
         RalfStagesRepo,
@@ -53,8 +52,7 @@ async def _run(question: str, timeout_min: float) -> int:
     procs = RalfProcessesRepo()
     proc_row = await procs.create(user_request=question, content_class="public")
     ralf_id = proc_row["ralf_id"]
-    print(f"[ralf-smoke] created ralf {ralf_id!r}; compiling fleet workspace ...")
-    ws = _ensure_fleet_compiled()
+    print(f"[ralf-smoke] created ralf {ralf_id!r}")
 
     print("[ralf-smoke] running planner (chain self-drives from here) ...")
     res = await run_agent_opencode(
@@ -117,4 +115,10 @@ def main(argv: list[str]) -> None:
     p.add_argument("--timeout-min", type=float, default=25.0)
     p.add_argument("--question", default=SMOKE_QUESTION)
     args = p.parse_args(argv)
-    sys.exit(asyncio.run(_run(args.question, args.timeout_min)))
+    # The fleet compile drives opencode warm-up sessions through asyncio.run
+    # internally, so it must happen OUTSIDE our own event loop.
+    from app.agents.improve_live import _ensure_fleet_compiled
+
+    print("[ralf-smoke] compiling fleet workspace ...")
+    ws = _ensure_fleet_compiled()
+    sys.exit(asyncio.run(_run(args.question, args.timeout_min, ws)))
