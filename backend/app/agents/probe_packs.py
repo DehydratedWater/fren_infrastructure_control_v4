@@ -29,30 +29,14 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+# Pack shape + pack->AgentTest conversion live in the framework
+# (src/testing/probe_pack.py) — this module owns corpus access and GLM
+# generation only. Re-exported here so existing imports keep working.
+from src import PackProbe, ProbePack  # noqa: F401
+from src import load_pack as _fw_load_pack
+from src import pack_to_tests as _fw_pack_to_tests
 
 PACKS_DIR = Path(__file__).parent / "probe_packs"
-
-
-class PackProbe(BaseModel):
-    """One corpus-grounded probe: a self-contained user message + judge rubric."""
-
-    name: str
-    prompt: str
-    criteria: str
-    pass_threshold: float = 0.7
-    # Short note which real corpus messages inspired this probe (provenance).
-    source_hint: str = ""
-
-
-class ProbePack(BaseModel):
-    """A persisted set of probes for one agent, regenerable from the corpus."""
-
-    agent_id: str
-    generated_at: str
-    source: str = "v3-corpus"
-    teacher: str = ""
-    probes: list[PackProbe] = Field(min_length=1)
 
 
 # --- corpus access (v3 DB, READ-ONLY) ---------------------------------------
@@ -351,13 +335,7 @@ def write_pack(pack: ProbePack) -> Path:
 
 def load_pack(agent_id: str) -> ProbePack | None:
     """The persisted pack for `agent_id`, or None when missing/invalid."""
-    path = _pack_path(agent_id)
-    try:
-        if not path.exists():
-            return None
-        return ProbePack.model_validate_json(path.read_text())
-    except Exception:  # noqa: BLE001
-        return None
+    return _fw_load_pack(_pack_path(agent_id))
 
 
 def pack_tests(agent_id: str) -> list:
@@ -370,22 +348,8 @@ def pack_tests(agent_id: str) -> list:
     if pack is None:
         return []
     from app.agents.improve import _ANTI_META  # local: improve imports us lazily
-    from src import AgentTest, LLMJudgeEvaluator
 
-    return [
-        AgentTest(
-            name=f"{agent_id}::pack:{probe.name}",
-            prompt=probe.prompt.rstrip() + _ANTI_META,
-            evaluators=(
-                LLMJudgeEvaluator(
-                    name=probe.name,
-                    criteria=probe.criteria,
-                    pass_threshold=probe.pass_threshold,
-                ),
-            ),
-        )
-        for probe in pack.probes
-    ]
+    return _fw_pack_to_tests(pack, prompt_suffix=_ANTI_META)
 
 
 # --- batch generation ---------------------------------------------------------
