@@ -288,7 +288,52 @@ so one zeroed probe floors the unit. The per-test metrics
 fails for which agent — the round-2 worklist. Notable anomaly: 2 agents
 (persona/responding, profile/knowledge_compiler) ace the role test but zero
 all pack probes (delivery-contract interaction under corpus-style prompts) —
-under active improvement in the retrieval loop at report time.
+isolated for a dedicated fix.
+
+## Retrieval suite results (judged, rounds=2, seeded corpus)
+
+The multi-source QA suite ran after the fleet sweep. **The retrieval
+infrastructure is verified end-to-end with exact ground truth:**
+
+| category | result |
+|---|---|
+| exact canaries (10) | **all 1.00** — perfect needle retrieval over 20,101 messages, EN+PL |
+| seeded transcripts (2) | **both 1.00** — chunk-search path proven (facts exist only in the canary video) |
+| journal, live on orp (1) | **0.925** — agent genuinely consulted the journal service |
+| self-exam: date a past fact (1) | **1.00** (found the bike-lock message and its date) |
+| self-exam: own sessions (1) | 0.50 |
+| open-ended synthesis (4) | 0.50--0.55 — grounded but thin; the tuning headroom |
+| corpus packs (5) | 0.0--0.97 (one zero floors the unit; no promotion at 0.75) |
+| role-fulfilment | 0.78 |
+
+Conclusion: retrieval *capability* is proven — 14/14 exact-ground-truth
+probes at 1.0, including cross-store — and the remaining work is
+prompt-level (richer open-ended synthesis, the one zeroed pack probe),
+precisely what subsequent improvement rounds target.
+
+## RALF end-to-end smoke: PASS
+
+The full loop (planning -> plan evaluation -> 4 execution stages -> per-step
+verification -> completed) ran on the seeded DB and answered a question
+whose two facts live in DIFFERENT stores:
+
+* `ralf_kv` final state: `fan_model=Noctua NF-A12x25` (canary transcript) and
+  `bike_lock_code=7351` (canary chat message) — **FactRecall 2/2, score 1.00**.
+* Step evaluators verified claims against actual data before approving (e.g.
+  stage 1's verdict cites both chat message id 20097 and the canary video).
+* One executor died on its session cap mid-stage; the self-heal path
+  recovered it: the step evaluator verdicted from the attempt's persisted
+  artifacts instead of a blind re-run.
+
+The smoke also EARNED its keep before passing: its first runs exposed and
+fixed six production defects — the chain-driver script that never existed
+(v3's ralf_ping was dropped without replacement), a misleading
+binary-not-found error masking a container path used on host, a missing
+PATH in detached spawns, an argument-convention mismatch between prompts
+and script, and two double-spawn races. The chain is now driven
+deterministically by the tool layer (ralf_manager auto-chains on every
+status/outcome transition; the agents' own spawn calls are redundant
+backup), with stale-attempt recovery via evaluator verification.
 
 # Operations record
 
@@ -310,8 +355,9 @@ under active improvement in the retrieval loop at report time.
 
 1. **Round-2 deeper pass** on the 46%-floor agents (worklist = per-test
    metrics from this sweep); rounds=2--3 on the weakest ~20 first.
-2. **Retrieval + RALF smoke results** — in flight at report time; will land
-   in snapshots/`.oac` and the next report revision.
+2. **Proactive suite rerun** — the judged context-signal suite (variety /
+   anti-repetition / grounded / skip) re-running after the fixes; results
+   land in `.oac/snapshots`.
 3. **Model-switch drill** (task #206): retune against glm-4.7-as-target and
    diff per-model_class promotions — the final proof of model portability.
 4. **Proactive context parity** (task #198): feed v4 proactive agents v3's
