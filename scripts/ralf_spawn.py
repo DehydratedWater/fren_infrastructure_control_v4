@@ -32,6 +32,14 @@ def main() -> int:
     agent, params = args[0], args[1:]
     prompt = " ".join(params) if params else ""
 
+    # The detached child must find the opencode binary: agent sessions get
+    # ~/.opencode/bin injected via _branch_env, but a fresh Popen env doesn't
+    # (first smoke run died here with "opencode binary not found").
+    env = dict(os.environ)
+    home = os.path.expanduser("~")
+    extra = [f"{home}/.opencode/bin", f"{home}/.local/bin"]
+    env["PATH"] = ":".join(extra + [env.get("PATH", "")])
+
     child = subprocess.Popen(  # noqa: S603 — fixed argv, params passed as one prompt arg
         [
             sys.executable, "scripts/opencode_manager.py",
@@ -41,6 +49,7 @@ def main() -> int:
             "--timeout", "900",
         ],
         cwd=os.getcwd(),
+        env=env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         start_new_session=True,

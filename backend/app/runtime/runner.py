@@ -371,6 +371,10 @@ async def run_agent_opencode(
     if extra_env:
         env.update({k: str(v) for k, v in extra_env.items()})
     cmd = ["opencode", "run", "--agent", agent_name, "--format", "json", prompt]
+    # A missing cwd raises the same FileNotFoundError as a missing binary —
+    # surface the actual problem (this masked the /data/agents-on-host bug).
+    if not Path(agent_dir).is_dir():
+        return AgentRunResult(error=f"agent_dir does not exist: {agent_dir}")
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd, cwd=str(agent_dir), env=env,

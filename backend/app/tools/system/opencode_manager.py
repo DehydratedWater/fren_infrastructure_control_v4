@@ -42,8 +42,20 @@ class Output(BaseModel):
 
 
 def _fleet_dir() -> Path:
-    """The compiled fleet tree (holds .opencode/agents/<name>.md for all agents)."""
-    return Path(get_settings().agents_dir)
+    """The compiled fleet tree (holds .opencode/agents/<name>.md for all agents).
+
+    settings.agents_dir is the CONTAINER volume path (/data/agents); on host
+    runs (RALF chain hand-offs, autoloop workspace) it doesn't exist — fall
+    back to the caller's cwd when that is itself a compiled fleet tree. This
+    is what lets ralf_spawn.py work identically in prod and in the loop.
+    """
+    configured = Path(get_settings().agents_dir)
+    if configured.is_dir():
+        return configured
+    cwd = Path.cwd()
+    if (cwd / ".opencode" / "agents").is_dir():
+        return cwd
+    return configured
 
 
 async def _spawn(inp: Input) -> dict:
