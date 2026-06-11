@@ -97,6 +97,22 @@ async def _infer(ralf_id: str) -> tuple[str, dict[str, str]]:
                 return "workflows/twily_ralf_execution", {
                     "stage_number": str(n), "attempt_number": "1"}
             outcome, age = last["outcome"], float(last["age_s"] or 0)
+            if outcome == "approved":
+                # The attempt is approved but the stage row hasn't flipped yet
+                # (auto-chain fires on update-attempt-outcome, BEFORE the
+                # evaluator's update-stage-status) — the stage is done; move
+                # on. Without this, the race spawned a redundant re-run.
+                nxt = await conn.fetchrow(
+                    "SELECT stage_number FROM ralf_stages WHERE ralf_id=$1"
+                    " AND stage_number > $2 ORDER BY stage_number LIMIT 1",
+                    ralf_id, n)
+                if nxt is None:
+                    raise SystemExit(json.dumps(
+                        {"ok": False,
+                         "error": "final stage approved — nothing to spawn"}))
+                return "workflows/twily_ralf_execution", {
+                    "stage_number": str(nxt["stage_number"]),
+                    "attempt_number": "1"}
             if outcome == "awaiting_eval":
                 return "workflows/twily_ralf_step_evaluator", {
                     "stage_number": str(n),
