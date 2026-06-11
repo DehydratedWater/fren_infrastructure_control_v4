@@ -42,6 +42,18 @@ export PYTHONPATH="/home/dw/programing/OpenCodeCompilerV2:$PWD"
 # their real tools using the caller's DISPLAY/XAUTHORITY. Explicit user
 # decision only — the marginal link means capture runs can still freeze the
 # box until the hardware is fixed.
+# POWER GUARD: at 250W caps, synchronized TP4 inference transients hard-lock
+# this host (degrading 12V path, confirmed by A/B load test 2026-06-11 —
+# 23s to lock at 250W, clean at <=200W). Refuse to drive the GPUs unless
+# every inference card is capped at or below the safe ceiling.
+MAX_PL="${FREN_AUTOLOOP_MAX_PL:-200}"
+over=$(nvidia-smi --query-gpu=power.limit --format=csv,noheader,nounits 2>/dev/null | awk -v m="$MAX_PL" '$1 > m + 0.5 {n++} END {print n+0}')
+if [ "$over" -gt 0 ]; then
+  echo "[autoloop] REFUSING to start: $over GPU(s) capped above ${MAX_PL}W — this hard-locks the host." >&2
+  echo "[autoloop] Fix with: sudo ./set_gpu_power.sh -p $MAX_PL -t $MAX_PL   (or raise FREN_AUTOLOOP_MAX_PL after the PSU/12V path is repaired)" >&2
+  exit 1
+fi
+
 export FREN_AUTOLOOP=1
 if [ "$WITH_CAPTURE" = "1" ]; then
   unset FREN_DISABLE_CAPTURE   # .env may set it; the flag overrides for this run
