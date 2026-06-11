@@ -355,9 +355,11 @@ backup), with stale-attempt recovery via evaluator verification.
 
 1. **Round-2 deeper pass** on the 46%-floor agents (worklist = per-test
    metrics from this sweep); rounds=2--3 on the weakest ~20 first.
-2. **Proactive suite rerun** — the judged context-signal suite (variety /
-   anti-repetition / grounded / skip) re-running after the fixes; results
-   land in `.oac/snapshots`.
+2. **Proactive suite** (judged rerun, rounds=2): pass rates — event_extractor
+   0.75, nudge_strategist 0.44, periodic_checker 0.33, winddown 0.33; no
+   promotions (each agent has 1--3 zeroed probes naming the work:
+   `probe-grounded-with-health` fails on 3 of 4 agents — the single highest-
+   leverage prompt fix; event_extractor is one probe from promotion).
 3. **Model-switch drill** (task #206): retune against glm-4.7-as-target and
    diff per-model_class promotions — the final proof of model portability.
 4. **Proactive context parity** (task #198): feed v4 proactive agents v3's
