@@ -94,6 +94,37 @@ class Output(BaseModel):
     error: str = ""
 
 
+def _auto_chain(ralf_id: str, *, outcome: str = "", stage_number: int | None = None,
+                attempt_number: int | None = None) -> None:
+    """Fire the next chain stage as a detached spawn (best-effort, never raises).
+
+    awaiting_eval names its target explicitly (the step evaluator for that
+    exact attempt); every other transition uses ralf_spawn's DB inference,
+    which is idempotent (skips when an equivalent run is fresh)."""
+    import os
+    import subprocess
+    import sys
+
+    script = os.path.join(os.getcwd(), "scripts", "ralf_spawn.py")
+    if not os.path.exists(script):
+        return
+    argv = [sys.executable, script]
+    if outcome == "awaiting_eval" and stage_number is not None:
+        argv += ["workflows/twily_ralf_step_evaluator", f"ralf_id={ralf_id}",
+                 f"stage_number={stage_number}",
+                 f"attempt_number={attempt_number or 1}"]
+    else:
+        argv += ["--ralf_id", ralf_id]
+    try:
+        subprocess.Popen(  # noqa: S603 — fixed argv
+            argv, cwd=os.getcwd(),
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except Exception:  # noqa: BLE001 — chaining is best-effort; state is in the DB
+        pass
+
+
 class RalfManagerTool(ScriptTool[Input, Output]):
     name: ClassVar[str] = "ralf_manager"
     description: ClassVar[str] = "Manage Ralf multi-stage workflow state in the database"
@@ -182,6 +213,14 @@ class RalfManagerTool(ScriptTool[Input, Output]):
                     last_error=inp.last_error or None,
                     stuck_reason=inp.stuck_reason or None,
                 )
+                # DETERMINISTIC CHAINING: the tool layer drives the hand-off.
+                # The 2026-06-11 smoke showed agent-initiated spawns fail in
+                # multiple ways (skipped, wrong args, session timeout before
+                # the spawn step); the chain must not depend on the model
+                # remembering its last instruction. Best-effort + idempotent
+                # (ralf_spawn skips when a fresh equivalent run exists).
+                if inp.status in ("plan_review", "executing", "running"):
+                    _auto_chain(inp.ralf_id)
                 return Output(success=True, process=row)
 
             if inp.command == "heartbeat":
@@ -347,6 +386,13 @@ class RalfManagerTool(ScriptTool[Input, Output]):
                     evaluator_verdict=inp.evaluator_verdict or None,
                     evaluator_notes=inp.evaluator_notes or None,
                 )
+                # approved -> next stage's executor; retry -> same stage again;
+                # awaiting_eval -> the step evaluator. Same deterministic
+                # chaining rationale as update-status above.
+                if inp.outcome in ("approved", "retry", "awaiting_eval"):
+                    _auto_chain(inp.ralf_id, outcome=inp.outcome,
+                                stage_number=inp.stage_number,
+                                attempt_number=inp.attempt_number)
                 return Output(success=True, attempt=row)
 
             if inp.command == "set-attempt-session":

@@ -82,16 +82,40 @@ async def _infer(ralf_id: str) -> tuple[str, dict[str, str]]:
         if status in ("executing", "running"):
             stage = await conn.fetchrow(
                 "SELECT stage_number FROM ralf_stages WHERE ralf_id=$1"
-                " AND status NOT IN ('approved') ORDER BY stage_number LIMIT 1", ralf_id)
+                " AND status NOT IN ('approved', 'completed')"
+                " ORDER BY stage_number LIMIT 1", ralf_id)
             if stage is None:
                 raise SystemExit(json.dumps(
-                    {"ok": False, "error": "all stages approved — nothing to spawn"}))
+                    {"ok": False, "error": "all stages done — nothing to spawn"}))
             n = stage["stage_number"]
-            attempts = await conn.fetchval(
-                "SELECT count(*) FROM ralf_step_attempts WHERE ralf_id=$1"
-                " AND stage_number=$2", ralf_id, n)
+            last = await conn.fetchrow(
+                "SELECT attempt_number, outcome,"
+                " EXTRACT(EPOCH FROM (now() - started_at)) AS age_s"
+                " FROM ralf_step_attempts WHERE ralf_id=$1 AND stage_number=$2"
+                " ORDER BY attempt_number DESC LIMIT 1", ralf_id, n)
+            if last is None:
+                return "workflows/twily_ralf_execution", {
+                    "stage_number": str(n), "attempt_number": "1"}
+            outcome, age = last["outcome"], float(last["age_s"] or 0)
+            if outcome == "awaiting_eval":
+                return "workflows/twily_ralf_step_evaluator", {
+                    "stage_number": str(n),
+                    "attempt_number": str(last["attempt_number"])}
+            if outcome == "in_progress":
+                if age < 1500:  # a live executor session — don't double-spawn
+                    raise SystemExit(json.dumps(
+                        {"ok": True, "skipped": "attempt in progress"
+                         f" ({int(age)}s old) — not spawning a duplicate"}))
+                # Executor died mid-attempt (session cap, crash): the step
+                # evaluator is the recovery path — it verifies the attempt's
+                # ACTUAL artifacts (kv/logs/data) and verdicts approve/retry.
+                return "workflows/twily_ralf_step_evaluator", {
+                    "stage_number": str(n),
+                    "attempt_number": str(last["attempt_number"])}
+            # retry (or any settled non-approved outcome) -> next attempt
             return "workflows/twily_ralf_execution", {
-                "stage_number": str(n), "attempt_number": str(int(attempts) + 1)}
+                "stage_number": str(n),
+                "attempt_number": str(int(last["attempt_number"]) + 1)}
         raise SystemExit(json.dumps(
             {"ok": False, "error": f"status {status!r} is terminal — nothing to spawn"}))
     finally:
@@ -124,7 +148,7 @@ def main() -> int:
             "--command", "run",
             "--agent", agent,
             "--prompt", prompt,
-            "--timeout", "900",
+            "--timeout", "1800",
         ],
         cwd=os.getcwd(),
         env=env,
