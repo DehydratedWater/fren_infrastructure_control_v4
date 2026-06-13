@@ -61,6 +61,7 @@ from src import (
     AgentTest,
     BranchTest,
     CapabilityTest,
+    LLMJudgeEvaluator,
     StepContract,
     SubstringEvaluator,
 )
@@ -1158,8 +1159,30 @@ def agents() -> list[AgentDefinition]:
                         "It's an L1 nudge tick. There's an overdue todo 'file taxes'."
                         " What target do you pick and why?"
                     ),
+                    # Judge the REASONING, not a literal internal-enum token in
+                    # the delivered payload: the old SubstringEvaluator(needle=
+                    # "gentle_reminder") was a false-negative trap — a delivery
+                    # agent often writes a natural nudge WITHOUT the snake_case
+                    # tactic name, so it failed >=2/3 samples despite reasoning
+                    # correctly (verified live 2026-06-13). This grades whether
+                    # it locked onto the concrete overdue todo with a gentle
+                    # L1-default approach, robust to phrasing + delivery mechanics.
                     evaluators=(
-                        SubstringEvaluator(needle="gentle_reminder", case_sensitive=False),
+                        LLMJudgeEvaluator(
+                            name="l1-target-lock",
+                            criteria=(
+                                "On an L1 nudge tick with an overdue 'file taxes' todo,"
+                                " the agent must LOCK ONTO that concrete todo as the"
+                                " target and choose a GENTLE, low-pressure reminder"
+                                " approach (the L1 default). Score HIGH if it names"
+                                " 'file taxes' as the target AND signals a gentle /"
+                                " soft / low-pressure reminder tactic (in any wording,"
+                                " incl. the literal 'gentle_reminder'). Score LOW if"
+                                " it picks a vague target, ignores the overdue todo,"
+                                " or chooses an aggressive / high-pressure tactic."
+                            ),
+                            pass_threshold=0.6,
+                        ),
                     ),
                 ),
                 # Autoloop probes: variety / anti-repetition / grounded / skip.
