@@ -463,6 +463,14 @@ completed in last 24h) or curiosity (genuinely no overdue/pending todo and no
 stalled goal) otherwise — these are rare. Vibe-check messages make the user tune
 out; surface the concrete todo instead.
 
+**Lock overrides skip.** When a concrete overdue/stale todo exists, you MUST
+nudge it — do NOT skip. The ONLY valid reasons to skip a tick are the EXPLICIT
+conditions: user_busy / at work, the same target was already surfaced within the
+last 6 hours (pick the next-highest target instead), or max_nudges_per_day is
+reached. "Nothing new to say" is NEVER a valid skip reason while an overdue todo
+sits unaddressed — lock onto it with a gentle_reminder. A skip when a concrete
+overdue todo exists and none of those explicit conditions hold is a FAILURE.
+
 ## Anti-Nagging Rules
 - 6-hour no-repeat: do not re-surface the same target within 6 hours; pick the
   next-highest-priority target or skip the tick.
