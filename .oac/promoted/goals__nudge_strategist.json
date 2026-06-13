@@ -3,9 +3,9 @@
   "version": {
     "component_id": "goals/nudge_strategist",
     "kind": "agent",
-    "content_hash": "2d33fa954368b1cc287fa2edd01319126445fbebd460abfbae35168861b22328",
+    "content_hash": "d0be83cb3ed048076077ccb80a52f4b509fcf21f6ef1972fe4912050cc6c796b",
     "parent_hash": null,
-    "timestamp": "2026-06-10T01:55:44",
+    "timestamp": "2026-06-13T21:49:37",
     "author": "human",
     "definition": {
       "header": {
@@ -32,7 +32,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/fetch_context.py*"
+                "python scripts/fetch_context.py*",
+                "uv run scripts/fetch_context.py*"
               ]
             },
             "positive_examples": [
@@ -60,7 +61,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/embedding_search.py*"
+                "python scripts/embedding_search.py*",
+                "uv run scripts/embedding_search.py*"
               ]
             },
             "positive_examples": [
@@ -88,7 +90,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/user_config.py*"
+                "python scripts/user_config.py*",
+                "uv run scripts/user_config.py*"
               ]
             },
             "positive_examples": [
@@ -116,7 +119,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/nudge_strategist.py*"
+                "python scripts/nudge_strategist.py*",
+                "uv run scripts/nudge_strategist.py*"
               ]
             },
             "positive_examples": [
@@ -144,7 +148,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/periodic_checker.py*"
+                "python scripts/periodic_checker.py*",
+                "uv run scripts/periodic_checker.py*"
               ]
             },
             "positive_examples": [
@@ -172,7 +177,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/strategy_tracker.py*"
+                "python scripts/strategy_tracker.py*",
+                "uv run scripts/strategy_tracker.py*"
               ]
             },
             "positive_examples": [
@@ -200,7 +206,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/goal_manager.py*"
+                "python scripts/goal_manager.py*",
+                "uv run scripts/goal_manager.py*"
               ]
             },
             "positive_examples": [
@@ -228,7 +235,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/todo_manager.py*"
+                "python scripts/todo_manager.py*",
+                "uv run scripts/todo_manager.py*"
               ]
             },
             "positive_examples": [
@@ -256,7 +264,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/priority_manager.py*"
+                "python scripts/priority_manager.py*",
+                "uv run scripts/priority_manager.py*"
               ]
             },
             "positive_examples": [
@@ -284,7 +293,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/goal_progress_auto_updater.py*"
+                "python scripts/goal_progress_auto_updater.py*",
+                "uv run scripts/goal_progress_auto_updater.py*"
               ]
             },
             "positive_examples": [
@@ -312,7 +322,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/habit_manager.py*"
+                "python scripts/habit_manager.py*",
+                "uv run scripts/habit_manager.py*"
               ]
             },
             "positive_examples": [
@@ -340,7 +351,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/chat_history.py*"
+                "python scripts/chat_history.py*",
+                "uv run scripts/chat_history.py*"
               ]
             },
             "positive_examples": [
@@ -368,7 +380,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/emit_guidance.py*"
+                "python scripts/emit_guidance.py*",
+                "uv run scripts/emit_guidance.py*"
               ]
             },
             "positive_examples": [
@@ -396,7 +409,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/question_sender.py*"
+                "python scripts/question_sender.py*",
+                "uv run scripts/question_sender.py*"
               ]
             },
             "positive_examples": [
@@ -424,7 +438,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/thought_transfer.py*"
+                "python scripts/thought_transfer.py*",
+                "uv run scripts/thought_transfer.py*"
               ]
             },
             "positive_examples": [
@@ -452,7 +467,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/execution_ledger.py*"
+                "python scripts/execution_ledger.py*",
+                "uv run scripts/execution_ledger.py*"
               ]
             },
             "positive_examples": [
@@ -480,7 +496,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/context_resolver.py*"
+                "python scripts/context_resolver.py*",
+                "uv run scripts/context_resolver.py*"
               ]
             },
             "positive_examples": [
@@ -508,7 +525,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/response_processor.py*"
+                "python scripts/response_processor.py*",
+                "uv run scripts/response_processor.py*"
               ]
             },
             "positive_examples": [
@@ -536,7 +554,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/agent_notes.py*"
+                "python scripts/agent_notes.py*",
+                "uv run scripts/agent_notes.py*"
               ]
             },
             "positive_examples": [
@@ -564,7 +583,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/garmin_health.py*"
+                "python scripts/garmin_health.py*",
+                "uv run scripts/garmin_health.py*"
               ]
             },
             "positive_examples": [
@@ -592,7 +612,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/personality_core.py*"
+                "python scripts/personality_core.py*",
+                "uv run scripts/personality_core.py*"
               ]
             },
             "positive_examples": [
@@ -620,7 +641,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/activity_blocks.py*"
+                "python scripts/activity_blocks.py*",
+                "uv run scripts/activity_blocks.py*"
               ]
             },
             "positive_examples": [
@@ -648,7 +670,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/profile_manager.py*"
+                "python scripts/profile_manager.py*",
+                "uv run scripts/profile_manager.py*"
               ]
             },
             "positive_examples": [
@@ -676,7 +699,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/visual_report.py*"
+                "python scripts/visual_report.py*",
+                "uv run scripts/visual_report.py*"
               ]
             },
             "positive_examples": [
@@ -704,11 +728,40 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/proactive_send.py*"
+                "python scripts/proactive_send.py*",
+                "uv run scripts/proactive_send.py*"
               ]
             },
             "positive_examples": [
               "python scripts/proactive_send.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only — your callable tools are exactly the scripts documented above; run them with `python scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only — your callable tools are exactly the scripts documented above; run them with `python scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only — your callable tools are exactly the scripts documented above; run them with `python scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -726,7 +779,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Nudge Strategist — Strategic Persuasion Engine\n\nYou are Twily's persuasion engine: make the user follow through on stated\npriorities, goals, and habits through persistent, adaptive, multi-day campaigns.\n\n## Core Directives\n- Relentless but adaptive — never abandon a campaign, but change approach when one\n  fails.\n- Check progress evidence before calling a goal \"stalled\" (auto-updater logs).\n- Measure how the user reacted to the previous nudge before sending a new one.\n- Escalate wisely: start gentle, escalate after consecutive ignored nudges,\n  de-escalate after success; enter strategic silence after sustained ignoring, then\n  restart at level 1.\n- Respect boundaries: skip if user_busy / at work; reduce intensity when body\n  battery < 30 or stress > 70; honor max_nudges_per_day.\n\n## Tactic Arsenal (5 escalation levels)\n- L1: gentle_reminder (DEFAULT), curiosity, celebration.\n- L2: accountability, pleading, tempting.\n- L3: nagging, suggestive_image, negotiation.\n- L4: shame, fear_of_loss, suggestive_image.\n- L5: fear_of_loss (nuclear).\n\n## L1 Target Lock (CRITICAL)\nAt L1 the default is gentle_reminder and `target` MUST be a concrete stale todo or\nmissed priority whenever one exists. Only pick celebration (campaign target\ncompleted in last 24h) or curiosity (genuinely no overdue/pending todo and no\nstalled goal) otherwise — these are rare. Vibe-check messages make the user tune\nout; surface the concrete todo instead.\n\n## Anti-Nagging Rules\n- 6-hour no-repeat: do not re-surface the same target within 6 hours; pick the\n  next-highest-priority target or skip the tick.\n- 2-strikes → reschedule offer: if the same todo was surfaced twice with no\n  reaction, on the 3rd cycle switch to a reschedule_offer (\"want me to reschedule,\n  push the deadline, or drop it?\").\n\n## Escalation & Media\nRotate tactics within a level after 3 ignored nudges; escalate when a level is\nexhausted. At L3+ invoke persona/twily_selfie; at L5 invoke\npersona/twily_videographer for narrated video. Before nudging, if a calendar event\nis within 30 min, only nudge about event prep. Emit one nudge guidance with an\nescalation-appropriate tone_hint — persona_prose composes the text. For\ntask-anchored tactics key_points[0] MUST name the concrete todo.\n",
+      "system_prompt": "# Nudge Strategist — Strategic Persuasion Engine\n\nYou are Twily's persuasion engine: make the user follow through on stated\npriorities, goals, and habits through persistent, adaptive, multi-day campaigns.\n\n## Core Directives\n- Relentless but adaptive — never abandon a campaign, but change approach when one\n  fails.\n- Check progress evidence before calling a goal \"stalled\" (auto-updater logs).\n- Measure how the user reacted to the previous nudge before sending a new one.\n- Escalate wisely: start gentle, escalate after consecutive ignored nudges,\n  de-escalate after success; enter strategic silence after sustained ignoring, then\n  restart at level 1.\n- Respect boundaries: skip if user_busy / at work; reduce intensity when body\n  battery < 30 or stress > 70; honor max_nudges_per_day.\n\n## Tactic Arsenal (5 escalation levels)\n- L1: gentle_reminder (DEFAULT), curiosity, celebration.\n- L2: accountability, pleading, tempting.\n- L3: nagging, suggestive_image, negotiation.\n- L4: shame, fear_of_loss, suggestive_image.\n- L5: fear_of_loss (nuclear).\n\n## L1 Target Lock (CRITICAL)\nAt L1 the default is gentle_reminder and `target` MUST be a concrete stale todo or\nmissed priority whenever one exists. Only pick celebration (campaign target\ncompleted in last 24h) or curiosity (genuinely no overdue/pending todo and no\nstalled goal) otherwise — these are rare. Vibe-check messages make the user tune\nout; surface the concrete todo instead.\n\n**Lock overrides skip.** When a concrete overdue/stale todo exists, you MUST\nnudge it — do NOT skip. The ONLY valid reasons to skip a tick are the EXPLICIT\nconditions: user_busy / at work, the same target was already surfaced within the\nlast 6 hours (pick the next-highest target instead), or max_nudges_per_day is\nreached. \"Nothing new to say\" is NEVER a valid skip reason while an overdue todo\nsits unaddressed — lock onto it with a gentle_reminder. A skip when a concrete\noverdue todo exists and none of those explicit conditions hold is a FAILURE.\n\n## Anti-Nagging Rules\n- 6-hour no-repeat: do not re-surface the same target within 6 hours; pick the\n  next-highest-priority target or skip the tick.\n- 2-strikes → reschedule offer: if the same todo was surfaced twice with no\n  reaction, on the 3rd cycle switch to a reschedule_offer (\"want me to reschedule,\n  push the deadline, or drop it?\").\n\n## Escalation & Media\nRotate tactics within a level after 3 ignored nudges; escalate when a level is\nexhausted. At L3+ invoke persona/twily_selfie; at L5 invoke\npersona/twily_videographer for narrated video. Before nudging, if a calendar event\nis within 30 min, only nudge about event prep. Emit one nudge guidance with an\nescalation-appropriate tone_hint — persona_prose composes the text. For\ntask-anchored tactics key_points[0] MUST name the concrete todo.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -748,10 +801,11 @@
           "expected_tool_calls": [],
           "evaluators": [
             {
-              "kind": "substring",
-              "name": "",
-              "needle": "gentle_reminder",
-              "case_sensitive": false
+              "kind": "llm_judge",
+              "name": "l1-target-lock",
+              "criteria": "On an L1 nudge tick with an overdue 'file taxes' todo, the agent must LOCK ONTO that concrete todo as the target and choose a GENTLE, low-pressure reminder approach (the L1 default). Score HIGH if it names 'file taxes' as the target AND signals a gentle / soft / low-pressure reminder tactic (in any wording, incl. the literal 'gentle_reminder'). Score LOW if it picks a vague target, ignores the overdue todo, or chooses an aggressive / high-pressure tactic.",
+              "judge_model": null,
+              "pass_threshold": 0.6
             }
           ],
           "timeout_s": 60.0
@@ -843,7 +897,7 @@
             {
               "kind": "llm_judge",
               "name": "grounded-uses-present-health",
-              "criteria": "Real health data IS present (body_battery=11, stress=68). Score HIGH if the message either cites these ACTUAL figures accurately or sensibly chooses to act on them (e.g. a winddown nudge), and does NOT invent OTHER figures not shown. Inventing a sleep score or step count not present scores LOW.",
+              "criteria": "Real health data IS present (body_battery=11 — critically low — and stress=68) and there is NO urgent todo/calendar trigger. This checks GROUNDING + SENSITIVITY, not a forced action. A GOOD response does ONE of: (a) cites the actual figures and/or gently acts on them (e.g. a soft winddown/rest nudge), OR (b) stays quiet / skips — an entirely appropriate, sensitive choice for a depleted late-night user with no urgent task. BOTH (a) and (b) score HIGH. Score LOW ONLY if the message (1) FABRICATES a figure not shown (sleep score, sleep debt, step count, heart rate, bedtime, etc.), or (2) pushes a high-pressure or unrelated nudge that ignores the user's depleted state. A grounded skip is a PASS.",
               "judge_model": null,
               "pass_threshold": 0.6
             }
@@ -969,8 +1023,19 @@
       "tool_tests": []
     },
     "metrics": {
-      "pass_rate": 1.0,
-      "score_floor": 0.0
+      "pass_rate": 0.7777777777777778,
+      "score_floor": 0.0,
+      "score_mean": 0.8333333333333334,
+      "score_quantile": 0.975,
+      "score_floor:by_name:l1-locks-onto-concrete-todo": 0.0,
+      "score_floor:by_name:probe-anti-repetition-evolving": 0.975,
+      "score_floor:by_name:probe-variety-first-tick": 0.55,
+      "score_floor:by_name:probe-grounded-no-health": 1.0,
+      "score_floor:by_name:probe-grounded-with-health": 1.0,
+      "score_floor:by_name:probe-skip-when-busy": 1.0,
+      "score_floor:by_name:probe-stale-resolved-stocks-pl": 1.0,
+      "score_floor:by_name:probe-stale-resolved-apartment-en": 1.0,
+      "score_floor:by_name:probe-stale-resolved-call-mixed": 0.975
     },
     "notes": ""
   },

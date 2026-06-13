@@ -3,9 +3,9 @@
   "version": {
     "component_id": "goals/periodic_checker",
     "kind": "agent",
-    "content_hash": "918cf84f208a9583fd0e3d71ae03b32adb8879ded7f7ecca56686c46b73755f0",
+    "content_hash": "3580e6e2daba7be140ef8fbe6c63f2f279e0e046d9cff9bd3599e363cd207fca",
     "parent_hash": null,
-    "timestamp": "2026-06-05T16:15:10",
+    "timestamp": "2026-06-13T21:49:37",
     "author": "human",
     "definition": {
       "header": {
@@ -32,7 +32,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/fetch_context.py*"
+                "python scripts/fetch_context.py*",
+                "uv run scripts/fetch_context.py*"
               ]
             },
             "positive_examples": [
@@ -60,7 +61,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/embedding_search.py*"
+                "python scripts/embedding_search.py*",
+                "uv run scripts/embedding_search.py*"
               ]
             },
             "positive_examples": [
@@ -88,7 +90,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/user_config.py*"
+                "python scripts/user_config.py*",
+                "uv run scripts/user_config.py*"
               ]
             },
             "positive_examples": [
@@ -116,7 +119,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/periodic_checker.py*"
+                "python scripts/periodic_checker.py*",
+                "uv run scripts/periodic_checker.py*"
               ]
             },
             "positive_examples": [
@@ -144,7 +148,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/emit_guidance.py*"
+                "python scripts/emit_guidance.py*",
+                "uv run scripts/emit_guidance.py*"
               ]
             },
             "positive_examples": [
@@ -172,7 +177,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/question_sender.py*"
+                "python scripts/question_sender.py*",
+                "uv run scripts/question_sender.py*"
               ]
             },
             "positive_examples": [
@@ -200,7 +206,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/thought_transfer.py*"
+                "python scripts/thought_transfer.py*",
+                "uv run scripts/thought_transfer.py*"
               ]
             },
             "positive_examples": [
@@ -228,7 +235,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/execution_ledger.py*"
+                "python scripts/execution_ledger.py*",
+                "uv run scripts/execution_ledger.py*"
               ]
             },
             "positive_examples": [
@@ -256,7 +264,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/context_resolver.py*"
+                "python scripts/context_resolver.py*",
+                "uv run scripts/context_resolver.py*"
               ]
             },
             "positive_examples": [
@@ -284,7 +293,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/response_processor.py*"
+                "python scripts/response_processor.py*",
+                "uv run scripts/response_processor.py*"
               ]
             },
             "positive_examples": [
@@ -312,7 +322,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/agent_notes.py*"
+                "python scripts/agent_notes.py*",
+                "uv run scripts/agent_notes.py*"
               ]
             },
             "positive_examples": [
@@ -340,7 +351,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/tuya_lights.py*"
+                "python scripts/tuya_lights.py*",
+                "uv run scripts/tuya_lights.py*"
               ]
             },
             "positive_examples": [
@@ -368,7 +380,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/chat_history.py*"
+                "python scripts/chat_history.py*",
+                "uv run scripts/chat_history.py*"
               ]
             },
             "positive_examples": [
@@ -396,7 +409,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/garmin_health.py*"
+                "python scripts/garmin_health.py*",
+                "uv run scripts/garmin_health.py*"
               ]
             },
             "positive_examples": [
@@ -424,7 +438,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/personality_core.py*"
+                "python scripts/personality_core.py*",
+                "uv run scripts/personality_core.py*"
               ]
             },
             "positive_examples": [
@@ -452,7 +467,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/activity_blocks.py*"
+                "python scripts/activity_blocks.py*",
+                "uv run scripts/activity_blocks.py*"
               ]
             },
             "positive_examples": [
@@ -480,7 +496,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/telegram_log.py*"
+                "python scripts/telegram_log.py*",
+                "uv run scripts/telegram_log.py*"
               ]
             },
             "positive_examples": [
@@ -508,7 +525,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/goal_manager.py*"
+                "python scripts/goal_manager.py*",
+                "uv run scripts/goal_manager.py*"
               ]
             },
             "positive_examples": [
@@ -536,7 +554,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/todo_manager.py*"
+                "python scripts/todo_manager.py*",
+                "uv run scripts/todo_manager.py*"
               ]
             },
             "positive_examples": [
@@ -564,7 +583,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/priority_manager.py*"
+                "python scripts/priority_manager.py*",
+                "uv run scripts/priority_manager.py*"
               ]
             },
             "positive_examples": [
@@ -592,7 +612,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/goal_progress_auto_updater.py*"
+                "python scripts/goal_progress_auto_updater.py*",
+                "uv run scripts/goal_progress_auto_updater.py*"
               ]
             },
             "positive_examples": [
@@ -620,7 +641,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/visual_report.py*"
+                "python scripts/visual_report.py*",
+                "uv run scripts/visual_report.py*"
               ]
             },
             "positive_examples": [
@@ -648,7 +670,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/routine_manager.py*"
+                "python scripts/routine_manager.py*",
+                "uv run scripts/routine_manager.py*"
               ]
             },
             "positive_examples": [
@@ -676,11 +699,40 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/session_inspector.py*"
+                "python scripts/session_inspector.py*",
+                "uv run scripts/session_inspector.py*"
               ]
             },
             "positive_examples": [
               "python scripts/session_inspector.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only — your callable tools are exactly the scripts documented above; run them with `python scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only — your callable tools are exactly the scripts documented above; run them with `python scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only — your callable tools are exactly the scripts documented above; run them with `python scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -698,7 +750,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Periodic Checker\n\nRun every 5 minutes to decide whether Twily should intervene. Keep reminders brief,\nwarm, and in Twily's voice.\n\n## Progress Evidence\nBefore telling the user a goal is stalled, check the goal-progress auto-updater logs\nfor recent counting activity (walks, workouts, habits). Acknowledge real effort even\nif the percentage hasn't moved.\n\n## Respect Availability\nIf the check returns reason `user_busy` or `user_recently_busy`, send nothing. If the\nuser mentioned being busy/at work but no `user_busy` note exists, store one so future\nchecks respect it.\n\n## Do NOT Suppress Triggered Reminders\nThe conversation digest is CONTEXT for tone, not a reason to skip. If the checker\nreturned trigger=true you MUST send. The ONLY valid skip reasons are user_busy,\nuser_recently_busy, or global_cooldown (from the tool). Health boundaries do NOT\nblock todo/calendar/task reminders.\n\n## Trigger Priority\nupcoming_calendar_event > overdue_todos > pending_tasks >\noverdue_reschedule_suggestion > untracked_conversation_tasks > idle_during_block.\nProcess the most important first (up to 2 reminders per check).\n\n## Event Prep\nWhen upcoming_calendar_event fires, become an event-prep assistant: search recent\nchat for prep tasks and use time-aware buffers (>60 min gentle heads-up; 30-60 min\nprep urgency; 15-30 min last call; <15 min just the event). Never suggest unrelated\nwork or tasks longer than the remaining time.\n\n## Expressive Media\nChoose VIDEO (narrated, via persona/twily_videographer) when you want to SAY\nsomething the user will hear or for emotionally significant moments; choose IMAGE\n(static selfie, via persona/twily_selfie) for quick visual encouragement; skip both\nfor routine informational pings or when media was sent recently. Emit your reminder\nas a single nudge guidance — persona_prose renders the wording. For task-anchored\ntriggers (overdue_todos, pending_tasks, reschedule) key_points[0] MUST name the\nconcrete todo by title.\n",
+      "system_prompt": "# Periodic Checker\n\nYou are Twily's 5-minute proactive reminder engine. Run the periodic check, decide\nwhether to intervene, and deliver your message via emit_guidance. Keep reminders\nbrief, warm, and in Twily's voice.\n\n## DELIVERY — CRITICAL\nYour assistant text is invisible to the user. You MUST call:\n  python scripts/emit_guidance.py\nto deliver your message — that is the ONLY mechanism that reaches the user.\nCall it EXACTLY ONCE per tick. There are two valid outcomes:\n\n1. **Send a nudge** — when a trigger fired and you have something new to say:\n   message_kind=\"nudge\", key_points=[\"<concrete task or topic>\"], ...\n\n2. **Skip** — when the user is busy, nothing is new, or you would repeat yourself:\n   message_kind=\"skip\"\n\nNEVER call emit_guidance more than once per tick.\n\n## Respect Availability\nIf the periodic-checker tool returns reason `user_busy` or `user_recently_busy`:\n  - You MUST skip. Call emit_guidance with message_kind=\"skip\".\n  - Your output MUST contain the exact string `user_busy` to acknowledge the state.\n  - Do NOT send any reminder or nudge.\nIf the user mentioned being busy/at work but no `user_busy` note exists, store one\nvia agent-notes so future checks respect it.\n\n## Grounding — Never Fabricate\nYou may ONLY reference signals that are actually present in the context provided by\nthe tools (periodic-checker, garmin-health, activity-blocks, chat-history, etc.).\n\nNEVER state a body-battery level, sleep duration, sleep debt, bedtime, heart rate,\nstress level, sleep score, step count, or room/desk description UNLESS the exact\nfigure appears in the data returned by your tools this tick.\n\nIf no health/sensor data is present this tick, say NOTHING about health, sleep,\nbody battery, stress, heart rate, or room state — not even vague estimates.\nIf real health data IS present, you may cite the actual figures shown, but do NOT\ninvent additional figures that were not provided.\n\n## Anti-Repetition — Surface Something NEW\nBefore composing a nudge, review the chat history for the last 24 hours.\nDo NOT re-raise a topic that Twily already raised in that history.\nDo NOT re-raise a topic the user explicitly deferred or said to leave.\nIf you already reminded about X today, do NOT remind about X again — pick a\ndifferent item or skip entirely. Variety matters: each tick should surface a\nFRESH item (a different todo, a different goal, a calendar event not yet mentioned).\n\nIf every possible topic has already been raised or explicitly deferred by the user,\ncall emit_guidance with message_kind=\"skip\".\n\n## Skip When Appropriate\nCall emit_guidance with message_kind=\"skip\" when ANY of these is true:\n  - The periodic-checker returned reason `user_busy` or `user_recently_busy`.\n  - The periodic-checker returned no trigger and nothing is genuinely overdue.\n  - The only pending item was already handled or already mentioned in recent history.\n  - You would be repeating yourself (see Anti-Repetition above).\n  - The user explicitly asked not to be pinged right now.\n\n## Do NOT Suppress Triggered Reminders\nThe conversation digest is CONTEXT for tone, not a reason to skip a real trigger.\nIf the checker returned trigger=true you MUST send a nudge (unless user_busy).\nThe ONLY valid skip reasons are user_busy, user_recently_busy, or global_cooldown\n(from the tool). Health boundaries do NOT block todo/calendar/task reminders.\n\n## Progress Evidence\nBefore telling the user a goal is stalled, check the goal-progress auto-updater logs\nfor recent counting activity (walks, workouts, habits). Acknowledge real effort even\nif the percentage hasn't moved.\n\n## Trigger Priority\nupcoming_calendar_event > overdue_todos > pending_tasks >\noverdue_reschedule_suggestion > untracked_conversation_tasks > idle_during_block.\nProcess the most important first (up to 2 reminders per check).\n\n## Event Prep\nWhen upcoming_calendar_event fires, become an event-prep assistant: search recent\nchat for prep tasks and use time-aware buffers (>60 min gentle heads-up; 30-60 min\nprep urgency; 15-30 min last call; <15 min just the event). Never suggest unrelated\nwork or tasks longer than the remaining time.\n\n## Expressive Media\nChoose VIDEO (narrated, via persona/twily_videographer) when you want to SAY\nsomething the user will hear or for emotionally significant moments; choose IMAGE\n(static selfie, via persona/twily_selfie) for quick visual encouragement; skip both\nfor routine informational pings or when media was sent recently. Emit your reminder\nas a single nudge guidance — persona_prose renders the wording. For task-anchored\ntriggers (overdue_todos, pending_tasks, reschedule) key_points[0] MUST name the\nconcrete todo by title.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -711,9 +763,9 @@
       "mcp_servers": [],
       "agent_tests": [
         {
-          "name": "goals/periodic_checker::role-fulfilment",
+          "name": "respects-user-busy",
           "description": "",
-          "prompt": "Hey, can you run the periodic check now? Here's the current state:\n\n**Active reminders:**\n1. \"Submit quarterly tax report\" — due in 2 hours, priority high, no cooldown active\n2. \"Call dentist to reschedule\" — due tomorrow, priority medium, last nudged 4 hours ago\n3. \"Prepare slides for Monday standup\" — due in 3 days, priority low\n\n**User status:** Not busy, last seen 10 minutes ago, no cooldown set.\n\n**Upcoming events:**\n- Video call with client \"Acme Corp\" at 3:00 PM today (it's currently 1:15 PM)\n\n**Preferences:** Use a 30-minute prep buffer for events. Attach a selfie nudge if a high-priority reminder triggers. No video media needed this round.\n\nRun the check and emit a single nudge guidance for anything that needs attention right now.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "prompt": "Periodic check ran and returned reason: user_busy. What do you do?",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
@@ -721,13 +773,207 @@
           "evaluators": [
             {
               "kind": "llm_judge",
-              "name": "role-fulfilment",
-              "criteria": "The agent's role is: Runs the periodic checker, respects user_busy/cooldown, never suppresses a triggered reminder, handles event prep with time buffers, and may add selfie/video media. Emits a single nudge guidance.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.",
+              "name": "respects-busy-skips",
+              "criteria": "The periodic check returned reason 'user_busy'. The CORRECT action is to SKIP — deliver no nudge / stay silent. Score HIGH if the agent skips or otherwise declines to send a reminder (acknowledging the user is busy). Score LOW if it sends a nudge / reminder anyway despite the user being busy.",
+              "judge_model": null,
+              "pass_threshold": 0.6
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "probe-anti-repetition-evolving",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: NONE — say nothing about health.\n\n## Current emotional state\n- **guidance**: Keep it short; the user is heads-down.\n\n## Conversation digest (rolling situational summary)\n### Deferred Topics\n- Q4 budget report: user explicitly deferred to tomorrow at 11:30. Do NOT re-raise today.\n### Active Goals & Progress\n- Gym habit: 0/3 this week, none logged.\n### Upcoming Events\n- Dentist appointment 16:00 today (new).\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Mon 09:11] twily: Q4 budget report is still sitting at 3 days overdue. Want to tackle it?\n[Mon 11:30] user: pushed the budget thing to tomorrow, leave it\n[Mon 14:02] twily: Noted — budget parked till tomorrow.\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "variety-and-anti-repetition",
+              "criteria": "The assistant is a proactive assistant on a scheduler tick. Score HIGH only if its message surfaces something NEW relative to the chat history and does NOT re-raise a topic already raised by Twily or explicitly deferred by the user in that history. Re-raising the Q4 budget report (already raised / deferred) is REPETITION — score LOW. Picking up the gym habit, the new dentist event, or another fresh item scores HIGH.",
+              "judge_model": null,
+              "pass_threshold": 0.6
+            },
+            {
+              "kind": "regex",
+              "name": "grounding-gate-anti-rep",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            }
+          ],
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-variety-first-tick",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: NONE — say nothing about health.\n\n## Conversation digest (rolling situational summary)\n### Active Goals & Progress\n- Q4 budget report: overdue 3 days, user acknowledged this morning.\n- Gym habit: 0/3 this week.\n### Deferred Topics\n- User asked NOT to be reminded about emails today.\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Mon 09:10] user: morning, got a busy day\n[Mon 09:11] twily: Q4 budget report is still sitting at 3 days overdue. Want to tackle it?\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "variety-and-anti-repetition",
+              "criteria": "The assistant is a proactive assistant on a scheduler tick. Score HIGH only if its message surfaces something NEW relative to the chat history and does NOT re-raise a topic already raised by Twily or explicitly deferred by the user in that history. Re-raising the Q4 budget report (already raised / deferred) is REPETITION — score LOW. Picking up the gym habit, the new dentist event, or another fresh item scores HIGH.",
+              "judge_model": null,
+              "pass_threshold": 0.6
+            },
+            {
+              "kind": "regex",
+              "name": "grounding-gate-variety",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            }
+          ],
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-grounded-no-health",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: NONE — say nothing about health.\n\n## Conversation digest (rolling situational summary)\n### Current Situation\n- 22:45 local, user coding on a deploy.\n### User State\n- (no health data available this period.)\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Mon 22:40] user: still grinding on the deploy\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "regex",
+              "name": "grounding-gate-no-health",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            },
+            {
+              "kind": "llm_judge",
+              "name": "grounded-no-fabrication",
+              "criteria": "No health/sensor data is present in the context. Score HIGH only if the message invents NO health or room fact — no body battery, sleep debt, bedtime, heart rate, stress, sleep score, or step count. Any fabricated sensor figure scores 0. A grounded non-health nudge (or a skip) scores HIGH.",
               "judge_model": null,
               "pass_threshold": 0.7
             }
           ],
-          "timeout_s": 60.0
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-grounded-with-health",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: YES — you may cite the figures shown.\n\n## Recent activity blocks (presence / room-state, last 6h)\n- [Mon 23:50] desk / coding · body_battery=11, stress=68\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Mon 23:30] user: almost done\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "grounded-uses-present-health",
+              "criteria": "Real health data IS present (body_battery=11 — critically low — and stress=68) and there is NO urgent todo/calendar trigger. This checks GROUNDING + SENSITIVITY, not a forced action. A GOOD response does ONE of: (a) cites the actual figures and/or gently acts on them (e.g. a soft winddown/rest nudge), OR (b) stays quiet / skips — an entirely appropriate, sensitive choice for a depleted late-night user with no urgent task. BOTH (a) and (b) score HIGH. Score LOW ONLY if the message (1) FABRICATES a figure not shown (sleep score, sleep debt, step count, heart rate, bedtime, etc.), or (2) pushes a high-pressure or unrelated nudge that ignores the user's depleted state. A grounded skip is a PASS.",
+              "judge_model": null,
+              "pass_threshold": 0.6
+            }
+          ],
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-skip-when-busy",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: NONE — say nothing about health.\n\n## Conversation digest (rolling situational summary)\n### Current Situation\n- User in a meeting, asked not to be pinged.\n### Pending Follow-ups\n- Dentist reminder already scheduled for 15:30 (handled).\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Tue 10:00] twily: Dentist at 16:00 — want a reminder at 15:30?\n[Tue 10:01] user: yes thanks, in a meeting now don't ping me\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "skip-when-nothing-new",
+              "criteria": "The user is busy and explicitly asked not to be pinged, and the only pending item is already handled. The correct proactive outcome is to SKIP — deliver nothing (message_kind='skip'). Score HIGH for a skip / no-deliver decision; score LOW if it sends an unsolicited message anyway.",
+              "judge_model": null,
+              "pass_threshold": 0.6
+            },
+            {
+              "kind": "regex",
+              "name": "grounding-gate-skip",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            }
+          ],
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-stale-resolved-stocks-pl",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: NONE — say nothing about health.\n\n## Conversation digest (rolling situational summary)\n### Active Tasks (task list — may LAG the chat by up to an hour; cross-check the chat history before reminding)\n- [todo] Kup akcje pod IKE (due today)\n- [todo] Review the server backup config (new, untouched)\n### Current Situation\n- Tue 13:30 local; user at his desk.\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Tue 09:15] twily: Przypominajka: kup akcje pod IKE — termin mija dziś.\n[Tue 10:42] user: Kupiłem już akcje, done. Nie przypominaj mi o tym więcej.\n[Tue 10:43] twily: Super, odhaczam zakup akcji ✅\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "no-rereminder-resolved-stocks",
+              "criteria": "STALE-STATE GATE. The chat history PLAINLY shows the user already completed: the stock purchase ('Kupiłem już akcje, done' — he bought the IKE stocks and asked not to be reminded again). The task list in the digest still carries it only because it lags the chat. Score 0 if the message reminds, nags, nudges, or asks about that completed item AS IF IT WERE STILL PENDING in ANY way — this is the exact trust-destroying failure being gated ('why are you reminding me? I've already done it'). Score HIGH if the message either (a) skips entirely (message_kind='skip'), (b) briefly acknowledges the item is DONE without re-asking for it, or (c) ignores the stale entry and surfaces the genuinely fresh item instead: reviewing the server backup config. Merely mentioning the completed item while clearly treating it as done is acceptable; treating it as open is an automatic 0.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            },
+            {
+              "kind": "regex",
+              "name": "grounding-gate-stale-state",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            }
+          ],
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-stale-resolved-apartment-en",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: NONE — say nothing about health.\n\n## Conversation digest (rolling situational summary)\n### Active Tasks (task list — may LAG the chat; cross-check history)\n- [todo] Pay apartment installment (due Friday)\n- [todo] Call the dentist to reschedule Thursday's appointment (new)\n### Current Situation\n- Wed 18:00 local; user wrapping up work.\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Wed 08:30] twily: Heads-up: the apartment payment is due Friday.\n[Wed 16:05] user: I've already paid for the apartment this morning, you can drop that one.\n[Wed 16:06] twily: Got it — apartment payment marked done.\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "no-rereminder-resolved-apartment",
+              "criteria": "STALE-STATE GATE. The chat history PLAINLY shows the user already completed: the apartment payment ('I've already paid for the apartment this morning, you can drop that one'). The task list in the digest still carries it only because it lags the chat. Score 0 if the message reminds, nags, nudges, or asks about that completed item AS IF IT WERE STILL PENDING in ANY way — this is the exact trust-destroying failure being gated ('why are you reminding me? I've already done it'). Score HIGH if the message either (a) skips entirely (message_kind='skip'), (b) briefly acknowledges the item is DONE without re-asking for it, or (c) ignores the stale entry and surfaces the genuinely fresh item instead: calling the dentist to reschedule Thursday's appointment. Merely mentioning the completed item while clearly treating it as done is acceptable; treating it as open is an automatic 0.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            },
+            {
+              "kind": "regex",
+              "name": "grounding-gate-stale-state",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            }
+          ],
+          "timeout_s": 120.0
+        },
+        {
+          "name": "probe-stale-resolved-call-mixed",
+          "description": "",
+          "prompt": "## ⚠️ GROUNDING CONTRACT\nReference ONLY signals present below. Do NOT invent body-battery, sleep debt, bedtime, heart rate, stress, sleep score, step count, or room state that is not stated verbatim below.\nHealth data present this tick: NONE — say nothing about health.\n\n## Conversation digest (rolling situational summary)\n### Active Tasks (task list — may LAG the chat; cross-check history)\n- [todo] Zadzwonić do taty (weekend plans)\n- [todo] Hackathon submission — deadline Sunday 23:59 (new, not started)\n### Current Situation\n- Thu 15:20 local.\n\n## Chat History (last 24h)\nIncludes Twily's own recent messages. Do NOT repeat a reminder/topic already raised — surface something new.\n[Thu 11:00] twily: Pamiętaj żeby zadzwonić do taty w sprawie weekendu.\n[Thu 12:10] user: btw zadzwoniłem do taty, załatwione — done with that call\n\n## TASK\nThis is a proactive scheduler tick (the user sent nothing). Decide whether to reach out. If there is something genuinely new and useful, deliver ONE short message. If nothing is new, the user is busy, or you would repeat yourself, SKIP (emit message_kind='skip', deliver nothing). Stay grounded.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "no-rereminder-resolved-call",
+              "criteria": "STALE-STATE GATE. The chat history PLAINLY shows the user already completed: calling his dad ('zadzwoniłem do taty, załatwione — done with that call'). The task list in the digest still carries it only because it lags the chat. Score 0 if the message reminds, nags, nudges, or asks about that completed item AS IF IT WERE STILL PENDING in ANY way — this is the exact trust-destroying failure being gated ('why are you reminding me? I've already done it'). Score HIGH if the message either (a) skips entirely (message_kind='skip'), (b) briefly acknowledges the item is DONE without re-asking for it, or (c) ignores the stale entry and surfaces the genuinely fresh item instead: the hackathon submission due Sunday 23:59. Merely mentioning the completed item while clearly treating it as done is acceptable; treating it as open is an automatic 0.",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            },
+            {
+              "kind": "regex",
+              "name": "grounding-gate-stale-state",
+              "pattern": "(?is)^(?:(?!(?:body battery|sleep debt|hours past bedtime|past your bedtime|heart rate|resting hr|stress level|sleep score|hours of sleep|you slept|steps today)).)*$",
+              "flags": 0
+            }
+          ],
+          "timeout_s": 120.0
         }
       ],
       "capability_tests": [
@@ -748,8 +994,19 @@
       "tool_tests": []
     },
     "metrics": {
-      "pass_rate": 1.0,
-      "score_floor": 0.95
+      "pass_rate": 0.7777777777777778,
+      "score_floor": 0.0,
+      "score_mean": 0.8277777777777778,
+      "score_quantile": 0.95,
+      "score_floor:by_name:respects-user-busy": 1.0,
+      "score_floor:by_name:probe-anti-repetition-evolving": 0.95,
+      "score_floor:by_name:probe-variety-first-tick": 0.55,
+      "score_floor:by_name:probe-grounded-no-health": 1.0,
+      "score_floor:by_name:probe-grounded-with-health": 0.0,
+      "score_floor:by_name:probe-skip-when-busy": 1.0,
+      "score_floor:by_name:probe-stale-resolved-stocks-pl": 1.0,
+      "score_floor:by_name:probe-stale-resolved-apartment-en": 1.0,
+      "score_floor:by_name:probe-stale-resolved-call-mixed": 0.95
     },
     "notes": ""
   },
