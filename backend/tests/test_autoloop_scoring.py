@@ -1055,3 +1055,81 @@ def test_build_registry_injects_postamble_for_real_broken_delivery_agents():
     assert post_by_id["goals/evening_focus"].count(marker) == 0
     # a non-delivery agent is untouched
     assert marker not in post_by_id.get("support/event_extractor", "")
+
+
+# --- 7. infra failures are SKIPPED, not scored 0 (the contention-noise bug) --
+
+def _two_test_agent():
+    """A non-delivery agent with two substring-graded probes (no judge/qwen)."""
+    from src import AgentTest, SubstringEvaluator
+    a = _agent("goals/winddown")
+    return a.model_copy(update={"agent_tests": [
+        AgentTest(name="probe-A", prompt="x",
+                  evaluators=(SubstringEvaluator(needle="good"),)),
+        AgentTest(name="probe-B", prompt="y",
+                  evaluators=(SubstringEvaluator(needle="good"),)),
+    ]})
+
+
+def _factory(per_test):
+    def runner_factory(_defn):
+        def runner(_d, test):
+            return per_test[test.name]
+        return runner
+    return runner_factory
+
+
+def test_infra_timeout_is_skipped_not_scored_zero():
+    """A timed-out session with no output is excluded from scoring — it must
+    not deflate the floor (the workers=4 contention bug that floored a
+    baseline scoring 0.95 in isolation)."""
+    import app.agents.improve as im
+
+    agent = _two_test_agent()
+    per_test = {
+        # probe-A: clean pass
+        "probe-A": ("this is good", [], {}),
+        # probe-B: session timed out, nothing produced -> infra skip
+        "probe-B": ("", [], {"error": "timeout after 120s"}),
+    }
+    ev = im.build_agent_evaluator(agent, _factory(per_test), judge=None)
+    m = ev(ComponentVersion.of("goals/winddown", "agent", agent.model_dump()))
+    # floor reflects ONLY the graded probe, not a phantom 0 from the timeout
+    assert m["score_floor"] == 1.0
+    assert m["pass_rate"] == 1.0
+    assert m.get("infra_skipped") == 1.0
+    # the skipped probe carries no per-test score
+    assert "score_floor:by_name:probe-B" not in m
+    assert m["score_floor:by_name:probe-A"] == 1.0
+
+
+def test_clean_empty_turn_is_still_a_real_zero():
+    """No error + empty output = a genuine miss (NOT infra); still scored 0."""
+    import app.agents.improve as im
+
+    agent = _two_test_agent()
+    per_test = {
+        "probe-A": ("this is good", [], {}),
+        "probe-B": ("", [], {}),  # empty, but NO error -> real failure
+    }
+    ev = im.build_agent_evaluator(agent, _factory(per_test), judge=None)
+    m = ev(ComponentVersion.of("goals/winddown", "agent", agent.model_dump()))
+    assert m["score_floor"] == 0.0
+    assert "infra_skipped" not in m
+
+
+def test_all_infra_skipped_is_unpromotable_not_perfect():
+    """A total outage (every probe times out) yields no evidence — it must look
+    unpromotable (floor 0), never a phantom perfect score."""
+    import app.agents.improve as im
+
+    agent = _two_test_agent()
+    per_test = {
+        "probe-A": ("", [], {"error": "Connection refused"}),
+        "probe-B": ("", [], {"error": "timeout after 120s"}),
+    }
+    ev = im.build_agent_evaluator(agent, _factory(per_test), judge=None)
+    m = ev(ComponentVersion.of("goals/winddown", "agent", agent.model_dump()))
+    assert m["score_floor"] == 0.0
+    assert m["pass_rate"] == 0.0
+    assert m["all_infra_skipped"] == 2.0

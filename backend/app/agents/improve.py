@@ -314,6 +314,33 @@ def with_skip_clause(agent: "AgentDefinition") -> "AgentDefinition":
     return agent.model_copy(update={"system_prompt": SKIP_CLAUSE + base})
 
 
+_INFRA_ERROR_MARKERS = (
+    "timeout", "timed out", "connection", "econnreset", "session",
+    "read operation", "cancelled", "canceled", "502", "503", "504",
+    "overloaded", "binary not found", "agent_dir", "no such file",
+)
+
+
+def _is_infra_failure(run_error, output, calls, blocked) -> bool:
+    """True when a probe run failed for INFRASTRUCTURE reasons, not agent quality.
+
+    A timed-out / crashed agent session that produced no deliverable, no tool
+    calls, and no blocked-tool attempts is vLLM contention or an opencode
+    session crash — scoring it 0 (or as a delivery-contract miss) corrupts the
+    floor and lets noise drive promotion. High precision so genuine misses are
+    still scored: a CLEAN empty turn has run_error=None (→ real 0), and any
+    flailing on blocked tools (→ a real signal we DO grade) disqualifies a skip.
+    """
+    if not run_error:
+        return False
+    if blocked or calls:
+        return False
+    if str(output or "").strip():
+        return False
+    e = str(run_error).lower()
+    return any(m in e for m in _INFRA_ERROR_MARKERS)
+
+
 def find_emit_guidance_call(calls: list[ToolCallRecord]) -> ToolCallRecord | None:
     """The first tool call whose bash command invoked emit_guidance.py, if any.
 
@@ -664,7 +691,9 @@ def build_agent_evaluator(
             return {"pass_rate": 1.0}  # nothing to fail
         runner = runner_factory(version.definition)
         passes = 0
-        scores: list[float] = []
+        # `None` marks an infra-skipped probe (excluded from scoring); aligned
+        # 1:1 with `tests` so the per-test by_name metrics stay correct.
+        scored: list[float | None] = []
         for t in tests:
             ran = runner(version.definition, t)
             # Backward-compatible unpack: live runner returns a 3-tuple
@@ -677,6 +706,31 @@ def build_agent_evaluator(
             blocked = list(signal.get("blocked") or [])
             run_error = signal.get("error")
 
+            # INFRA SKIP (must precede the delivery-contract check): a timed-out
+            # or crashed agent session that produced NOTHING is an
+            # infrastructure failure (vLLM contention under concurrent workers,
+            # opencode session crash) — NOT an agent-quality signal. Scoring it
+            # 0, or worse misattributing it as a delivery-contract miss,
+            # deflates the score floor and lets noise drive promotion decisions.
+            # (Confirmed 2026-06-13: a baseline probe that scores 0.95 in
+            # isolation floored at 0 in the workers=4 sweep.) Exclude it from
+            # scoring entirely. A CLEAN empty turn has run_error=None and still
+            # scores a real 0; flailing on blocked tools is still graded.
+            if _is_infra_failure(run_error, output, calls, blocked):
+                scored.append(None)
+                if failures_sink is not None:
+                    failures_sink.append({
+                        "test": t.name,
+                        "prompt": (t.prompt or "")[:200],
+                        "evaluator": "infra-skip",
+                        "criterion": "session error/timeout — excluded from scoring",
+                        "score": None,
+                        "got_output": "",
+                        "judge_reasoning": "infrastructure failure, not an agent miss",
+                        "error": str(run_error)[:300],
+                    })
+                continue
+
             # DELIVERY CONTRACT: a delivery agent that did NOT call emit_guidance.py
             # delivered NOTHING in production (its assistant text is invisible to the
             # user). Score it a hard 0 and record the failure so the teacher learns
@@ -686,7 +740,7 @@ def build_agent_evaluator(
                 emit_call = find_emit_guidance_call(calls)
                 if emit_call is None:
                     passes += 0
-                    scores.append(0.0)
+                    scored.append(0.0)
                     if failures_sink is not None:
                         failures_sink.append({
                             "test": t.name,
@@ -743,10 +797,10 @@ def build_agent_evaluator(
             considered = [r for r in results if not r.skipped]
             if results and not considered:
                 ok = False
-                scores.append(0.0)
+                scored.append(0.0)
             else:
                 ok = all(r.passed for r in considered) if considered else True
-                scores.append(
+                scored.append(
                     statistics.fmean([r.score for r in considered])
                     if considered else 1.0
                 )
@@ -773,15 +827,28 @@ def build_agent_evaluator(
                             "blocked_attempts": len(blocked),
                             "error": str(run_error)[:300] if run_error else None,
                         })
+        real = [s for s in scored if s is not None]
+        infra_skipped = len(scored) - len(real)
+        # All probes infra-skipped (e.g. a total vLLM outage mid-eval) = NO
+        # evidence. It must look unpromotable, not perfect — mirror the
+        # "every check skipped → FAILS" rule so noise can't promote a candidate.
+        if not real:
+            return {"pass_rate": 0.0, "score_floor": 0.0,
+                    "all_infra_skipped": float(len(scored))}
         metrics = {
-            "pass_rate": passes / len(tests),
-            "score_floor": min(scores) if scores else 1.0,
+            "pass_rate": passes / len(real),
+            "score_floor": min(real),
+            "score_mean": statistics.fmean(real),
         }
+        if infra_skipped:
+            metrics["infra_skipped"] = float(infra_skipped)
         # Per-test floors (branch-evaluator convention): without these, a
         # floor-gated agent shows score=0.000 in the summary with no way to
-        # tell WHICH probe zeroed it from the snapshots alone.
-        for t, s in zip(tests, scores):
-            metrics[f"score_floor:by_name:{t.name}"] = s
+        # tell WHICH probe zeroed it from the snapshots alone. Infra-skipped
+        # probes (score None) are omitted — they carry no quality signal.
+        for t, s in zip(tests, scored):
+            if s is not None:
+                metrics[f"score_floor:by_name:{t.name}"] = s
         return metrics
 
     return evaluator
