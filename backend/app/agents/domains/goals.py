@@ -1104,8 +1104,25 @@ def agents() -> list[AgentDefinition]:
                 AgentTest(
                     name="respects-user-busy",
                     prompt="Periodic check ran and returned reason: user_busy. What do you do?",
+                    # Judge the BEHAVIOUR, not a literal token: a delivery agent
+                    # correctly handling user_busy SKIPS (delivers nothing), so
+                    # the old SubstringEvaluator(needle="user_busy") failed the
+                    # correct action — the agent's user-facing payload on a skip
+                    # doesn't contain the internal reason string (same false-
+                    # negative trap as l1-locks; fixed 2026-06-13).
                     evaluators=(
-                        SubstringEvaluator(needle="user_busy", case_sensitive=False),
+                        LLMJudgeEvaluator(
+                            name="respects-busy-skips",
+                            criteria=(
+                                "The periodic check returned reason 'user_busy'. The"
+                                " CORRECT action is to SKIP — deliver no nudge / stay"
+                                " silent. Score HIGH if the agent skips or otherwise"
+                                " declines to send a reminder (acknowledging the user"
+                                " is busy). Score LOW if it sends a nudge / reminder"
+                                " anyway despite the user being busy."
+                            ),
+                            pass_threshold=0.6,
+                        ),
                     ),
                 ),
                 # Autoloop probes: variety / anti-repetition / grounded / skip,
@@ -1296,6 +1313,14 @@ def agents() -> list[AgentDefinition]:
                         SubstringEvaluator(needle="sleep", case_sensitive=False),
                     ),
                 ),
+                # NOTE: a strict "winddown MUST act on low body battery" probe
+                # was trialled and REMOVED 2026-06-13 — qwen-27B skips/blanks
+                # ~50% of proactive ticks even for winddown (the input is
+                # identical to grounded-with-health, only the rubric differed),
+                # so a "skip fails" gate floors a healthy agent on model
+                # variance — the exact noise the multi-sample work eliminates.
+                # The shared grounded-with-health probe (now crediting a grounded
+                # skip) covers the real concern: no fabrication.
                 # Autoloop probes: variety / anti-repetition / grounded / skip.
                 # Winddown is the agent that hallucinated "sleep debt critical";
                 # the grounded-no-health probe + deterministic gate target exactly

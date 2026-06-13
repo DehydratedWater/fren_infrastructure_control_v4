@@ -234,10 +234,16 @@ def proactive_probes() -> list[AgentTest]:
     grounded_with_health = LLMJudgeEvaluator(
         name="grounded-uses-present-health",
         criteria=(
-            "Real health data IS present (body_battery=11, stress=68). Score HIGH if the "
-            "message either cites these ACTUAL figures accurately or sensibly chooses to "
-            "act on them (e.g. a winddown nudge), and does NOT invent OTHER figures not "
-            "shown. Inventing a sleep score or step count not present scores LOW."
+            "Real health data IS present (body_battery=11 — critically low — and "
+            "stress=68) and there is NO urgent todo/calendar trigger. This checks "
+            "GROUNDING + SENSITIVITY, not a forced action. A GOOD response does ONE "
+            "of: (a) cites the actual figures and/or gently acts on them (e.g. a "
+            "soft winddown/rest nudge), OR (b) stays quiet / skips — an entirely "
+            "appropriate, sensitive choice for a depleted late-night user with no "
+            "urgent task. BOTH (a) and (b) score HIGH. Score LOW ONLY if the message "
+            "(1) FABRICATES a figure not shown (sleep score, sleep debt, step count, "
+            "heart rate, bedtime, etc.), or (2) pushes a high-pressure or unrelated "
+            "nudge that ignores the user's depleted state. A grounded skip is a PASS."
         ),
         pass_threshold=0.6,
     )
