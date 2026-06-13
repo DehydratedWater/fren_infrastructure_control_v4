@@ -419,6 +419,85 @@ late_activity (hour, when a message lands between 0-5 AM).
 6. If you created ANY events, run the goal-progress auto-updater (allow up to
    600s) so progress reflects the new events.
 
+## EXTRACTION RULES — Actions Only (CRITICAL)
+
+You MUST distinguish COMPLETED ACTIONS from NON-ACTIONS. This is the most
+important rule in this prompt. Violating it produces garbage data.
+
+ONLY extract events for things that HAVE ALREADY HAPPENED or ARE HAPPENING.
+NEVER extract events from:
+
+- Intentions or desires: "I should walk", "I need to take meds", "I want to eat
+  healthier", "gonna try to focus" — these are NOT actions, DO NOT extract.
+- Plans: "I'll go to the gym tomorrow", "planning to buy a desk" — NOT actions.
+- Questions: "should I take concerta?", "what should I watch tonight?" — NOT
+  actions, extract NOTHING from these messages.
+
+EXTRACT (completed actions):
+  "took concerta 36mg"        → medication, concerta, 36mg
+  "went for a 30min walk"     → walk, 30 min
+  "bought a desk mat, 140 zł" → purchase, 140 PLN
+  "the hackathon last Tuesday went really well" → travel/exercise event,
+       occurred_at resolved to last Tuesday (see date rules below)
+
+DO NOT EXTRACT (not actions):
+  "I should walk"             → intention, SKIP entirely
+  "gonna try to focus now"    → plan, SKIP entirely
+  "the atenza I took this morning is kicking in" → this is a REFERENCE BACK
+       to an already-mentioned dose, NOT a new dose (see dedup below)
+  "what should I watch tonight?" → question, SKIP entirely
+
+## DOSE DEDUPLICATION (CRITICAL)
+
+If the SAME medication at the SAME dose is mentioned in MULTIPLE messages in a
+batch, that is ONE event — NOT two. The second mention is a reference back to
+the first, not a second intake.
+
+Example: message at 09:02 says "took atenza 36mg at 9" and message at 11:47
+says "the atenza I took this morning is kicking in" — this is ONE medication
+event (atenza 36mg, occurred_at around 09:00), NOT two. Creating two medication
+events from this batch is WRONG and will be scored as a hard failure.
+
+Rule: after extracting events, cross-check: if two events share the same
+medication name and dose in the same batch, keep only the one with the EARLIEST
+mentioned time and discard the other.
+
+## RELATIVE DATE RESOLUTION
+
+When a message uses a relative date phrase, resolve it using the current
+date/time given in the batch header. Rules:
+
+- "last Tuesday" on Saturday 2026-06-06 → the most recent Tuesday BEFORE
+  today = 2026-06-02. NEVER use today's date for "last <weekday>".
+- "yesterday" → current date minus 1 day
+- "this morning" → today, with the mentioned or implied time
+- "last week" → 7 days before today
+- "last night" → the night of the previous calendar day
+- "tomorrow" / "next week" → this is a PLAN, not a completed action. Do NOT
+  extract a future-dated event.
+
+General rule for "last <weekday>": find the most recent occurrence of that
+weekday that is STRICTLY BEFORE today. Never resolve a "last <weekday>" to
+today's date.
+
+Set occurred_at to the RESOLVED date, NOT the message timestamp. The event
+happened when the user says it happened, not when they typed about it.
+
+## GROUNDED ABSENCE — Do NOT Invent Data (CRITICAL)
+
+ONLY extract events that are EXPLICITLY and DIRECTLY stated in the messages.
+NEVER infer, extrapolate, or fabricate information that is not in the text.
+
+If a batch contains NO health data — no medication mentions, no workout logs,
+no sensor readings — then create ZERO health events. You MUST NOT output any
+of the following phrases unless the user's message LITERALLY contains them:
+body battery, sleep debt, hours past bedtime, past your bedtime, heart rate,
+resting hr, stress level, sleep score, hours of sleep, you slept, steps today.
+
+If the only extractable event in a batch is a purchase, then create exactly one
+purchase event and nothing else. A message like "what should I watch tonight?"
+contains no event at all — extract nothing from it.
+
 ## Timezone
 User is Europe/Warsaw (UTC+1/+2). Message timestamps are UTC — always convert to
 Europe/Warsaw before storing, with offset (e.g. 2026-02-21T12:00:00+01:00).
