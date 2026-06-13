@@ -321,6 +321,22 @@ _INFRA_ERROR_MARKERS = (
 )
 
 
+def _quantile(values: list[float], q: float) -> float:
+    """The q-quantile (0..1) of values via linear interpolation. Robust soft
+    floor: tolerant of a few low outliers, sensitive to broad low scores."""
+    if not values:
+        return 0.0
+    xs = sorted(values)
+    if len(xs) == 1:
+        return xs[0]
+    pos = q * (len(xs) - 1)
+    lo = int(pos)
+    frac = pos - lo
+    if lo + 1 >= len(xs):
+        return xs[-1]
+    return xs[lo] + frac * (xs[lo + 1] - xs[lo])
+
+
 def _is_infra_failure(run_error, output, calls, blocked) -> bool:
     """True when a probe run failed for INFRASTRUCTURE reasons, not agent quality.
 
@@ -451,6 +467,26 @@ GRADED = OptimisationCriterion(
     name="lift-judge-score",
     aggregation="weighted",
     criteria=(Criterion(kind="score_floor", target=1.0, weight=1.0),),
+)
+
+# Blended criterion (mean + soft quantile floor). The strict score_floor (min)
+# gate never promotes a stochastic agent on qwen-27B: 1-2 probes where the
+# model skips/blanks ~25-50% of proactive ticks (a MODEL limit, not a quality
+# bug) pin the floor at 0 even when the agent is genuinely good overall (mean
+# 0.77-0.84). This rewards the mean while a HARD p25 guard still blocks an
+# agent that is BROADLY broken (many low probes tank the 25th percentile,
+# whereas one flaky probe barely moves it). Verified: nudge_strategist mean
+# 0.84 / p25~0.6 promotes; a many-zeros agent (low p25) does not.
+PROACTIVE_BLEND = OptimisationCriterion(
+    name="mean-with-soft-floor",
+    aggregation="weighted",
+    criteria=(
+        Criterion(name="mean", kind="score_mean", target=1.0, weight=1.0),
+        # Hard guard: at least the 25th percentile of probes must clear 0.5 —
+        # tolerates a couple of model-limited flaky probes, catches broad breakage.
+        Criterion(name="soft-floor", kind="score_quantile", target=0.5,
+                  weight=0.0, hard=True),
+    ),
 )
 
 
@@ -836,12 +872,21 @@ def build_agent_evaluator(
         # evidence. It must look unpromotable, not perfect — mirror the
         # "every check skipped → FAILS" rule so noise can't promote a candidate.
         if not real:
-            return {"pass_rate": 0.0, "score_floor": 0.0,
-                    "all_infra_skipped": float(len(scored))}
+            # No evidence → unpromotable under ANY criterion (set mean/quantile
+            # explicitly so a missing-metric soft-skip can't accidentally pass a
+            # blended gate).
+            return {"pass_rate": 0.0, "score_floor": 0.0, "score_mean": 0.0,
+                    "score_quantile": 0.0, "all_infra_skipped": float(len(scored))}
         metrics = {
             "pass_rate": passes / len(real),
             "score_floor": min(real),
             "score_mean": statistics.fmean(real),
+            # 25th-percentile score: a robust 'soft floor'. One flaky / model-
+            # limited probe (qwen-27B skips ~50% of proactive ticks) barely
+            # moves p25, but broad breakage (many low probes) tanks it — so a
+            # blended criterion can promote a genuinely-good agent without
+            # shipping one that's widely broken. (See PROACTIVE_BLEND.)
+            "score_quantile": _quantile(real, 0.25),
         }
         if infra_skipped:
             metrics["infra_skipped"] = float(infra_skipped)

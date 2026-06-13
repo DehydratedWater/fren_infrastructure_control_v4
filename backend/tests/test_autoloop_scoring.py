@@ -1195,3 +1195,25 @@ def test_samples_one_is_identical_to_legacy_single_run():
     assert m["pass_rate"] == 0.5
     assert m["score_floor:by_name:probe-A"] == 1.0
     assert m["score_floor:by_name:probe-B"] == 0.0
+
+
+# --- 9. evaluator emits score_mean + score_quantile (blended-criterion inputs) -
+
+def test_quantile_helper_is_robust_to_one_outlier():
+    from app.agents.improve import _quantile
+    # one 0 among eight 1.0s: p25 stays high (the blend tolerates a flaky probe)
+    vals = [1.0] * 8 + [0.0]
+    assert _quantile(sorted(vals), 0.25) >= 0.75
+    # many zeros: p25 collapses (broad breakage is caught)
+    assert _quantile([0.0, 0.0, 0.0, 0.0, 1.0], 0.25) == 0.0
+    assert _quantile([0.5], 0.25) == 0.5  # single value
+
+
+def test_evaluator_emits_mean_and_quantile():
+    import app.agents.improve as im
+    agent = _two_test_agent()
+    per = {"probe-A": ("this is good", [], {}), "probe-B": ("good", [], {})}
+    ev = im.build_agent_evaluator(agent, _factory(per), judge=None)
+    m = ev(ComponentVersion.of("goals/winddown", "agent", agent.model_dump()))
+    assert "score_mean" in m and "score_quantile" in m
+    assert m["score_mean"] == 1.0 and m["score_quantile"] == 1.0
