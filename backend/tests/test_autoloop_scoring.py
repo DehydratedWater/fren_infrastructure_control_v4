@@ -1133,3 +1133,65 @@ def test_all_infra_skipped_is_unpromotable_not_perfect():
     assert m["score_floor"] == 0.0
     assert m["pass_rate"] == 0.0
     assert m["all_infra_skipped"] == 2.0
+
+
+# --- 8. multi-sample evaluation: median tames stochastic per-sample variance --
+
+def _seq_factory(seq_by_test):
+    """A runner whose per-test results are consumed in sequence across samples."""
+    state = {k: list(v) for k, v in seq_by_test.items()}
+
+    def runner_factory(_defn):
+        def runner(_d, test):
+            return state[test.name].pop(0)
+        return runner
+    return runner_factory
+
+
+def test_samples_median_ignores_single_stochastic_blank():
+    """A reliable probe that blanks ONCE in 3 samples must NOT floor at 0 —
+    median([1.0, 1.0, 0]) = 1.0 (the workers=4 noise pattern, now tamed)."""
+    import app.agents.improve as im
+
+    agent = _two_test_agent()  # non-delivery, substring 'good'
+    seq = {
+        "probe-A": [("this is good", [], {})] * 3,
+        # probe-B: two clean passes + one stochastic blank (no error)
+        "probe-B": [("this is good", [], {}),
+                    ("this is good", [], {}),
+                    ("", [], {})],
+    }
+    ev = im.build_agent_evaluator(agent, _seq_factory(seq), judge=None, samples=3)
+    m = ev(ComponentVersion.of("goals/winddown", "agent", agent.model_dump()))
+    # median of [1,1,0] = 1.0 -> the blank is correctly treated as an outlier
+    assert m["score_floor"] == 1.0
+    assert m["score_floor:by_name:probe-B"] == 1.0
+
+
+def test_samples_median_reflects_genuine_inconsistency():
+    """An agent that genuinely fails the MAJORITY of samples still scores low —
+    median([0, 0, 1.0]) = 0, so a real gap is not hidden by sampling."""
+    import app.agents.improve as im
+
+    agent = _two_test_agent()
+    seq = {
+        "probe-A": [("this is good", [], {})] * 3,
+        "probe-B": [("nope", [], {}), ("nope", [], {}), ("this is good", [], {})],
+    }
+    ev = im.build_agent_evaluator(agent, _seq_factory(seq), judge=None, samples=3)
+    m = ev(ComponentVersion.of("goals/winddown", "agent", agent.model_dump()))
+    assert m["score_floor:by_name:probe-B"] == 0.0
+
+
+def test_samples_one_is_identical_to_legacy_single_run():
+    """samples=1 (default) must be byte-identical to the old single-run path."""
+    import app.agents.improve as im
+
+    agent = _two_test_agent()
+    per = {"probe-A": ("this is good", [], {}), "probe-B": ("bad", [], {})}
+    ev = im.build_agent_evaluator(agent, _factory(per), judge=None)  # default samples=1
+    m = ev(ComponentVersion.of("goals/winddown", "agent", agent.model_dump()))
+    assert m["score_floor"] == 0.0
+    assert m["pass_rate"] == 0.5
+    assert m["score_floor:by_name:probe-A"] == 1.0
+    assert m["score_floor:by_name:probe-B"] == 0.0

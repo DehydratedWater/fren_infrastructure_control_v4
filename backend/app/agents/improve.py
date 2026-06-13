@@ -670,6 +670,7 @@ def _test_expectations(agent: AgentDefinition) -> list[dict[str, Any]]:
 def build_agent_evaluator(
     agent: AgentDefinition, runner_factory: AgentRunnerFactory,
     *, failures_sink: list[dict[str, Any]] | None = None, judge: Any = None,
+    samples: int = 1,
 ):
     """Score a candidate by running the agent's embedded agent_tests.
 
@@ -677,11 +678,18 @@ def build_agent_evaluator(
     evidence for every FAILED check is appended to it — so the loop's
     MutationContext can feed it to the LLM rewriter (it then knows exactly what
     to fix). The list is cleared each evaluation so it reflects the latest run.
+
+    `samples` runs EACH probe N times and aggregates by median — the principled
+    fix for a stochastic agent (qwen temp 1.0): a single unlucky blank/skip can
+    no longer floor an otherwise-reliable probe (a 4x repeat of one probe gave
+    [1.00, 0.60, 0.00, BLANK]; median=0.6 vs min=0.0). samples=1 (default) is
+    byte-identical to the old single-run behaviour.
     """
 
     # A delivery agent (emit_guidance.py in its allow-list) MUST deliver via
     # emit_guidance; the contract is enforced per-candidate below.
     delivery = is_delivery_agent(agent.model_dump())
+    n_samples = max(1, samples)
 
     def evaluator(version: ComponentVersion) -> dict[str, float]:
         tests = agent.agent_tests
@@ -690,11 +698,14 @@ def build_agent_evaluator(
         if not tests:
             return {"pass_rate": 1.0}  # nothing to fail
         runner = runner_factory(version.definition)
-        passes = 0
-        # `None` marks an infra-skipped probe (excluded from scoring); aligned
-        # 1:1 with `tests` so the per-test by_name metrics stay correct.
-        scored: list[float | None] = []
-        for t in tests:
+
+        def score_once(t) -> tuple[float | None, bool, list[dict]]:
+            """One run of one probe → (score|None, ok, failure_records).
+
+            score=None marks an infrastructure failure (excluded from scoring).
+            Pure: it appends nothing — the caller aggregates across samples and
+            decides what to record."""
+            recs: list[dict] = []
             ran = runner(version.definition, t)
             # Backward-compatible unpack: live runner returns a 3-tuple
             # (output, calls, signal); gate-tier / test mocks return (output, calls).
@@ -707,58 +718,44 @@ def build_agent_evaluator(
             run_error = signal.get("error")
 
             # INFRA SKIP (must precede the delivery-contract check): a timed-out
-            # or crashed agent session that produced NOTHING is an
-            # infrastructure failure (vLLM contention under concurrent workers,
-            # opencode session crash) — NOT an agent-quality signal. Scoring it
-            # 0, or worse misattributing it as a delivery-contract miss,
-            # deflates the score floor and lets noise drive promotion decisions.
-            # (Confirmed 2026-06-13: a baseline probe that scores 0.95 in
-            # isolation floored at 0 in the workers=4 sweep.) Exclude it from
-            # scoring entirely. A CLEAN empty turn has run_error=None and still
-            # scores a real 0; flailing on blocked tools is still graded.
+            # or crashed session that produced NOTHING is an infrastructure
+            # failure (vLLM contention, opencode crash) — NOT agent quality.
+            # Scoring it 0, or misattributing it as a delivery-contract miss,
+            # deflates the floor and lets noise drive promotion. A CLEAN empty
+            # turn has run_error=None and still scores a real 0; flailing on
+            # blocked tools is still graded.
             if _is_infra_failure(run_error, output, calls, blocked):
-                scored.append(None)
-                if failures_sink is not None:
-                    failures_sink.append({
-                        "test": t.name,
-                        "prompt": (t.prompt or "")[:200],
-                        "evaluator": "infra-skip",
-                        "criterion": "session error/timeout — excluded from scoring",
-                        "score": None,
-                        "got_output": "",
-                        "judge_reasoning": "infrastructure failure, not an agent miss",
-                        "error": str(run_error)[:300],
-                    })
-                continue
+                recs.append({
+                    "test": t.name, "prompt": (t.prompt or "")[:200],
+                    "evaluator": "infra-skip",
+                    "criterion": "session error/timeout — excluded from scoring",
+                    "score": None, "got_output": "",
+                    "judge_reasoning": "infrastructure failure, not an agent miss",
+                    "error": str(run_error)[:300],
+                })
+                return None, False, recs
 
-            # DELIVERY CONTRACT: a delivery agent that did NOT call emit_guidance.py
-            # delivered NOTHING in production (its assistant text is invisible to the
-            # user). Score it a hard 0 and record the failure so the teacher learns
-            # to restore the contract. If it DID call emit_guidance, grade the
-            # EMITTED PAYLOAD (what the user receives), not the assistant text.
+            # DELIVERY CONTRACT: a delivery agent that did NOT call
+            # emit_guidance.py delivered NOTHING in production (its assistant
+            # text is invisible). Score a hard 0. If it DID call emit_guidance,
+            # grade the EMITTED PAYLOAD (what the user receives).
             if delivery:
                 emit_call = find_emit_guidance_call(calls)
                 if emit_call is None:
-                    passes += 0
-                    scored.append(0.0)
-                    if failures_sink is not None:
-                        failures_sink.append({
-                            "test": t.name,
-                            "prompt": (t.prompt or "")[:200],
-                            "evaluator": "delivery-contract",
-                            "criterion": "must call python scripts/emit_guidance.py",
-                            "score": 0.0,
-                            "got_output": str(output)[:400],
-                            "judge_reasoning": _NO_DELIVERY_REASON,
-                            "blocked_tools": [n for n, _ in blocked],
-                            "blocked_attempts": len(blocked),
-                            "error": str(run_error)[:300] if run_error else None,
-                        })
-                    continue
+                    recs.append({
+                        "test": t.name, "prompt": (t.prompt or "")[:200],
+                        "evaluator": "delivery-contract",
+                        "criterion": "must call python scripts/emit_guidance.py",
+                        "score": 0.0, "got_output": str(output)[:400],
+                        "judge_reasoning": _NO_DELIVERY_REASON,
+                        "blocked_tools": [n for n, _ in blocked],
+                        "blocked_attempts": len(blocked),
+                        "error": str(run_error)[:300] if run_error else None,
+                    })
+                    return 0.0, False, recs
                 # A SKIP satisfies the contract (emit_guidance WAS called) but
-                # delivers nothing. Do NOT score it 0 for 'not messaging'; instead
-                # hand the judge a neutral skip label so it grades whether staying
-                # silent was APPROPRIATE for this probe.
+                # delivers nothing. Hand the judge a neutral skip label so it
+                # grades whether staying silent was APPROPRIATE for this probe.
                 if emit_is_skip(emit_call):
                     output = _SKIP_JUDGE_OUTPUT
                 else:
@@ -766,11 +763,8 @@ def build_agent_evaluator(
                     if payload.strip():
                         output = payload
             # Trajectory-aware: a handoff/tool agent's real output is its tool
-            # calls, not assistant text. Without this, every such agent scores a
-            # hard 0 (empty text) even when it delegates correctly. Show the judge
-            # the actions so it can grade their appropriateness (the rubric in
-            # make_judge_test knows to grade delegation, and penalise flailing on
-            # wrong/blocked tools).
+            # calls, not assistant text — show the judge the actions so it can
+            # grade their appropriateness (and penalise flailing).
             judge_output = output
             if not str(output).strip() and calls:
                 traj = " -> ".join(c.name for c in calls)
@@ -778,55 +772,64 @@ def build_agent_evaluator(
                     "[The agent produced no prose reply; it acted by invoking"
                     f" tools/subagents in this order: {traj}.]"
                 )
-            # TOOL-DISCIPLINE: forward the denied/blocked attempts + session error
-            # to the judge so the rubric's flailing clause can actually fire — and
-            # an errored run is labelled, not presented as an empty blank.
             note = flailing_note(blocked, run_error)
             if note:
                 judge_output = (str(judge_output or "") + "\n\n" + note).strip()
             ctx = RunContext(output=judge_output, tool_calls=list(calls), judge=judge)
             evs = list(t.evaluators)
             results = [evaluate(e, ctx) for e in evs] if evs else []
-            # SKIPPED results (e.g. an LLMJudge with no judge wired) carry
-            # passed=True/score=0.0. Counting them as passes let agents get
-            # "promoted at 1.000" on regex gates alone while judged probes
-            # were never graded; counting their 0.0 into the mean corrupted
-            # floors the other way. Rule: grade only on non-skipped checks,
-            # and a probe whose EVERY check skipped is ungraded → it FAILS
-            # (promotion must never ride on ungraded probes).
+            # Grade only NON-skipped checks; a probe whose EVERY check skipped is
+            # ungraded → it FAILS (promotion must never ride on ungraded probes).
             considered = [r for r in results if not r.skipped]
             if results and not considered:
                 ok = False
-                scored.append(0.0)
+                score = 0.0
             else:
                 ok = all(r.passed for r in considered) if considered else True
-                scored.append(
-                    statistics.fmean([r.score for r in considered])
-                    if considered else 1.0
-                )
+                score = (statistics.fmean([r.score for r in considered])
+                         if considered else 1.0)
+            for e, r in zip(evs, results):
+                if not r.passed or r.score < 1.0 or blocked or run_error:
+                    recs.append({
+                        "test": t.name, "prompt": (t.prompt or "")[:200],
+                        "evaluator": e.kind,
+                        "criterion": getattr(e, "criteria", None)
+                        or getattr(e, "needle", None)
+                        or getattr(e, "expected", None),
+                        "score": round(r.score, 2),
+                        "got_output": str(judge_output)[:400],
+                        "judge_reasoning": r.evidence[:250],
+                        "blocked_tools": [n for n, _ in blocked],
+                        "blocked_attempts": len(blocked),
+                        "error": str(run_error)[:300] if run_error else None,
+                    })
+            return score, ok, recs
+
+        passes = 0
+        # `None` marks an infra-skipped probe (excluded from scoring); aligned
+        # 1:1 with `tests` so the per-test by_name metrics stay correct.
+        scored: list[float | None] = []
+        for t in tests:
+            samples_out = [score_once(t) for _ in range(n_samples)]
+            real = [(s, ok, rc) for (s, ok, rc) in samples_out if s is not None]
+            if not real:
+                # Every sample was an infra failure → no quality evidence.
+                scored.append(None)
+                if failures_sink is not None and samples_out:
+                    failures_sink.extend(samples_out[0][2])
+                continue
+            scores_only = [s for s, _, _ in real]
+            # MEDIAN across real samples: robust to a single stochastic blank/
+            # skip (the noise diagnosed 2026-06-13). ok by MAJORITY vote.
+            agg = statistics.median(scores_only)
+            ok = sum(1 for _, o, _ in real if o) * 2 >= len(real)
+            scored.append(agg)
             passes += 1 if ok else 0
             if failures_sink is not None:
-                # Capture evidence for any check that didn't fully pass (score < 1)
-                # so the rewriter learns WHAT to fix and WHY (judge reasoning).
-                # Also record the denied/blocked attempts + session error even when
-                # the checks pass, so the teacher rewrites the prompt to explicitly
-                # avoid those tools (close the self-correction loop on flailing).
-                for e, r in zip(evs, results):
-                    if not r.passed or r.score < 1.0 or blocked or run_error:
-                        failures_sink.append({
-                            "test": t.name,
-                            "prompt": (t.prompt or "")[:200],
-                            "evaluator": e.kind,
-                            "criterion": getattr(e, "criteria", None)
-                            or getattr(e, "needle", None)
-                            or getattr(e, "expected", None),
-                            "score": round(r.score, 2),
-                            "got_output": str(judge_output)[:400],
-                            "judge_reasoning": r.evidence[:250],
-                            "blocked_tools": [n for n, _ in blocked],
-                            "blocked_attempts": len(blocked),
-                            "error": str(run_error)[:300] if run_error else None,
-                        })
+                # Record the WORST real sample's evidence — the most informative
+                # for the teacher (what to fix), without N-fold duplication.
+                worst = min(real, key=lambda x: x[0])
+                failures_sink.extend(worst[2])
         real = [s for s in scored if s is not None]
         infra_skipped = len(scored) - len(real)
         # All probes infra-skipped (e.g. a total vLLM outage mid-eval) = NO
@@ -864,6 +867,7 @@ def build_agent_units(
     judge: Any = None,
     only: set[str] | None = None,
     use_judge_test: bool = False,
+    samples: int = 1,
 ) -> list[ImprovementUnit]:
     """One improvement unit per agent.
 
@@ -903,7 +907,7 @@ def build_agent_units(
             evaluator=build_agent_evaluator(
                 agent, runner_factory,
                 failures_sink=failures if llm is not None else None,
-                judge=judge,
+                judge=judge, samples=samples,
             ),
             max_rounds=max_rounds,
             mutation_context=ctx,
@@ -1111,6 +1115,7 @@ def build_branch_units(
     judge: Any = None,
     only: set[str] | None = None,
     use_judge_test: bool = False,
+    samples: int = 1,
 ) -> list[ImprovementUnit]:
     """One improvement unit per branch.
 
@@ -1188,6 +1193,7 @@ def run_improvement(
     include_branches: bool = True,
     criterion: OptimisationCriterion = PASS,
     use_judge_test: bool = False,
+    samples: int = 1,
 ):
     """Run the full fleet improvement (agents + branches) and (optionally) promote.
 
@@ -1199,6 +1205,7 @@ def run_improvement(
     units = build_agent_units(
         agent_runner_factory, llm=llm, judge=judge, only=only,
         max_rounds=max_rounds, criterion=criterion, use_judge_test=use_judge_test,
+        samples=samples,
     )
     if include_branches:
         units += build_branch_units(

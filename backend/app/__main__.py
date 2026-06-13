@@ -151,6 +151,11 @@ def _run_improve(argv: list[str]) -> None:
     p.add_argument("--agent", action="append", default=[], help="restrict to agent id(s)")
     p.add_argument("--rounds", type=int, default=2)
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--samples", type=int, default=1,
+                   help="run EACH probe N times and aggregate by median — "
+                        "tames qwen's per-sample variance (a single stochastic "
+                        "blank/skip can't floor a reliable probe). Use 3 for a "
+                        "trustworthy proactive/judge scoreboard.")
     p.add_argument("--threshold", type=float, default=0.75,
                    help="promote when winner score_floor >= this (graded judge)")
     p.add_argument("--no-branches", action="store_true")
@@ -244,6 +249,7 @@ def _run_improve(argv: list[str]) -> None:
         use_judge_test=use_judge_test,
         only=only,
         max_rounds=args.rounds,
+        samples=args.samples,
         **kw,
         include_branches=not args.no_branches,
     )
