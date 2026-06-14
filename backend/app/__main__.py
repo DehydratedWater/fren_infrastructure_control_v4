@@ -173,8 +173,23 @@ def _run_improve(argv: list[str]) -> None:
                         "transcripts / journal / self-exam) in "
                         "app/agents/retrieval_probes.py. Requires the seeded "
                         "autoloop corpus: python -m app seed-retrieval.")
+    p.add_argument("--target-model", default="",
+                   help="opencode provider/model the candidate agents are COMPILED "
+                        "+ RUN on while tuning (default: the local qwen). Set e.g. "
+                        "'zai-coding-plan/glm-4.7' for the model-switch adaptivity "
+                        "drill — the autoloop then adapts prompts to THAT model. "
+                        "GLM models route via opencode (never raw API).")
     p.add_argument("--list", action="store_true", help="list improvable agents and exit")
     args = p.parse_args(argv)
+
+    # Model-switch: re-point the tuning target BEFORE settings is first read
+    # (get_settings is lru_cached), so improve_live compiles agents onto it.
+    if args.target_model:
+        import os as _os
+
+        from app.settings import get_settings as _gs
+        _os.environ["AUTOLOOP_TARGET_MODEL"] = args.target_model
+        _gs.cache_clear()
 
     # --retrieval-probes: target the retrieval suite agents in judge-test mode
     # (the suite merges into _judge_test_suite next to the role-fulfilment
@@ -230,13 +245,16 @@ def _run_improve(argv: list[str]) -> None:
     # (score_mean) while the p25 guard still blocks broadly-broken candidates.
     criterion = run_improvement_criterion = BLENDED
 
+    from app.settings import get_settings as _gs2
+    _target = _gs2().autoloop_target_model
     log.info(
-        "autoloop starting: %s agents%s, rounds=%d, workers=%d, threshold=%.2f, "
-        "mode=%s (teacher rewrites+judges, agents tuned on local qwen)",
+        "autoloop starting: %s agents%s, rounds=%d, workers=%d, samples=%d, "
+        "threshold=%.2f, mode=%s, target=%s (teacher rewrites+judges)",
         len(only) if only else len(improvable),
         "" if only else " (all)",
-        args.rounds, args.workers, args.threshold,
+        args.rounds, args.workers, args.samples, args.threshold,
         "graded-judge" if use_judge_test else "substring",
+        _target,
     )
     kw = {}
     if criterion is not None:
