@@ -1241,6 +1241,7 @@ def run_improvement(
     criterion: OptimisationCriterion = PASS,
     use_judge_test: bool = False,
     samples: int = 1,
+    namespace: str | None = None,
 ):
     """Run the full fleet improvement (agents + branches) and (optionally) promote.
 
@@ -1267,4 +1268,5 @@ def run_improvement(
         promote_threshold=promote_threshold,
         max_workers=max_workers,
         run_label="fleet-improve",
+        namespace=namespace or None,
     )

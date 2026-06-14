@@ -23,6 +23,18 @@ if [ "${1:-}" = "--with-capture" ]; then
   WITH_CAPTURE=1
 fi
 
+# --ns <name>: run-isolation namespace. Each namespace gets its OWN workspace,
+# opencode server port, snapshots/promoted bucket AND loop DB copy, so N loops
+# of the SAME agent on DIFFERENT models can run fully in parallel without
+# clobbering. The name flows to python via FREN_AUTOLOOP_NS (read by settings).
+RUN_NS=""
+if [ "${1:-}" = "--ns" ]; then
+  RUN_NS="$2"; shift 2
+  export FREN_AUTOLOOP_NS="$RUN_NS"
+  LOOP_DB="${PROD_DB}_autoloop_${RUN_NS}"
+  echo "[autoloop] namespace=$RUN_NS  (workspace/snapshots/promoted/db all isolated)"
+fi
+
 if [ "${1:-}" = "--refresh" ]; then
   shift
   echo "[autoloop] refreshing $LOOP_DB from $PROD_DB (prod is only READ) ..."

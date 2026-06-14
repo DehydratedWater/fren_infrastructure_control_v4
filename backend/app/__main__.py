@@ -247,14 +247,15 @@ def _run_improve(argv: list[str]) -> None:
 
     from app.settings import get_settings as _gs2
     _target = _gs2().autoloop_target_model
+    _ns = _gs2().autoloop_run_namespace or ""
     log.info(
         "autoloop starting: %s agents%s, rounds=%d, workers=%d, samples=%d, "
-        "threshold=%.2f, mode=%s, target=%s (teacher rewrites+judges)",
+        "threshold=%.2f, mode=%s, target=%s, ns=%s (teacher rewrites+judges)",
         len(only) if only else len(improvable),
         "" if only else " (all)",
         args.rounds, args.workers, args.samples, args.threshold,
         "graded-judge" if use_judge_test else "substring",
-        _target,
+        _target, _ns or "(base)",
     )
     kw = {}
     if criterion is not None:
@@ -272,6 +273,7 @@ def _run_improve(argv: list[str]) -> None:
         only=only,
         max_rounds=args.rounds,
         samples=args.samples,
+        namespace=_ns or None,
         **kw,
         include_branches=not args.no_branches,
     )

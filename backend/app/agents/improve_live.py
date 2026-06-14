@@ -272,7 +272,22 @@ def _prep_candidate(definition: dict[str, Any]) -> tuple[Path, str]:
 # output) was the real cause of the autoloop's mass-zeros. A warm dedicated
 # opencode web server keeps the project + model hot for high-concurrency runs.
 
-_WS_PORT = int(os.environ.get("AUTOLOOP_OPENCODE_PORT", "4097"))
+_WS_PORT_BASE = int(os.environ.get("AUTOLOOP_OPENCODE_PORT", "4097"))
+
+
+def _run_ns() -> str:
+    """The run-isolation namespace (slug-safe). Empty = base single-run layout."""
+    raw = get_settings().autoloop_run_namespace or ""
+    return re.sub(r"[^a-zA-Z0-9_.-]", "-", raw).strip("-")
+
+
+def _ws_port() -> int:
+    """Per-namespace opencode server port so parallel runs don't fight over one
+    warm server. Deterministic offset from the base port."""
+    ns = _run_ns()
+    if not ns:
+        return _WS_PORT_BASE
+    return _WS_PORT_BASE + 1 + (sum(ord(c) for c in ns) % 800)
 _ws_lock = threading.Lock()
 _ws_ready = False
 
@@ -281,17 +296,29 @@ def _project_root() -> Path:
     return Path(get_settings().project_root)
 
 
-def _workspace() -> Path:
-    # Run candidates from the real opencode PROJECT ROOT (the dir that holds
-    # opencode.json), like v3's opencode_manager — so the agent is discovered AND
-    # sessions land in <project>/.opencode/data, where you monitor the v4 project
-    # (not an isolated subdir the running opencode can't see). Walk up from the
-    # configured project_root to find opencode.json.
+def _project_opencode_root() -> Path:
+    """The dir holding opencode.json (walk up from project_root)."""
     start = _project_root()
     for d in (start, *start.parents):
         if (d / "opencode.json").exists():
             return d
     return start
+
+
+def _workspace() -> Path:
+    # Base (no namespace): run candidates from the real opencode PROJECT ROOT so
+    # the agent is discovered and sessions land in <project>/.opencode/data.
+    #
+    # Namespaced run (FREN_AUTOLOOP_NS set): use a DEDICATED, fully self-contained
+    # workspace at <project>/.oac/autoloop_ws/<ns>/ — its own opencode.json,
+    # scripts symlink, .opencode/agents (model-specific compiled frontmatter) and
+    # .opencode/data. This is what lets N loops of the SAME agent on DIFFERENT
+    # models run in parallel: each model's namespace gets its own compiled
+    # candidates + opencode server (see _ws_port) + data, so they never collide.
+    ns = _run_ns()
+    if not ns:
+        return _project_opencode_root()
+    return _project_opencode_root() / ".oac" / "autoloop_ws" / ns
 
 
 def _server_healthy(port: int) -> bool:
@@ -308,13 +335,13 @@ def _ensure_server(ws: Path) -> None:
     the model hot, mirroring v3's proven high-concurrency setup. A separate port
     from any production server avoids collisions.
     """
-    if _server_healthy(_WS_PORT):
+    if _server_healthy(_ws_port()):
         return
     env = os.environ.copy()
     env["XDG_DATA_HOME"] = str(ws / ".opencode" / "data")
     try:
         subprocess.Popen(
-            ["opencode", "web", "--hostname", "127.0.0.1", "--port", str(_WS_PORT)],
+            ["opencode", "web", "--hostname", "127.0.0.1", "--port", str(_ws_port())],
             cwd=str(ws), env=env,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             start_new_session=True,
@@ -322,7 +349,7 @@ def _ensure_server(ws: Path) -> None:
     except FileNotFoundError:
         return
     for _ in range(30):
-        if _server_healthy(_WS_PORT):
+        if _server_healthy(_ws_port()):
             return
         time.sleep(1)
 
@@ -331,16 +358,19 @@ def _ensure_workspace() -> Path:
     """Create/refresh the stable project workspace once (thread-safe)."""
     global _ws_ready
     ws = _workspace()
+    root = _project_opencode_root()
     with _ws_lock:
         (ws / ".opencode" / "agents").mkdir(parents=True, exist_ok=True)
         # opencode.json => opencode treats ws as a project => reliable discovery.
-        # (ws is the project root now, so the config + scripts are already here.)
-        src_cfg = _project_root() / "opencode.json"
+        # For a namespaced ws this is a fresh subdir, so the config + scripts are
+        # copied/linked in from the real opencode root (for the base ws they
+        # already exist and the copy is a no-op).
+        src_cfg = root / "opencode.json"
         dst_cfg = ws / "opencode.json"
         if src_cfg.exists() and src_cfg.resolve() != dst_cfg.resolve():
             shutil.copy(src_cfg, dst_cfg)
         link = ws / "scripts"
-        scripts = _project_root() / "scripts"
+        scripts = root / "scripts"
         if scripts.exists() and not link.exists() and scripts.resolve() != link.resolve():
             try:
                 link.symlink_to(scripts)

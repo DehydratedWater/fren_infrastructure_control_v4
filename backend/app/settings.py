@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     autoloop_target_model: str = Field(
         default="local-vllm-remote/qwen35-27b", alias="AUTOLOOP_TARGET_MODEL",
     )
+    # Run-isolation namespace: when set, the autoloop's workspace, opencode
+    # server port, snapshots and promoted bucket are all isolated under it, so
+    # N loops of the SAME agent on DIFFERENT models can run in parallel without
+    # clobbering each other. Empty = the base (single-run) layout.
+    autoloop_run_namespace: str = Field(default="", alias="FREN_AUTOLOOP_NS")
 
     # --- live / interactive provider (local OpenAI-compatible qwen) ---------
     local_llm_base_url: str = Field(default="", alias="LOCAL_LLM_BASE_URL")
