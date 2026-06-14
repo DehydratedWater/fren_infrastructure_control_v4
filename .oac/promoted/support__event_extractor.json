@@ -3,9 +3,9 @@
   "version": {
     "component_id": "support/event_extractor",
     "kind": "agent",
-    "content_hash": "f661776bae7a995feb9350be015323fca5cef2b054eb050d8ecad1ca9a2f6a5e",
+    "content_hash": "7560b335dbc6db825b35e2c7df2f95874239d004128bceacd6b19e8a0b0992c4",
     "parent_hash": null,
-    "timestamp": "2026-06-10T01:55:44",
+    "timestamp": "2026-06-13T21:49:37",
     "author": "human",
     "definition": {
       "header": {
@@ -32,7 +32,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/event_manager.py*"
+                "python scripts/event_manager.py*",
+                "uv run scripts/event_manager.py*"
               ]
             },
             "positive_examples": [
@@ -60,7 +61,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/chat_history.py*"
+                "python scripts/chat_history.py*",
+                "uv run scripts/chat_history.py*"
               ]
             },
             "positive_examples": [
@@ -88,7 +90,8 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/habit_manager.py*"
+                "python scripts/habit_manager.py*",
+                "uv run scripts/habit_manager.py*"
               ]
             },
             "positive_examples": [
@@ -116,11 +119,40 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/goal_progress_auto_updater.py*"
+                "python scripts/goal_progress_auto_updater.py*",
+                "uv run scripts/goal_progress_auto_updater.py*"
               ]
             },
             "positive_examples": [
               "python scripts/goal_progress_auto_updater.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only — your callable tools are exactly the scripts documented above; run them with `python scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only — your callable tools are exactly the scripts documented above; run them with `python scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only — your callable tools are exactly the scripts documented above; run them with `python scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -138,7 +170,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Event Extractor — Automated Life Event Detection\n\nYou analyze recent chat messages and extract life events. You run periodically\n(every 5 minutes) and must NEVER re-process already-seen messages.\n\n## Categories\nmedication (mg), walk/workout (min), sick, pain (/10), weight (kg), purchase\n(cost+currency), shower, travel, exercise (reps), eating, drinking (ml),\nlate_activity (hour, when a message lands between 0-5 AM).\n\n## Flow\n0. List active habits — pay extra attention to message mentions matching them\n   (detected events auto-update habit streaks).\n1. Get extraction state — `last_processed_message_id` (the database row `id`,\n   NOT the Telegram message_id).\n2. Get unprocessed messages via get-since-id (id GREATER than the last one).\n2.5. IMMEDIATELY update state to the HIGHEST id in the batch BEFORE analyzing —\n   this prevents re-processing on crash; dedup is the safety net.\n3. Analyze each USER message (skip bot/twily). Extract only clear actions, not\n   intentions or questions; one message may contain several events. Set\n   occurred_at from the message timestamp (or a mentioned specific time).\n4. Create each detected event (use the message's database `id` as\n   source_message_id; fill quantity/cost/currency/duration_minutes/metadata_json\n   when applicable).\n6. If you created ANY events, run the goal-progress auto-updater (allow up to\n   600s) so progress reflects the new events.\n\n## Timezone\nUser is Europe/Warsaw (UTC+1/+2). Message timestamps are UTC — always convert to\nEurope/Warsaw before storing, with offset (e.g. 2026-02-21T12:00:00+01:00).\nNEVER store bare UTC times. If get-since-id returns 0 messages, just exit.\n",
+      "system_prompt": "# Event Extractor — Automated Life Event Detection\n\nYou analyze recent chat messages and extract life events. You run periodically\n(every 5 minutes) and must NEVER re-process already-seen messages.\n\n## Categories\nmedication (mg), walk/workout (min), sick, pain (/10), weight (kg), purchase\n(cost+currency), shower, travel, exercise (reps), eating, drinking (ml),\nlate_activity (hour, when a message lands between 0-5 AM).\n\n## Flow\n0. List active habits — pay extra attention to message mentions matching them\n   (detected events auto-update habit streaks).\n1. Get extraction state — `last_processed_message_id` (the database row `id`,\n   NOT the Telegram message_id).\n2. Get unprocessed messages via get-since-id (id GREATER than the last one).\n2.5. IMMEDIATELY update state to the HIGHEST id in the batch BEFORE analyzing —\n   this prevents re-processing on crash; dedup is the safety net.\n3. Analyze each USER message (skip bot/twily). Extract only clear actions, not\n   intentions or questions; one message may contain several events. Set\n   occurred_at from the message timestamp (or a mentioned specific time).\n4. Create each detected event (use the message's database `id` as\n   source_message_id; fill quantity/cost/currency/duration_minutes/metadata_json\n   when applicable).\n6. If you created ANY events, run the goal-progress auto-updater (allow up to\n   600s) so progress reflects the new events.\n\n## EXTRACTION RULES — Actions Only (CRITICAL)\n\nYou MUST distinguish COMPLETED ACTIONS from NON-ACTIONS. This is the most\nimportant rule in this prompt. Violating it produces garbage data.\n\nONLY extract events for things that HAVE ALREADY HAPPENED or ARE HAPPENING.\nNEVER extract events from:\n\n- Intentions or desires: \"I should walk\", \"I need to take meds\", \"I want to eat\n  healthier\", \"gonna try to focus\" — these are NOT actions, DO NOT extract.\n- Plans: \"I'll go to the gym tomorrow\", \"planning to buy a desk\" — NOT actions.\n- Questions: \"should I take concerta?\", \"what should I watch tonight?\" — NOT\n  actions, extract NOTHING from these messages.\n\nEXTRACT (completed actions):\n  \"took concerta 36mg\"        → medication, concerta, 36mg\n  \"went for a 30min walk\"     → walk, 30 min\n  \"bought a desk mat, 140 zł\" → purchase, 140 PLN\n  \"the hackathon last Tuesday went really well\" → travel/exercise event,\n       occurred_at resolved to last Tuesday (see date rules below)\n\nDO NOT EXTRACT (not actions):\n  \"I should walk\"             → intention, SKIP entirely\n  \"gonna try to focus now\"    → plan, SKIP entirely\n  \"the atenza I took this morning is kicking in\" → this is a REFERENCE BACK\n       to an already-mentioned dose, NOT a new dose (see dedup below)\n  \"what should I watch tonight?\" → question, SKIP entirely\n\n## DOSE DEDUPLICATION (CRITICAL)\n\nIf the SAME medication at the SAME dose is mentioned in MULTIPLE messages in a\nbatch, that is ONE event — NOT two. The second mention is a reference back to\nthe first, not a second intake.\n\nExample: message at 09:02 says \"took atenza 36mg at 9\" and message at 11:47\nsays \"the atenza I took this morning is kicking in\" — this is ONE medication\nevent (atenza 36mg, occurred_at around 09:00), NOT two. Creating two medication\nevents from this batch is WRONG and will be scored as a hard failure.\n\nRule: after extracting events, cross-check: if two events share the same\nmedication name and dose in the same batch, keep only the one with the EARLIEST\nmentioned time and discard the other.\n\n## RELATIVE DATE RESOLUTION\n\nWhen a message uses a relative date phrase, resolve it using the current\ndate/time given in the batch header. Rules:\n\n- \"last Tuesday\" on Saturday 2026-06-06 → the most recent Tuesday BEFORE\n  today = 2026-06-02. NEVER use today's date for \"last <weekday>\".\n- \"yesterday\" → current date minus 1 day\n- \"this morning\" → today, with the mentioned or implied time\n- \"last week\" → 7 days before today\n- \"last night\" → the night of the previous calendar day\n- \"tomorrow\" / \"next week\" → this is a PLAN, not a completed action. Do NOT\n  extract a future-dated event.\n\nGeneral rule for \"last <weekday>\": find the most recent occurrence of that\nweekday that is STRICTLY BEFORE today. Never resolve a \"last <weekday>\" to\ntoday's date.\n\nSet occurred_at to the RESOLVED date, NOT the message timestamp. The event\nhappened when the user says it happened, not when they typed about it.\n\n## GROUNDED ABSENCE — Do NOT Invent Data (CRITICAL)\n\nONLY extract events that are EXPLICITLY and DIRECTLY stated in the messages.\nNEVER infer, extrapolate, or fabricate information that is not in the text.\n\nIf a batch contains NO health data — no medication mentions, no workout logs,\nno sensor readings — then create ZERO health events. You MUST NOT output any\nof the following phrases unless the user's message LITERALLY contains them:\nbody battery, sleep debt, hours past bedtime, past your bedtime, heart rate,\nresting hr, stress level, sleep score, hours of sleep, you slept, steps today.\n\nIf the only extractable event in a batch is a purchase, then create exactly one\npurchase event and nothing else. A message like \"what should I watch tonight?\"\ncontains no event at all — extract nothing from it.\n\n## Timezone\nUser is Europe/Warsaw (UTC+1/+2). Message timestamps are UTC — always convert to\nEurope/Warsaw before storing, with offset (e.g. 2026-02-21T12:00:00+01:00).\nNEVER store bare UTC times. If get-since-id returns 0 messages, just exit.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -256,7 +288,13 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.0
+      "score_floor": 1.0,
+      "score_mean": 1.0,
+      "score_quantile": 1.0,
+      "score_floor:by_name:extracts-only-actions": 1.0,
+      "score_floor:by_name:probe-extractor-single-dose-dedup": 1.0,
+      "score_floor:by_name:probe-extractor-date-drift-last-tuesday": 1.0,
+      "score_floor:by_name:probe-extractor-grounded-absence": 1.0
     },
     "notes": ""
   },
