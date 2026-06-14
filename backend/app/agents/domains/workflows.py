@@ -184,7 +184,7 @@ Include all GPUs in the report.
 
 Send the report by running:
 
-    python scripts/emit_guidance.py --data '{"intent":"GPU status report","key_points":["<your formatted GPU report>"],"message_kind":"workflow_result"}'
+    uv run scripts/emit_guidance.py --data '{"intent":"GPU status report","key_points":["<your formatted GPU report>"],"message_kind":"workflow_result"}'
 
 Replace `<your formatted GPU report>` with the actual formatted text from
 Step 3. This is the only deliverable — the user sees nothing until you call
@@ -600,7 +600,7 @@ user currently cares about. If a snapshot is provided, parse it directly.
 If not, call persona_memory_manager.py:
 
 ```
-python scripts/persona_memory_manager.py --command top-interests --limit 10
+uv run scripts/persona_memory_manager.py --command top-interests --limit 10
 ```
 
 From the results, list ALL user interests — these are FORBIDDEN topics.
@@ -613,7 +613,7 @@ If the user provided RSS article texts directly in their message, use those
 as your source material — do NOT discard them. Also check for due feeds:
 
 ```
-python scripts/persona_memory_manager.py --command feeds-due --min_age_hours 6
+uv run scripts/persona_memory_manager.py --command feeds-due --min_age_hours 6
 ```
 
 For each due feed that is NOT already covered by the user's provided content,
@@ -621,7 +621,7 @@ use web search to find 1-2 recent articles on that feed's adjacent topic.
 After reading, mark fetched feeds:
 
 ```
-python scripts/persona_memory_manager.py --command mark-feed-fetched --feed_id ID --fetch_status ok
+uv run scripts/persona_memory_manager.py --command mark-feed-fetched --feed_id ID --fetch_status ok
 ```
 
 ### Step 3: Write opinionated interests (MANDATORY — the core job)
@@ -634,7 +634,7 @@ Produce create-interest calls:
 Each call uses this EXACT format:
 
 ```
-python scripts/persona_memory_manager.py \
+uv run scripts/persona_memory_manager.py \
   --command create-interest \
   --topic "short topic name" \
   --stance "FIRST-PERSON OPINION here" \
@@ -698,7 +698,7 @@ EVERY --stance entry you write MUST pass this checklist:
 ### Step 4: Prune stale interests
 
 ```
-python scripts/persona_memory_manager.py --command prune-interests
+uv run scripts/persona_memory_manager.py --command prune-interests
 ```
 
 ### Step 5: Deliver to user via emit_guidance.py (CRITICAL)
@@ -713,13 +713,13 @@ Twily's stance on each. The user asked, so they expect to hear back.
 
 Example delivery for a direct request:
 ```
-python scripts/emit_guidance.py --data '{"intent":"refreshed persona_interests with N new opinionated entries","key_points":["Wrote N new persona_interests entries covering: <topic1>, <topic2>, ...","Entry about <topic>: <brief summary of Twily's stance>","Entry about <topic>: <brief summary of Twily's stance>","..."],"message_kind":"reply","actions_taken":["Fetched RSS feeds","Created N persona_interests entries","Pruned stale interests"]}'
+uv run scripts/emit_guidance.py --data '{"intent":"refreshed persona_interests with N new opinionated entries","key_points":["Wrote N new persona_interests entries covering: <topic1>, <topic2>, ...","Entry about <topic>: <brief summary of Twily's stance>","Entry about <topic>: <brief summary of Twily's stance>","..."],"message_kind":"reply","actions_taken":["Fetched RSS feeds","Created N persona_interests entries","Pruned stale interests"]}'
 ```
 
 FOR CRON MODE (automatic 06:30 trigger, no user request):
 Most cron runs produce NO output to the user. SKIP by default:
 ```
-python scripts/emit_guidance.py --data '{"intent":"nothing to send","key_points":[],"message_kind":"skip"}'
+uv run scripts/emit_guidance.py --data '{"intent":"nothing to send","key_points":[],"message_kind":"skip"}'
 ```
 Only deliver a real message on a cron run if something genuinely exceptional
 and noteworthy was found that the user should know about. When in doubt, SKIP.

@@ -41,8 +41,15 @@ def build_tool(
     """
     if note:
         description = f"{description} {note}"
+    # CANONICAL invocation is `uv run <script>`: it deterministically resolves
+    # the project's uv env (all deps), independent of which `python` happens to
+    # be on PATH. Bare `python <script>` is kept ALLOWED as a fallback — it
+    # works where the venv is already active (the autoloop forces it via
+    # _branch_env; prod runs in the deps-having container) — but the agent is
+    # shown the uv form so it prefers the env-guaranteed one.
+    uv_command = f"uv run {script}"
     command = f"python {script}"
-    pos = list(examples) or [f"{command} --command list"]
+    pos = list(examples) or [f"{uv_command} --command list"]
     return ToolDefinition(
         header=ToolDefinitionHeader(
             name=name,
@@ -55,10 +62,9 @@ def build_tool(
             permission_bash=BashToolPermission(
                 tool_name="bash",
                 value="allow",
-                # The uv variant is the SAME script under the same scope — qwen
-                # reaches for `uv run` often enough that denying it produced
-                # ~190 blocked calls/night of pure runner-choice friction.
-                allowed_commands=[f"{command}*", f"uv run {script}*"],
+                # uv run = canonical (env-guaranteed); python = PATH-dependent
+                # fallback. Both scoped to exactly this script.
+                allowed_commands=[f"{uv_command}*", f"{command}*"],
             ),
             positive_examples=pos,
             negative_examples=[],

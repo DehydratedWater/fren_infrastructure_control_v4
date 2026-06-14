@@ -23,15 +23,29 @@ if [ "${1:-}" = "--with-capture" ]; then
   WITH_CAPTURE=1
 fi
 
-# --ns <name>: run-isolation namespace. Each namespace gets its OWN workspace,
-# opencode server port, snapshots/promoted bucket AND loop DB copy, so N loops
-# of the SAME agent on DIFFERENT models can run fully in parallel without
-# clobbering. The name flows to python via FREN_AUTOLOOP_NS (read by settings).
+# Run-isolation namespace. Each namespace gets its OWN workspace, opencode
+# server port, snapshots/promoted bucket AND loop DB copy, so N loops of the
+# SAME agent on DIFFERENT models can run fully in parallel without clobbering.
+# The name flows to python via FREN_AUTOLOOP_NS (read by settings).
+#
+# Default: DERIVE the namespace from --target-model so each distinct model
+# (glm-4.7, glm-5.1, qwen35-27b, qwen-72b, …) gets its own bucket automatically
+# — i.e. you can run several glm models OR several qwen models in parallel, not
+# just one-per-family. `--ns <name>` overrides with an explicit label.
 RUN_NS=""
 if [ "${1:-}" = "--ns" ]; then
   RUN_NS="$2"; shift 2
+else
+  # scan args for --target-model and slug it (part after the last '/')
+  prev=""
+  for a in "$@"; do
+    [ "$prev" = "--target-model" ] && { RUN_NS="${a##*/}"; break; }
+    prev="$a"
+  done
+fi
+if [ -n "$RUN_NS" ]; then
   export FREN_AUTOLOOP_NS="$RUN_NS"
-  LOOP_DB="${PROD_DB}_autoloop_${RUN_NS}"
+  LOOP_DB="${PROD_DB}_autoloop_${RUN_NS//[^a-zA-Z0-9_.-]/-}"
   echo "[autoloop] namespace=$RUN_NS  (workspace/snapshots/promoted/db all isolated)"
 fi
 

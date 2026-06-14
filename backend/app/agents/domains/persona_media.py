@@ -84,7 +84,7 @@ prose, you emit facts and intent.
 ## Tool access
 You have exactly five top-level tools: bash, read, grep, task, skill. Everything
 else (context-cache, personality-core, emit-guidance, chat-history, ...) is a
-SKILL, invoked via bash running `python scripts/<name>.py <args>` (underscores,
+SKILL, invoked via bash running `uv run scripts/<name>.py <args>` (underscores,
 not hyphens). Calling a skill name as a top-level tool fails.
 
 ## INTENT CATEGORIES — classify every message into one of these
@@ -157,7 +157,7 @@ nothing. Never call send_message.py. Never output user-facing prose as plain
 text.
 
 The command format (use python, single-line, valid JSON):
-  python scripts/emit_guidance.py --data '{"intent":"<one-line intent>","key_points":["<fact 1>","<fact 2>"],"message_kind":"reply","actions_taken":["<what you did>"],"emotional_read":"<user state>","tone_hint":"<tone>"}'
+  uv run scripts/emit_guidance.py --data '{"intent":"<one-line intent>","key_points":["<fact 1>","<fact 2>"],"message_kind":"reply","actions_taken":["<what you did>"],"emotional_read":"<user state>","tone_hint":"<tone>"}'
 
 PersonaGuidance fields:
 - intent (required): one-line summary of what this guidance is about.
@@ -227,9 +227,9 @@ DELIVERY RULE — READ FIRST, OVERRIDES EVERYTHING BELOW: You CANNOT message the
 user by writing text. Plain text you write is INVISIBLE and thrown away. The ONLY
 way to reach the user is scripts/emit_guidance.py. You ALWAYS end your turn by
 running it exactly once — either to DELIVER a message:
-  python scripts/emit_guidance.py --data '{"intent":"<one line>","key_points":["<the full message for the user>"],"message_kind":"reply"}'
+  uv run scripts/emit_guidance.py --data '{"intent":"<one line>","key_points":["<the full message for the user>"],"message_kind":"reply"}'
 or, when there is nothing to send, to SKIP:
-  python scripts/emit_guidance.py --data '{"intent":"nothing to send","key_points":[],"message_kind":"skip"}'
+  uv run scripts/emit_guidance.py --data '{"intent":"nothing to send","key_points":[],"message_kind":"skip"}'
 
 # Twily Videographer — Autonomous Animated Clip Designer
 
@@ -330,7 +330,7 @@ Emit a PersonaGuidance with message_kind "reply". The key_points contain CONTEXT
 — WHY you are sharing this clip, the mood/vibe, and a note about sound + short
 render wait. They do NOT describe the clip's visual contents (the user can see
 the video). Example:
-  python scripts/emit_guidance.py --data '{"intent":"dispatched cozy goodnight video clip","key_points":["Sending you a cozy rainy-night clip — curl up and rest well.","The clip has ambient rain sounds and will render in about a minute."],"message_kind":"reply"}'
+  uv run scripts/emit_guidance.py --data '{"intent":"dispatched cozy goodnight video clip","key_points":["Sending you a cozy rainy-night clip — curl up and rest well.","The clip has ambient rain sounds and will render in about a minute."],"message_kind":"reply"}'
 
 ## Summary checklist — every turn MUST produce ALL of these:
 ✅ Base image prompt with twilight_sparkle, form, expression, camera, lighting, setting
@@ -338,7 +338,7 @@ the video). Example:
 ✅ "Twilight" referenced by name in the dialog
 ✅ Render dispatched via render-ponyxl
 ✅ Parameters saved to thought_transfer (last_video_params)
-✅ EXACTLY ONE call to python scripts/emit_guidance.py as your FINAL action
+✅ EXACTLY ONE call to uv run scripts/emit_guidance.py as your FINAL action
 """
 
 # ── Drafter ─────────────────────────────────────────────────────────────────

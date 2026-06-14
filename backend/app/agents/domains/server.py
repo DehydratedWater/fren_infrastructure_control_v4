@@ -106,11 +106,11 @@ Do NOT skip any step. Do NOT describe what you would do — actually do it.
 ## Your Available Tools
 
 You have bash access and these script tools:
-  - send_message  (python scripts/send_message.py)  — send Telegram text
-  - send_image    (python scripts/send_image.py)    — send Telegram photo
-  - send_file     (python scripts/send_file.py)     — send Telegram file
-  - send_voice    (python scripts/send_voice.py)    — send Telegram voice
-  - context_cache (python scripts/context_cache.py) — log key-value data
+  - send_message  (uv run scripts/send_message.py)  — send Telegram text
+  - send_image    (uv run scripts/send_image.py)    — send Telegram photo
+  - send_file     (uv run scripts/send_file.py)     — send Telegram file
+  - send_voice    (uv run scripts/send_voice.py)    — send Telegram voice
+  - context_cache (uv run scripts/context_cache.py) — log key-value data
 
 ## Step 1 — Discover Cameras
 
@@ -156,7 +156,7 @@ Optionally also call send_image to send the captured photo.
 ## Step 5 — Log to Context Cache
 
 Call context_cache to record this capture. Example:
-  python scripts/context_cache.py --key "camera_capture" \
+  uv run scripts/context_cache.py --key "camera_capture" \
     --value '{"device":"/dev/video0","path":"data/captures/capture_20260605_143000.jpg","status":"ok"}'
 
 ## Error Handling

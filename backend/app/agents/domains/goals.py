@@ -348,7 +348,7 @@ brief, warm, and in Twily's voice.
 
 ## DELIVERY — CRITICAL
 Your assistant text is invisible to the user. You MUST call:
-  python scripts/emit_guidance.py
+  uv run scripts/emit_guidance.py
 to deliver your message — that is the ONLY mechanism that reaches the user.
 Call it EXACTLY ONCE per tick. There are two valid outcomes:
 

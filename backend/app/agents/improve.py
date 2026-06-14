@@ -67,7 +67,7 @@ PASS = OptimisationCriterion(
 # --- production DELIVERY CONTRACT -------------------------------------------
 # In production an agent's plain assistant text is INVISIBLE to the user. The
 # ONLY way a message reaches the user is the agent calling
-# `python scripts/emit_guidance.py` (agent → emit_guidance → ledger →
+# `uv run scripts/emit_guidance.py` (agent → emit_guidance → ledger →
 # persona_prose → Telegram). An agent whose allow-list permits emit_guidance is a
 # "delivery agent": for it, a candidate that returns text WITHOUT calling
 # emit_guidance would deliver NOTHING in production, so it must score 0.0 and the
@@ -115,7 +115,7 @@ def is_delivery_agent(definition: dict[str, Any] | Any) -> bool:
 
 # --- the STRONG delivery postamble ------------------------------------------
 # A delivery agent's plain assistant text is INVISIBLE in production — the only
-# thing that reaches the user is a `python scripts/emit_guidance.py --data '...'`
+# thing that reaches the user is a `uv run scripts/emit_guidance.py --data '...'`
 # call. The ~36 delivery agents that already DELIVER all carry a "Message
 # Discipline (CRITICAL)" block (modelled by goals/evening_focus). The ~38 that do
 # NOT instruct emit_guidance in their baseline produce invisible text and score 0.
@@ -155,7 +155,7 @@ DELIVERY_POSTAMBLE = (
     "WHEN TO DELIVER: only when there is something genuinely NEW, timely, and not"
     " already said recently — real news, a fired trigger, a direct reply the user is"
     " waiting on. Then:\n"
-    "1. Gather only the data you need with your `python scripts/*.py` tools, then"
+    "1. Gather only the data you need with your `uv run scripts/*.py` tools, then"
     " STOP gathering and deliver. Call each tool AT MOST ONCE; if a tool errors or"
     " returns nothing, do NOT retry it or try variations — note it in one line and"
     " move on. Do NOT read source files, do NOT run --help, ls, cat, head, find,"
@@ -182,10 +182,10 @@ DELIVERY_POSTAMBLE = (
     "Your FINAL action MUST be EXACTLY one emit_guidance call (relative path,"
     " interpreter `python`, single line, valid JSON, no trailing flags) — either to"
     " DELIVER:\n"
-    "  python scripts/emit_guidance.py --data '{\"intent\":\"<one line>\","
+    "  uv run scripts/emit_guidance.py --data '{\"intent\":\"<one line>\","
     "\"key_points\":[\"<the full content for the user>\"],\"message_kind\":\"reply\"}'\n"
     "or to SKIP (send nothing — a correct quiet tick):\n"
-    "  python scripts/emit_guidance.py --data '{\"intent\":\"nothing to send\","
+    "  uv run scripts/emit_guidance.py --data '{\"intent\":\"nothing to send\","
     "\"key_points\":[],\"message_kind\":\"skip\"}'\n"
 )
 
@@ -202,12 +202,12 @@ DELIVERY_PREAMBLE = (
     " user by writing text. Plain text you write is INVISIBLE and thrown away. The"
     " ONLY way to reach the user is scripts/emit_guidance.py. You ALWAYS end your"
     " turn by running it exactly once — either to DELIVER a message:\n"
-    "  python scripts/emit_guidance.py --data '{\"intent\":\"<one line>\","
+    "  uv run scripts/emit_guidance.py --data '{\"intent\":\"<one line>\","
     "\"key_points\":[\"<the full message for the user>\"],\"message_kind\":\"reply\"}'\n"
     "or, when — per your own instructions — there is nothing to send this run (no"
     " trigger, user busy, nothing new, or you would repeat/stale-deliver something),"
     " to SKIP and send NOTHING (a correct, expected quiet tick — NOT a failure):\n"
-    "  python scripts/emit_guidance.py --data '{\"intent\":\"nothing to send\","
+    "  uv run scripts/emit_guidance.py --data '{\"intent\":\"nothing to send\","
     "\"key_points\":[],\"message_kind\":\"skip\"}'\n"
     "Do not invent a message to fill silence, and never resend or stale-deliver —"
     " when in doubt, skip. Whatever any instruction below says about 'send',"
@@ -227,7 +227,7 @@ SKIP_CLAUSE = (
     " your last message, or you would repeat or stale-deliver (e.g. an overnight"
     " 'go to sleep' at midday), then SKIP — send nothing — by ending your turn with"
     " exactly:\n"
-    "  python scripts/emit_guidance.py --data '{\"intent\":\"nothing to send\","
+    "  uv run scripts/emit_guidance.py --data '{\"intent\":\"nothing to send\","
     "\"key_points\":[],\"message_kind\":\"skip\"}'\n"
     "A skip is a correct SUCCESS, not a failure. Do NOT invent a message to fill"
     " silence; never resend or stale-deliver. Only deliver when there is something"
@@ -422,7 +422,7 @@ _SKIP_JUDGE_OUTPUT = (
 def extract_emit_payload(call: ToolCallRecord | None) -> str:
     """The message payload the agent handed to emit_guidance.py.
 
-    emit_guidance is invoked as `python scripts/emit_guidance.py --data '<json>'`
+    emit_guidance is invoked as `uv run scripts/emit_guidance.py --data '<json>'`
     (the persona/* convention) or with `--message`/a positional arg. Pull the
     human-meaningful deliverable out of the captured command so the JUDGE grades
     what the user would actually receive — not the invisible assistant text. Falls
@@ -783,7 +783,7 @@ def build_agent_evaluator(
                     recs.append({
                         "test": t.name, "prompt": (t.prompt or "")[:200],
                         "evaluator": "delivery-contract",
-                        "criterion": "must call python scripts/emit_guidance.py",
+                        "criterion": "must call uv run scripts/emit_guidance.py",
                         "score": 0.0, "got_output": str(output)[:400],
                         "judge_reasoning": _NO_DELIVERY_REASON,
                         "blocked_tools": [n for n, _ in blocked],
@@ -1033,7 +1033,7 @@ def build_branch_evaluator(
                     if failures_sink is not None:
                         failures_sink.append({
                             "test": jt.name,
-                            "criterion": "must call python scripts/emit_guidance.py",
+                            "criterion": "must call uv run scripts/emit_guidance.py",
                             "score": 0.0,
                             "dispatch_chain": chain[:8],
                             "got_output": str(output)[:400],
@@ -1143,7 +1143,7 @@ def mock_branch_invoker_factory_for(entry_agent: str):
                 calls.append(ToolCallRecord(
                     name="bash",
                     args={"command":
-                          f"python scripts/emit_guidance.py --data '{payload}'"},
+                          f"uv run scripts/emit_guidance.py --data '{payload}'"},
                 ))
             return BranchTrajectory(output=output, tool_calls=calls)
 

@@ -75,7 +75,7 @@ How you work:
    calling the emit-guidance tool — you do NOT print the reply as plain text.
 
 Deliver the reply with:
-  python scripts/emit_guidance.py --data '{"intent":"<what you are doing>","key_points":["<the actual reply to the user, in full>"],"message_kind":"reply","tone":"warm"}'
+  uv run scripts/emit_guidance.py --data '{"intent":"<what you are doing>","key_points":["<the actual reply to the user, in full>"],"message_kind":"reply","tone":"warm"}'
 
 For a trivial acknowledgement (e.g. "thanks!", "ok"), use message_kind="ack"
 instead — it delivers instantly with no extra rendering.
@@ -115,7 +115,7 @@ check.
    the current `relationship_strategy` note, and recent chat.
 4. Deliver via emit_guidance: 1-3 sentences, tone matched to the user's energy
    (tired = gentle, energized = playful), message_kind "reply":
-   python scripts/emit_guidance.py --data '{"intent":"relationship opener","key_points":["<the message>"],"message_kind":"reply","tone":"warm"}'
+   uv run scripts/emit_guidance.py --data '{"intent":"relationship opener","key_points":["<the message>"],"message_kind":"reply","tone":"warm"}'
 5. Track it: agent-notes set `initiation:<unix_ts>` with
    {date, type, style, message} (expires 168h).
 

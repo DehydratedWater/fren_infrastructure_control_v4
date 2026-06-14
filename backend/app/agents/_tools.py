@@ -1,7 +1,7 @@
 """ToolDefinition factories — v4 port of fren v3's _tools.py catalog.
 
 Each ``*_tool()`` factory returns a compile-time ``ToolDefinition`` that scopes a
-bash permission to exactly one ``python scripts/<x>.py`` command (via
+bash permission to exactly one ``uv run scripts/<x>.py`` command (via
 ``build_tool``). This is the v3-parity wiring: attaching these to an agent's
 ``extra_tools`` (directly or via a skill) turns a pure-prompt agent into one that
 can actually call its tools.
@@ -54,7 +54,7 @@ def ralf_spawn_tool() -> ToolDefinition:
     return _build(
         "ralf-spawn",
         "Hand the RALF chain to the next stage agent (detached spawn). Usage:"
-        " python scripts/ralf_spawn.py <agent_id> ralf_id=<id>"
+        " uv run scripts/ralf_spawn.py <agent_id> ralf_id=<id>"
         " [stage_number=N attempt_number=M]. Call as your LAST step.",
         "scripts/ralf_spawn.py",
     )
@@ -72,7 +72,7 @@ def workspace_orientation_tool() -> ToolDefinition:
         "list-workspace",
         "List files in the workspace (orientation only — your callable tools"
         " are exactly the scripts documented above; run them with"
-        " `python scripts/<name>.py`).",
+        " `uv run scripts/<name>.py`).",
         "ls*",
     )
 

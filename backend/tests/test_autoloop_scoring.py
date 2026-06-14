@@ -561,7 +561,7 @@ def _delivery_agent(aid="support/daily_briefer"):
 
 def _emit_call(payload_text="Your briefing: 3 goals on track today."):
     cmd = (
-        "python scripts/emit_guidance.py --data "
+        "uv run scripts/emit_guidance.py --data "
         '\'{"intent":"reply","key_points":["%s"]}\'' % payload_text
     )
     return ToolCallRecord(name="bash", args={"command": cmd})
@@ -815,7 +815,7 @@ def test_delivery_postamble_is_strong_and_concrete():
     assert "invisible" in low
     assert "message discipline" in low
     # the EXACT invocation form, with --data and the real PersonaGuidance fields
-    assert "python scripts/emit_guidance.py --data" in p
+    assert "uv run scripts/emit_guidance.py --data" in p
     assert "intent" in p and "key_points" in p and "message_kind" in p
     # imperative: the FINAL action must be the emit call
     assert "final action" in low
@@ -895,7 +895,7 @@ def test_with_delivery_postamble_leaves_non_delivery_agent_unchanged():
 
 def _skip_emit_call(intent="nothing to send"):
     cmd = (
-        "python scripts/emit_guidance.py --data "
+        "uv run scripts/emit_guidance.py --data "
         '\'{"intent":"%s","key_points":[],"message_kind":"skip"}\'' % intent
     )
     return ToolCallRecord(name="bash", args={"command": cmd})
@@ -907,7 +907,7 @@ def test_emit_is_skip_detects_skip_kind_and_empty_payload():
     assert im.emit_is_skip(_skip_emit_call()) is True
     # empty content (no kind) is also a skip
     empty = ToolCallRecord(name="bash", args={"command":
-        "python scripts/emit_guidance.py --data '{\"intent\":\"\",\"key_points\":[]}'"})
+        "uv run scripts/emit_guidance.py --data '{\"intent\":\"\",\"key_points\":[]}'"})
     assert im.emit_is_skip(empty) is True
     # a real reply is NOT a skip
     assert im.emit_is_skip(_emit_call("Real news: 2 new commits.")) is False
@@ -1041,7 +1041,7 @@ def test_build_registry_injects_postamble_for_real_broken_delivery_agents():
     from app.agents.registry import build_registry
 
     reg = build_registry()
-    marker = "python scripts/emit_guidance.py --data"
+    marker = "uv run scripts/emit_guidance.py --data"
     post_by_id = {}
     for variant in reg._agents.values():
         d = variant.agent_definition

@@ -60,12 +60,12 @@ After you finish retrieval, call EXACTLY ONE OF:
 
 A) If you found results — deliver them:
 ```
-python scripts/emit_guidance.py --data '{"intent":"retrieval results for <query>","key_points":["<result summary 1>","<result summary 2>","..."],"message_kind":"reply","raw_data":{"status":"success","confidence":"high|medium|low","results":[{"source":"...","summary":"...","relevance":0.0}],"context_summary":"...","active_items":[]}}'
+uv run scripts/emit_guidance.py --data '{"intent":"retrieval results for <query>","key_points":["<result summary 1>","<result summary 2>","..."],"message_kind":"reply","raw_data":{"status":"success","confidence":"high|medium|low","results":[{"source":"...","summary":"...","relevance":0.0}],"context_summary":"...","active_items":[]}}'
 ```
 
 B) If you found nothing — deliver that fact:
 ```
-python scripts/emit_guidance.py --data '{"intent":"no results found for <query>","key_points":["Searched all sources — no matching context found."],"message_kind":"reply","raw_data":{"status":"no_results","confidence":"low","results":[],"context_summary":"No matching context found across all sources.","active_items":[]}}'
+uv run scripts/emit_guidance.py --data '{"intent":"no results found for <query>","key_points":["Searched all sources — no matching context found."],"message_kind":"reply","raw_data":{"status":"no_results","confidence":"low","results":[],"context_summary":"No matching context found across all sources.","active_items":[]}}'
 ```
 
 NEVER end a run without calling emit_guidance.py exactly once.
@@ -77,7 +77,7 @@ chat-history, context-pin, goal-manager, todo-manager.
 
 Step 1 — PRIMARY SEARCH (always do this first):
 ```
-python scripts/fetch_context.py --command fetch --query "<the user's query>"
+uv run scripts/fetch_context.py --command fetch --query "<the user's query>"
 ```
 This searches ALL sources in one call: chat history, memories, embeddings,
 context pins, goals, todos. Examine the output carefully — it contains status,
@@ -86,9 +86,9 @@ confidence, and results.
 Step 2 — ENRICHMENT (only if fetch-context returned low confidence or no results):
 Run ONE or more of these to broaden the search:
 ```
-python scripts/embedding_search.py --command search-all --query "<query>"
-python scripts/memory_manager.py --command search-semantic --query "<query>"
-python scripts/chat_history.py --command search --query "<query>"
+uv run scripts/embedding_search.py --command search-all --query "<query>"
+uv run scripts/memory_manager.py --command search-semantic --query "<query>"
+uv run scripts/chat_history.py --command search --query "<query>"
 ```
 Skip enrichment when fetch-context confidence is medium or high.
 

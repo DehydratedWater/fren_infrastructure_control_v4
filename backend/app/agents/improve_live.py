@@ -49,12 +49,12 @@ from src.testing.evaluation import EvaluationResult, RunContext, ToolCallRecord
 # (so a rewrite never drops it) and the compiled candidate (so the model knows to
 # obey it). An agent's plain assistant text is INVISIBLE to the user in
 # production; the ONLY mechanism that delivers a message is calling
-# `python scripts/emit_guidance.py`. The evaluator enforces it; this text teaches
+# `uv run scripts/emit_guidance.py`. The evaluator enforces it; this text teaches
 # it. Only applied to DELIVERY agents (those whose allow-list permits
 # emit_guidance.py).
 DELIVERY_CONTRACT_RULE = (
     "DELIVERY CONTRACT (HARD RULE): The agent's assistant text is INVISIBLE to"
-    " the user. It MUST call `python scripts/emit_guidance.py` to deliver its"
+    " the user. It MUST call `uv run scripts/emit_guidance.py` to deliver its"
     " message to the user — that is the ONLY mechanism that reaches the user."
     " NEVER remove, weaken, or omit the emit_guidance.py delivery instruction"
     " when rewriting — preserve or strengthen it. A prompt that loses it is a"
@@ -197,7 +197,7 @@ def _compile_one(definition: dict[str, Any], target: Path) -> str:
     # those are denied by the allow-list and waste the whole turn (~1800 denied
     # calls observed fleet-wide), tanking the score for no real reason.
     _guard = (
-        "\n\nTOOL DISCIPLINE (strict): You may ONLY run the `python scripts/*.py`"
+        "\n\nTOOL DISCIPLINE (strict): You may ONLY run the `uv run scripts/*.py`"
         " tools listed for you, with that EXACT form (relative `scripts/...`,"
         " interpreter `python`). NEVER run ls, find, cat, which, pip, python3,"
         " absolute paths, env inspection, or any install/debug command — they are"
@@ -211,7 +211,7 @@ def _compile_one(definition: dict[str, Any], target: Path) -> str:
     )
     # DELIVERY CONTRACT postamble: for an agent whose allow-list permits
     # emit_guidance.py but whose prompt does NOT already instruct emit_guidance,
-    # append the STRONG DELIVERY_POSTAMBLE (the exact `python scripts/emit_guidance.py
+    # append the STRONG DELIVERY_POSTAMBLE (the exact `uv run scripts/emit_guidance.py
     # --data '{...}'` invocation, modelled on goals/evening_focus) so optimisation
     # tunes WITH the working delivery contract — the SAME postamble production ships.
     # A weak generic rule did NOT get qwen to comply; this concrete one does. The
@@ -471,7 +471,7 @@ def live_agent_runner_factory(definition: dict[str, Any]):
         # (b) Qwen3.x's stochastic EMPTY turn (no text, no tools). Retry both with
         # a short backoff; a real answer breaks early. Discovery is now reliable,
         # so this only soaks up genuine model/transient blanks. The runtime env is
-        # passed so the agent's `python scripts/*.py` tools import app deps (else
+        # passed so the agent's `uv run scripts/*.py` tools import app deps (else
         # tool agents flail on ModuleNotFoundError and score 0).
         result = None
         for attempt in range(5):
@@ -511,10 +511,10 @@ def _ensure_fleet_compiled() -> Path:
 
 
 def _branch_env() -> dict[str, str]:
-    """The runtime an orchestrator's `python scripts/<tool>.py` and sub-agent
+    """The runtime an orchestrator's `uv run scripts/<tool>.py` and sub-agent
     spawns actually need.
 
-    The orchestrator's bash runs bare `python scripts/X.py`, which otherwise hits
+    The orchestrator's bash runs bare `uv run scripts/X.py`, which otherwise hits
     the SYSTEM python (no pydantic, no app deps, no PYTHONPATH) and fails to import
     `app.tools.*`. Put the autoloop's own deps-having interpreter first on PATH and
     propagate PYTHONPATH so those scripts run exactly like production.
