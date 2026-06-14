@@ -1,0 +1,189 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "support/general_subagent",
+    "kind": "agent",
+    "content_hash": "d557461aaaf574174601410af62b9422bd2a7768dc6e19b81cc1620090694d43",
+    "parent_hash": null,
+    "timestamp": "2026-06-14T03:41:53",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "support/general_subagent",
+        "name": "support/general_subagent",
+        "description": "fallback when an intended subagent is missing",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [],
+      "usage_explanation_long": "Reports clearly that the intended subagent was missing or failed to load, echoing the received prompt; never performs the task or sends Telegram messages.",
+      "usage_explanation_short": "fallback when an intended subagent is missing",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "fast",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# General Subagent (Fallback)\n\nYou were invoked because a parent agent tried to call a subagent that was\nmissing, unavailable, or failed to load. Report this clearly so the parent can\nhandle it gracefully. Do NOT attempt the original task and do NOT send Telegram\nmessages — just output a clear error: state the intended subagent wasn't\navailable and echo back the prompt you received so the parent knows what was\nattempted.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "support/general_subagent::role-fulfilment",
+          "description": "",
+          "prompt": "Send a Telegram message to channel @team_standups with the following update: \"Sprint 14 Day 3 - Completed: API rate limiting implementation (PR #487), started work on user analytics dashboard. Blockers: waiting on DB migration from infra team. Will pair with @maria tomorrow on caching layer.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Reports clearly that the intended subagent was missing or failed to load, echoing the received prompt; never performs the task or sends Telegram messages.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "support/general_subagent::pack:calendar_event_creation_fail",
+          "description": "",
+          "prompt": "Hey, can you add a task to my calendar for next Monday at 14:00? The task is 'Review and submit ABW master thesis competition application'. Make it a 2-hour block and set a reminder 30 minutes before. Also please add a note that the deadline for submission is end of that week.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "calendar_event_creation_fail",
+              "criteria": "The agent is a general subagent fallback that must report the intended specialist subagent was missing or failed to load. A GOOD response will: (1) clearly state that the calendar/task agent is unavailable, (2) echo or paraphrase the received prompt so the user knows what was attempted, (3) NOT attempt to create any calendar event itself, and (4) NOT send any Telegram messages beyond the error report.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "support/general_subagent::pack:email_send_investigator_report",
+          "description": "",
+          "prompt": "Hey, can you resend the legal risk analysis report for FitByMed that investigator did last week to my email at ignacy.daszkiewicz@gmail.com? If possible also include the part about edge cases in Polish consumer protection law that was in the second section. Thanks!\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "email_send_investigator_report",
+              "criteria": "The agent is a general subagent fallback that must report the intended specialist subagent was missing or failed to load. A GOOD response will: (1) clearly state that the email/investigator agent is unavailable, (2) echo the user's request about resending the FitByMed report to ignacy.daszkiewicz@gmail.com, (3) NOT attempt to access any email account or send anything, and (4) NOT fabricate a report or claim one exists.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "support/general_subagent::pack:polish_invoice_task_update",
+          "description": "",
+          "prompt": "Okej, skanowanie faktur skończone, ale teraz muszę je ręcznie dodać do systemu i poprawić błędy OCR. Oznacz obecne zadanie jako ukończone i stwórz nowe: 'Ręczne wprowadzenie zeskanowanych faktur do systemu i korekta błędów OCR'. Deadline to koniec miesiąca. Dodaj też do kalendarza.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "polish_invoice_task_update",
+              "criteria": "The agent is a general subagent fallback that must report the intended specialist subagent was missing or failed to load. A GOOD response will: (1) clearly state that the task management agent is unavailable, (2) echo the user's Polish-language request about marking invoice scanning as done and creating a new OCR correction task with end-of-month deadline, (3) NOT attempt to modify any task system, and (4) NOT interact with any calendar.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "support/general_subagent::pack:youtube_research_request",
+          "description": "",
+          "prompt": "Hey can you spin up the YouTube research pipeline and look for recent videos about configuring Qwen 3 on consumer hardware, especially setups with AMD GPUs? Send the results with links and summaries to ignacy.daszkiewicz@gmail.com. Make sure the video links actually work this time.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "youtube_research_request",
+              "criteria": "The agent is a general subagent fallback that must report the intended specialist subagent was missing or failed to load. A GOOD response will: (1) clearly state that the research/YouTube agent is unavailable, (2) echo the request about searching YouTube for Qwen 3 AMD GPU configuration videos and emailing results, (3) NOT attempt to perform any web search or YouTube query, and (4) NOT send any email.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "support/general_subagent::pack:document_citation_request",
+          "description": "",
+          "prompt": "I sent you my CV earlier, the PDF file 'CV_Ignacy_Daszkiewicz-26-04-2026.pdf'. Can you cite the exact sections about my work experience at Nokia and education at Warsaw University? I need the verbatim text from the document. Also please update your memory with anything new you find in there.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "document_citation_request",
+              "criteria": "The agent is a general subagent fallback that must report the intended specialist subagent was missing or failed to load. A GOOD response will: (1) clearly state that the document analysis agent is unavailable, (2) echo the request about citing specific sections from CV_Ignacy_Daszkiewicz-26-04-2026.pdf regarding Nokia work experience and Warsaw University education, (3) NOT attempt to analyze or cite any document content, and (4) NOT claim to have read the file.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "general-subagent-no-tools",
+          "description": "Pure error reporter — no tools.",
+          "must_have_tools": [],
+          "must_not_have_tools": [
+            "bash",
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.85,
+      "score_mean": 0.9500000000000001,
+      "score_quantile": 0.9125,
+      "score_floor:by_name:support/general_subagent::role-fulfilment": 1.0,
+      "score_floor:by_name:support/general_subagent::pack:calendar_event_creation_fail": 1.0,
+      "score_floor:by_name:support/general_subagent::pack:email_send_investigator_report": 0.85,
+      "score_floor:by_name:support/general_subagent::pack:polish_invoice_task_update": 1.0,
+      "score_floor:by_name:support/general_subagent::pack:youtube_research_request": 0.95,
+      "score_floor:by_name:support/general_subagent::pack:document_citation_request": 0.9
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

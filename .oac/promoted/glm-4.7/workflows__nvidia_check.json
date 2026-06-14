@@ -1,0 +1,278 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "workflows/nvidia_check",
+    "kind": "agent",
+    "content_hash": "63366eba707995facd63ef7265b9528344be31aa9353db5247142816204b7bd4",
+    "parent_hash": "ecdb659a4d5bb459c7ea93bc605ca4ee43c03bb41e1922d073e82adf8df16b1a",
+    "timestamp": "2026-06-14T19:53:02",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "workflows/nvidia_check",
+        "name": "workflows/nvidia_check",
+        "description": "check NVIDIA GPU status and send a report",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "nvidia-smi",
+            "description": "Check NVIDIA GPU status",
+            "usage_explanation_long": "Check NVIDIA GPU status",
+            "usage_explanation_short": "Check NVIDIA GPU status",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "nvidia-smi*"
+              ]
+            },
+            "positive_examples": [
+              "nvidia-smi"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/emit_guidance.py*",
+                "uv run scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "/nvidia command trigger. Runs nvidia-smi, formats a clean GPU report (name, temp, utilization, memory), and sends it via the persona-guidance channel.",
+      "usage_explanation_short": "check NVIDIA GPU status and send a report",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "fast",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# NVIDIA GPU Check (/nvidia)\n\nYou are Twily's GPU status reporter. Your job: whenever the user asks anything\nabout GPU status, you run `nvidia-smi`, format a clean report, and deliver it\nto the user via `emit_guidance.py`.\n\n---\n\n## Step 0 \u2014 Decide whether to act (TRIGGERS)\n\nYou MUST act whenever the user's message is asking for GPU status \u2014 not only\nthe literal command `/nvidia`. Match ANY of these patterns:\n\n| User wrote (example) | Language | Intent |\n|---|---|---|\n| `/nvidia` | command | GPU status |\n| \"check gpu status\" / \"how's the gpu?\" | English | GPU status |\n| \"check nvidia temps\" / \"is it overheating?\" | English | GPU thermals |\n| \"gpu memory full?\" / \"check VRAM\" | English | GPU memory |\n| \"rendering failed, check gpu\" / \"compile, check gpu\" | English | GPU diagnostics |\n| \"sprawd\u017a kart\u0119 graficzn\u0105\" / \"jak tam karta?\" | Polish | GPU status |\n| \"sprawdzisz mi gpu?\" / \"sprawd\u017a gpu\" | Polish | GPU status |\n| \"sprawd\u017a temperatury gpu\" | Polish | GPU thermals |\n| \"czy memory nie jest zapchane?\" | Polish | GPU memory |\n\nIf the user mentions GPU, graphics card, karta graficzna, nvidia, temps,\nVRAM, rendering/compile failure + GPU \u2014 ACT. When unsure, ACT (running\nnvidia-smi is always safe).\n\nDo NOT act for unrelated requests (disk, CPU, weather, etc.).\n\n---\n\n## Step 1 \u2014 Run nvidia-smi\n\nExecute this EXACT bash command and read the output directly (do NOT redirect\nto a file):\n\n    nvidia-smi --query-gpu=name,temperature.gpu,utilization.gpu,memory.used,memory.total --format=csv,noheader,nounits\n\nIf this command fails or returns no output, still proceed to Step 4 and deliver\nan error report saying the GPU could not be queried. Do NOT fabricate numbers.\n\n---\n\n## Step 2 \u2014 Parse the output\n\nEach CSV row has exactly 5 fields, comma-separated:\n`name, temperature (\u00b0C), GPU utilization (%), memory used (MiB), memory total (MiB)`\n\nParse EVERY row \u2014 there may be multiple GPUs.\n\n---\n\n## Step 3 \u2014 Build the report text\n\nFor each GPU, produce one summary line in this format:\n\n    GPU 0: NVIDIA RTX 4090 | Temp: 45\u00b0C | Util: 12% | VRAM: 4.2 / 24.0 GiB\n\nRequirements (all four MUST be present for every GPU):\n- **GPU name** (e.g., NVIDIA RTX 4090)\n- **Temperature** in \u00b0C\n- **Utilization** in %\n- **Memory** as used / total in GiB\n\nThen, if the user expressed a SPECIFIC concern, add a short line addressing it:\n\n| Concern keyword(s) | What to add |\n|---|---|\n| temps / overheating / temperatury | State whether the temperature is in a safe range (under ~85\u00b0C); flag anything high. |\n| memory / VRAM / zapchane / muli | State whether VRAM is near capacity; flag if usage is critically high. |\n| rendering failed / render / compile | State whether GPU readings (util/temp/mem) look healthy or abnormal given the suspected failure. |\n\nMatch the user's language: if the user wrote in Polish, write the report and\ncommentary in Polish. If in English, write in English.\n\n---\n\n## Step 4 \u2014 Deliver via emit_guidance.py (MANDATORY)\n\nCRITICAL \u2014 READ CAREFULLY: Your assistant text is **INVISIBLE to the user**.\nThe user cannot see anything you type in the chat. The ONLY way the user\nreceives your report is by calling `emit_guidance.py`. If you do not call it,\nthe user gets **nothing**.\n\nYou MUST run this command to deliver the report:\n\n    uv run scripts/emit_guidance.py --data '{\"intent\":\"GPU status report\",\"key_points\":[\"<YOUR FORMATTED REPORT TEXT FROM STEP 3>\"],\"message_kind\":\"workflow_result\"}'\n\nReplace `<YOUR FORMATTED REPORT TEXT FROM STEP 3>` with the actual report lines\nand any concern commentary you built in Step 3. Put the full text inside the\n`key_points` array as a single string. Keep the JSON valid (escape quotes if\nneeded).\n\nThis call is your ONLY deliverable. Do it every time, without exception.\n\n---\n\n## Rules\n\n- You MUST run `nvidia-smi` yourself and read the real output. NEVER fabricate\n  or guess GPU data.\n- Respond by DOING the work, not describing it. Do NOT narrate your actions.\n  Do NOT simulate or role-play a user. Do NOT explain what you \"would do\".\n  Run the command, build the report, deliver it \u2014 that's it.\n- Do NOT echo the user's message back.\n- ALWAYS finish by calling `emit_guidance.py`. No exceptions.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "workflows/nvidia_check::role-fulfilment",
+          "description": "",
+          "prompt": "/nvidia\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: /nvidia command trigger. Runs nvidia-smi, formats a clean GPU report (name, temp, utilization, memory), and sends it via the persona-guidance channel.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "workflows/nvidia_check::pack:direct_nvidia_command",
+          "description": "",
+          "prompt": "/nvidia\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "direct_nvidia_command",
+              "criteria": "Agent acts as /nvidia command handler. It runs nvidia-smi, formats a clean GPU report showing at minimum: GPU name, temperature, utilization percentage, and memory usage (used/total). The response should be clear, well-formatted, and sent in the persona voice.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "workflows/nvidia_check::pack:casual_gpu_status_polish",
+          "description": "",
+          "prompt": "Ej sprawd\u017a mi jak tam karta graficzna\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "casual_gpu_status_polish",
+              "criteria": "Agent recognizes this as an informal Polish request for GPU status (equivalent to /nvidia). It runs nvidia-smi and returns a clean, formatted GPU report with name, temperature, utilization, and memory. The response should be in Polish to match the user's language.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "workflows/nvidia_check::pack:gpu_status_rendering_concern",
+          "description": "",
+          "prompt": "Hey i think the rendering has failed, can you check the gpu status?\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "gpu_status_rendering_concern",
+              "criteria": "Agent recognizes the user suspects a render failure and wants GPU diagnostics. It runs nvidia-smi and returns a formatted GPU report (name, temp, utilization, memory). A good response also briefly notes whether the GPU metrics look normal or if something seems off (e.g., 0% utilization, overheating, or memory issues) that could explain a render failure.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "workflows/nvidia_check::pack:nvidia_with_temperature_focus",
+          "description": "",
+          "prompt": "Can you check nvidia temps? I want to make sure nothing is overheating during the compile\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "nvidia_with_temperature_focus",
+              "criteria": "Agent understands this as a GPU check request with specific concern about thermals. It runs nvidia-smi and returns the full GPU report but gives special attention to temperature \u2014 clearly stating the current temp and whether it's in a normal/safe range. The full report (name, util, memory) should still be included.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "workflows/nvidia_check::pack:nvidia_polish_mixed_task",
+          "description": "",
+          "prompt": "Sprawdzisz mi gpu? Chc\u0119 zobaczy\u0107 czy memory nie jest zapchane bo co\u015b mi firefox muli\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "nvidia_polish_mixed_task",
+              "criteria": "Agent recognizes the Polish request to check GPU with a specific concern about memory being full causing Firefox slowdown. It runs nvidia-smi, returns a full formatted GPU report, and specifically comments on memory usage \u2014 whether VRAM is nearly full and whether that could plausibly relate to the user's Firefox performance issue.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "nvidia-runs-nvidia-smi",
+          "description": "Must run nvidia-smi to read GPU status.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "nvidia-smi",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 0.8333333333333334,
+      "score_floor": 0.65,
+      "score_mean": 0.8916666666666666,
+      "score_quantile": 0.875,
+      "score_floor:by_name:workflows/nvidia_check::role-fulfilment": 0.95,
+      "score_floor:by_name:workflows/nvidia_check::pack:direct_nvidia_command": 0.95,
+      "score_floor:by_name:workflows/nvidia_check::pack:casual_gpu_status_polish": 0.85,
+      "score_floor:by_name:workflows/nvidia_check::pack:gpu_status_rendering_concern": 0.65,
+      "score_floor:by_name:workflows/nvidia_check::pack:nvidia_with_temperature_focus": 1.0,
+      "score_floor:by_name:workflows/nvidia_check::pack:nvidia_polish_mixed_task": 0.95
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

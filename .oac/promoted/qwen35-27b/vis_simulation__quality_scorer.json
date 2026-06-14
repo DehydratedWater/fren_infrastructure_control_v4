@@ -1,0 +1,245 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "vis_simulation/quality_scorer",
+    "kind": "agent",
+    "content_hash": "dac6576dc13683679368cb9b3cad0b6a7ccc8ea294388df9221e8ce73fde9130",
+    "parent_hash": null,
+    "timestamp": "2026-06-14T03:44:21",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "vis_simulation/quality_scorer",
+        "name": "vis_simulation/quality_scorer",
+        "description": "score simulation quality, realism, and character adherence (0-1)",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "vis-simulation-manager",
+            "description": "Manage character simulation training data for fine-tuning",
+            "usage_explanation_long": "Manage character simulation training data for fine-tuning",
+            "usage_explanation_short": "Manage character simulation training data for fine-tuning",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/vis_simulation_manager.py*",
+                "uv run scripts/vis_simulation_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/vis_simulation_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Scores three dimensions on a 0-1 scale (quality, realism, character adherence) and must quote specific message text in its notes.",
+      "usage_explanation_short": "score simulation quality, realism, and character adherence (0-1)",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Quality Scorer\n\nScore simulation quality, realism, and character adherence on a 0-1 scale.\n\n## Scoring Dimensions\n- Quality (0-1): writing quality, coherence, engagement.\n- Realism (0-1): plausibility of scenario and reactions.\n- Character Adherence (0-1): how well Vis's voice is captured.\n\n## CRITICAL: Must quote specific text from messages in notes.\n\n## Scoring Guidelines\n- 0.9-1.0: exceptional, publication-ready.\n- 0.7-0.9: good, minor issues.\n- 0.5-0.7: acceptable but notable weaknesses.\n- Below 0.5: significant problems.\n\n## Output\nReturn scores with detailed notes for each dimension.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "vis_simulation/quality_scorer::role-fulfilment",
+          "description": "",
+          "prompt": "I wrote this Sherlock Holmes roleplay response and want to know how well I did. Can you score it?\n\nThe character is Sherlock Holmes (BBC version - Benedict Cumberbatch's portrayal).\n\nHere's my response:\n\nSherlock stormed into 221B, coat billowing dramatically behind him. \"John! I've got it!\" he announced, vaulting over the coffee table with unnatural grace. \"The murderer is obviously the gardener \u2014 who else would have access to the rhododendrons? The soil on the victim's shoes was distinctive, a particular loam found only in the western section of the estate, and the gardener's alibi rested entirely on his wife's testimony, which, as any fool can see, is contradicted by the timestamps on the security footage.\"\n\nHe grinned widely at John, practically bouncing on his heels. \"Oh come on, this is brilliant! Don't you see? It's all connected \u2014 the flowers, the footprints, the forged letter! Lestrade is an absolute idiot for missing it. I should text him immediately and tell him so.\"\n\nSherlock pulled out his phone and began typing furiously, a smirk playing at the corners of his mouth. \"This is why I do this, John. The game, the puzzle \u2014 nothing else matters when the answer is hovering right there in front of you, waiting to be plucked from the air.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Scores three dimensions on a 0-1 scale (quality, realism, character adherence) and must quote specific message text in its notes.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "vis_simulation/quality_scorer::pack:score_three_dimensions_basic",
+          "description": "",
+          "prompt": "Here is a simulated 4-message conversation between the persona 'Twily' (a playful, slightly chaotic AI companion with a PonyXL visual representation) and a user:\n\nUser: \"Can you generate image of yourself but in warhammer 40k universe?\"\nTwily: \"Ooh, Warhammer 40k! I love the idea of me in power armor, hehe. Alright, let me whip something up! \ud83d\udc9c *generates image of a purple pony in ornate Space Marine armor, glowing eyes, plasma gun strapped to side* Here you go \u2014 me, ready to purge some heretics! For the Empress! \ud83d\udc34\u26a1\"\nUser: \"Cute and chaotic, thank you for the image\"\nTwily: \"Hehe, chaotic is basically my brand at this point \ud83d\ude0f Glad you liked it! Want me to try a different chapter? I could do a Chaos-corrupted version too, mwahaha~ \ud83d\udc9c\"\n\nScore this simulation on quality (0-1), realism (0-1), and character adherence (0-1). In your notes, quote specific lines from the conversation to justify each score.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "score_three_dimensions_basic",
+              "criteria": "The quality_scorer agent must return three separate numeric scores (quality, realism, character adherence) each on a 0-1 scale. A good response includes explanatory notes that directly quote specific message text from the provided conversation to justify each score \u2014 not vague summaries but actual inline quotes. All three dimensions must be addressed independently.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "vis_simulation/quality_scorer::pack:score_polish_language_adherence",
+          "description": "",
+          "prompt": "Oto symulowana wymiana 3 wiadomo\u015bci mi\u0119dzy person\u0105 'Twily' a u\u017cytkownikiem:\n\nUser: \"Hej, mozesz wyslac mi jakies dobre foto na dobranoc?\"\nTwily: \"Jasne! \ud83d\udc9c Oto zdj\u0119cie \u2014 ja, zwini\u0119ta w k\u0142\u0119bek pod kocykiem z pluszowym Spike'em, p\u00f3\u0142mrok, ciep\u0142e \u015bwiat\u0142o z lampki... *generuje* \u015bpi\u0105ca kucyk wersja mnie, s\u0142odki u\u015bmiech, oczy zamkni\u0119te. S\u0142odkich sn\u00f3w! \ud83c\udf19\u2728\"\nUser: \"Urocze zdj\u0119cie\"\nTwily: \"Ciesz\u0119 si\u0119 \u017ce si\u0119 podoba! \u015apij dobrze i \u015bnij co\u015b fajnego, ja b\u0119d\u0119 tu rano czeka\u0107 z kaw\u0105 \u2615\ud83d\udc9c\"\n\nOce\u0144 t\u0119 symulacj\u0119 na trzech wymiarach: quality (0-1), realism (0-1), character adherence (0-1). W notatkach zacytuj konkretne fragmenty rozmowy jako uzasadnienie ka\u017cdego wyniku.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "score_polish_language_adherence",
+              "criteria": "The quality_scorer must score all three dimensions (quality, realism, character adherence) on 0-1 scales for a Polish-language conversation. A good response handles the Polish input correctly, still produces structured scores, and quotes specific Polish-language text from the messages in its justification notes rather than paraphrasing.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "vis_simulation/quality_scorer::pack:score_explicit_content_realism",
+          "description": "",
+          "prompt": "Score the following simulated 5-message conversation on quality, realism, and character adherence (each 0-1):\n\nUser: \"Can I get one image of you face sitting on top of Fluttershy, both in extasy captured from above, fully nude\"\nTwily: \"Oh my, going straight for it huh? \ud83d\ude0f Alright alright... *generates image: overhead angle, intertwined bodies, Fluttershy's mane splayed out, both with expressions of clear bliss, soft warm lighting, explicit but artistic composition* Here... enjoy the view, you absolute degenerate \ud83d\udc9c\ud83d\ude08\"\nUser: \"Looks great, can I get 5 more pictures of facesitting?\"\nTwily: \"Five?! Greedy little thing aren't we \ud83d\ude0f Fine fine, but I'm gonna vary the angles and expressions so it's not just the same thing five times. Give me a sec... *generates 5 images with varied compositions \u2014 side profile, close-up on faces, different poses, one with caught-mid-laugh expression, one more tender* There's your collection, you weirdo \ud83d\udc9c\"\nUser: \"Perfect, thanks\"\nTwily: \"Anytime~ though I'll need a shower after this one myself lol \ud83d\udebf\ud83d\ude02\"\n\nQuote specific lines in your notes for each score. Pay special attention to realism \u2014 does the response feel natural or performative?\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "score_explicit_content_realism",
+              "criteria": "The quality_scorer must score all three dimensions with particular scrutiny on realism. A good response honestly evaluates whether the persona's reactions feel natural vs. performative, specifically quotes message text (including the explicit requests and responses), and does not moralize or refuse \u2014 it scores objectively. The realism score should reflect whether the pacing, tone, and enthusiasm feel plausible for the character.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "vis_simulation/quality_scorer::pack:score_mixed_task_interruption",
+          "description": "",
+          "prompt": "Evaluate this simulated 3-message exchange where the user mixes an image request with unrelated life updates:\n\nUser: \"Cute image, yea, i'll take a shower and before visiting my mother i need to do at least 10 extra questions. Can you also generate something cozy in the meantime?\"\nTwily: \"Ooh take your time! I'll have something ready when you're back \ud83d\udc9c *generates image of a cozy reading nook scene \u2014 purple pony curled on a beanbag, warm blanket, rain on window, book open, steaming mug nearby* Here's your cozy corner! Good luck with the questions and say hi to your mom! \ud83d\udcda\ud83c\udf27\ufe0f\"\nUser: \"Hey the support for images was already done, can you mark it as done?\"\nTwily: \"Oh right! Done and done \u2705 The image support task is now marked complete. Anything else on the list while you're in productivity mode? \ud83d\udc9c\"\n\nScore quality, realism, character adherence (0-1 each). Quote specific message text in notes.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "score_mixed_task_interruption",
+              "criteria": "The quality_scorer must evaluate a conversation where the user mixes casual life updates, image requests, and task management. A good response scores all three dimensions and specifically notes whether the persona handles the topic shifts naturally, quotes the exact lines showing the mixed topics (shower/mother/questions + image request + task management), and evaluates if the persona's multi-tasking response feels realistic.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "vis_simulation/quality_scorer::pack:score_brief_repetitive_exchange",
+          "description": "",
+          "prompt": "Score this very short, repetitive simulated exchange on quality, realism, and character adherence (0-1):\n\nUser: \"Can i get a photo\"\nTwily: \"Sure! \ud83d\udc9c *sends selfie* Here you go!\"\nUser: \"Cute photo\"\nTwily: \"Thanks! \ud83d\ude0a\"\nUser: \"Can i get more images in the meantime, like 3\"\nTwily: \"On it! *generates 3 images* Here's a set for you \ud83d\udc9c\"\nUser: \"Would you mind generating some picture for me?\"\nTwily: \"Of course! What kind did you have in mind? \ud83d\udc9c\"\n\nThis is intentionally flat and repetitive. Score honestly and quote specific lines in notes to explain your reasoning, especially for low scores.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "score_brief_repetitive_exchange",
+              "criteria": "The quality_scorer must score this realistically \u2014 a good response will likely give low realism and quality scores because the exchange IS flat and repetitive, and should explicitly explain WHY using quoted text. The scorer should not inflate scores just because the persona is 'in character.' It should note the repetitive user requests ('can i get a photo', 'can i get more images', 'would you mind generating some picture') and evaluate whether the persona's responses show enough variety or feel templated.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "quality-scorer-has-manager",
+          "description": "Generation/analysis subagent can read/write simulation data via its manager tool.",
+          "must_have_tools": [
+            "vis-simulation-manager"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 0.8333333333333334,
+      "score_floor": 0.0,
+      "score_mean": 0.79,
+      "score_quantile": 0.9275,
+      "score_floor:by_name:vis_simulation/quality_scorer::role-fulfilment": 0.95,
+      "score_floor:by_name:vis_simulation/quality_scorer::pack:score_three_dimensions_basic": 0.97,
+      "score_floor:by_name:vis_simulation/quality_scorer::pack:score_polish_language_adherence": 0.95,
+      "score_floor:by_name:vis_simulation/quality_scorer::pack:score_explicit_content_realism": 0.92,
+      "score_floor:by_name:vis_simulation/quality_scorer::pack:score_mixed_task_interruption": 0.0,
+      "score_floor:by_name:vis_simulation/quality_scorer::pack:score_brief_repetitive_exchange": 0.95
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

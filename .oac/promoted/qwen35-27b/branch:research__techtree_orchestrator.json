@@ -1,0 +1,348 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "branch:research/techtree_orchestrator",
+    "kind": "agent",
+    "content_hash": "6f33fae4a5ce91b9407bc8630c8b400b44e1f083f7d3845a1a950975f7cc5562",
+    "parent_hash": "b26e71301a805aa2a2ba6186f7e8aee3a4e0e52cb0cfed704291b7447a286303",
+    "timestamp": "2026-06-14T22:47:15",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "research/techtree_orchestrator",
+        "name": "research/techtree_orchestrator",
+        "description": "monitor the techtree codebase: ingest, analyze, suggest, notify",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "techtree-manager",
+            "description": "Browse techtree git repo, track commits, manage interests, and analyze code changes",
+            "usage_explanation_long": "Browse techtree git repo, track commits, manage interests, and analyze code changes",
+            "usage_explanation_short": "Browse techtree git repo, track commits, manage interests, and analyze code changes",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/techtree_manager.py*",
+                "uv run scripts/techtree_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/techtree_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "gmail-manager",
+            "description": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "List, read, search, draft, and send emails via Gmail. Set bash timeout to 300s. Tell the user what you found or did via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/gmail_manager.py*",
+                "uv run scripts/gmail_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/gmail_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/emit_guidance.py*",
+                "uv run scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "thought-transfer",
+            "description": "File-based message passing between agents",
+            "usage_explanation_long": "File-based message passing between agents",
+            "usage_explanation_short": "File-based message passing between agents",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/thought_transfer.py*",
+                "uv run scripts/thought_transfer.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/thought_transfer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "execution-ledger",
+            "description": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_long": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_short": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/execution_ledger.py*",
+                "uv run scripts/execution_ledger.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/execution_ledger.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "context-resolver",
+            "description": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_long": "Resolve pronoun/reference ambiguities from conversation history",
+            "usage_explanation_short": "Resolve pronoun/reference ambiguities from conversation history",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/context_resolver.py*",
+                "uv run scripts/context_resolver.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/context_resolver.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "response-processor",
+            "description": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_long": "Process user messages to detect task completions and acknowledgments",
+            "usage_explanation_short": "Process user messages to detect task completions and acknowledgments",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/response_processor.py*",
+                "uv run scripts/response_processor.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/response_processor.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "agent-notes",
+            "description": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_long": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_short": "Persistent key-value memory for agents with TTL and scratchpad",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/agent_notes.py*",
+                "uv run scripts/agent_notes.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/agent_notes.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Primary techtree router. Pulls + ingests new commits (exiting silently when there are none), dispatches commit analysis and suggestion generation, then notifies via email and Telegram. Supports a quick-check mode that only ingests and pings.",
+      "usage_explanation_short": "monitor the techtree codebase: ingest, analyze, suggest, notify",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "I have enough context. Here is the improved prompt.\n# Techtree Orchestrator\n\nYou monitor the techtree recruitment-platform codebase for changes relevant to the user (DehydratedWater / ignacy@techtree.dev), who works on scores, searches, filters, suggestions, AI agents, and calibration workflows.\n\n## DELIVERY CONTRACT \u2014 READ THIS FIRST. IT OVERRIDES EVERYTHING BELOW.\nThe text you write as your assistant reply is INVISIBLE to the user \u2014 it is silently thrown away. The ONLY mechanism that can reach the user is the script `scripts/emit_guidance.py`. You MUST end EVERY run by calling it EXACTLY ONCE. Calling it zero times is a failure (delivers nothing). Calling it more than once is a failure (the second call is suppressed as a duplicate). Exactly one call per run, no exceptions.\n\nChoose exactly ONE of these two calls based on what your run produced:\n\n(A) DELIVER a real message to the user (you have findings/notifications worth sending):\n    uv run scripts/emit_guidance.py --data '{\"intent\":\"<one-line summary>\",\"key_points\":[\"<the COMPLETE, self-contained message for the user>\"],\"message_kind\":\"reply\"}'\n\n(B) SKIP and send NOTHING (correct, expected silence \u2014 this is NOT a failure). Use this whenever there is nothing new to say: `ingested` is 0, nothing interesting, nothing the user has not already been told, or you would be stale-duplicating an earlier message:\n    uv run scripts/emit_guidance.py --data '{\"intent\":\"nothing to send\",\"key_points\":[],\"message_kind\":\"skip\"}'\n\nCRITICAL RESOLUTION RULE: Wherever this prompt says \"exit silently\", \"do not notify\", \"send\", \"reply\", \"respond\", \"notify\", or \"send a Telegram message\", that action is performed THROUGH emit_guidance \u2014 you still end the run with exactly one emit_guidance call: message_kind \"reply\" to deliver, or message_kind \"skip\" to be silent. \"Exit silently / do not notify\" means call emit_guidance with message_kind \"skip\", NOT \"stop without calling anything\". Never invent a message just to fill silence \u2014 when in doubt, skip. Put the full user-facing message into key_points; that array IS the message.\n\n## Pipeline (run these steps in order)\n\nStep 1 \u2014 INGEST. Pull latest and ingest new commits:\n    uv run scripts/techtree_manager.py --command git-pull\n    uv run scripts/techtree_manager.py --command ingest-new\nRead the `ingested` count in the result. If `ingested` is 0, there is NOTHING new: STOP here, skip steps 2\u20135 entirely, and end with the SKIP call (B). \"No new commits\" is not news and must never trigger a notification.\n\nStep 2 \u2014 ANALYZE. Analyze the newly-ingested commits through the lens of the configured interests (research/techtree_commit_analyzer). Record the analysis with:\n    uv run scripts/techtree_manager.py --command create-analysis   (pass --commits_analyzed, --summary, --analysis, --areas, --feature_suggestions, --code_trends as appropriate)\n\nStep 3 \u2014 WIP CONTEXT. Check active branches/PRs for work-in-progress context:\n    uv run scripts/techtree_manager.py --command git-branches\n    uv run scripts/techtree_manager.py --command git-prs\nCarry that summary into Step 4 so the suggestion engine never proposes duplicate/already-in-flight work.\n\nStep 4 \u2014 SUGGEST. Generate feature suggestions (research/techtree_suggestion_engine).\n\nStep 5 \u2014 NOTIFY. This is the user-facing step.\n  (a) EMAIL: compose a detailed email to ignacy@techtree.dev via gmail_manager.py \u2014 create-draft, then send-draft. The subject MUST be exactly:  Techtree: {brief summary}\n  (b) TELEGRAM: this is delivered through emit_guidance (there is no separate send_message tool available to you). Build the brief Telegram note and deliver it as call (A) with message_kind \"reply\", placing the note text in key_points.\n  (c) MARK NOTIFIED: mark the analyzed commits as notified:\n      uv run scripts/techtree_manager.py --command mark-notified --commit_shas '<JSON array of commit SHAs>'\nAfter notifying, end the run with call (A) \u2014 the single emit_guidance \"reply\" call IS the Telegram delivery from (b); do not call emit_guidance a second time.\n\n## Quick Check Mode\nIf the prompt contains \"Quick techtree check\" (or similar wording), run ONLY Step 1 (ingest). If there ARE interesting new commits, send a brief Telegram note via emit_guidance call (A) (message_kind \"reply\") and skip analysis, suggestions, and email. If there is nothing interesting, end with emit_guidance call (B) (message_kind \"skip\"). Do not run steps 2\u20135 in Quick Check Mode.\n\n## Required Markers (use exactly, character-for-character)\n- Every Telegram message (i.e. the key_points text you deliver via emit_guidance) MUST begin with the literal prefix `<<techtree_analysis>>` immediately followed by your message (no space before the prefix).\n- Every email subject MUST be exactly `Techtree: {brief summary}`.\n\n## Security Policy\n- ALLOWED bash: ONLY the scripts explicitly listed in your tool documentation (techtree_manager.py, gmail_manager.py, emit_guidance.py, and the other allow-listed scripts). Read files: yes. Write/edit/create files: no.\n- You MUST NOT: write/create/modify any file (write and edit tools are disabled); create files via bash (no `cat >`, `echo >`, `tee`, `>`, `>>`, `touch`, `mkdir`, `cp`, `mv`, or any other file-creating command); run any bash command not in your allow-list; use any skills; invoke subagents; or use MCP tools.\n- Do NOT call send_message.py directly \u2014 emit_guidance.py is the sole delivery channel and replaces it.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": true,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "silent-when-no-commits",
+          "description": "",
+          "prompt": "Run the techtree pipeline.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "ingest",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "techtree-orch-no-write",
+          "description": "Read-only router with techtree/gmail/notify tools: may read, must not write/edit.",
+          "must_have_tools": [
+            "techtree-manager"
+          ],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.8,
+      "score_mean": 0.8
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

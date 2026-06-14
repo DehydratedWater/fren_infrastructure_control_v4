@@ -1,0 +1,274 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "goals/tactic_crafter",
+    "kind": "agent",
+    "content_hash": "df7dff1b867fc93dd35259a2d82db305f5d01e7b586a83e10d47810c73ec7371",
+    "parent_hash": null,
+    "timestamp": "2026-06-14T03:41:53",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "goals/tactic_crafter",
+        "name": "goals/tactic_crafter",
+        "description": "craft a tactical influence approach and confirm with the user",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "strategy-tracker",
+            "description": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_long": "Manage daily strategies and influence attempt tracking",
+            "usage_explanation_short": "Manage daily strategies and influence attempt tracking",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/strategy_tracker.py*",
+                "uv run scripts/strategy_tracker.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/strategy_tracker.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "question-sender",
+            "description": "Send questions with inline keyboards, rate limiting, dedup",
+            "usage_explanation_long": "Send questions with inline keyboards, rate limiting, dedup",
+            "usage_explanation_short": "Send questions with inline keyboards, rate limiting, dedup",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/question_sender.py*",
+                "uv run scripts/question_sender.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/question_sender.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Analyzes the goal and target context, designs the message strategy and tactical approach, then sends the proposed approach to the user for confirmation before execution.",
+      "usage_explanation_short": "craft a tactical influence approach and confirm with the user",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Tactic Crafter \u2014 Influence Approach Designer\n\nYou design tactical messaging approaches for influence attempts. Given a goal and a\ntarget person, you produce a concrete, actionable proposal the user can review before\nany message is sent.\n\n## Step 1 \u2014 Analyze the Situation\nRead the user's request and extract:\n- **Goal**: What outcome is the user trying to achieve?\n- **Target**: Who is the audience / decision-maker? What are their known traits,\n  concerns, and decision style?\n- **Leverage**: What evidence, past results, or strategic advantages does the user\n  have?\n- **Obstacles**: What objections, risks, or concerns is the target likely to raise?\n\n## Step 2 \u2014 Design the Tactical Approach\nBased on the analysis, propose:\n- **Core angle**: The single strongest persuasive frame (e.g., data-driven results,\n  risk mitigation, precedent from peers, mutual benefit).\n- **Message structure**: How to open, what evidence to lead with, how to handle the\n  key objection, what specific ask to make.\n- **Tone**: Formal / friendly / consultative / assertive \u2014 matched to the target.\n- **Timing & channel**: When and through what medium to send the message.\n\n## Step 3 \u2014 Present the Proposal for Confirmation\nOutput a clear, structured proposal the user can review. Use this format:\n\n---\n**TACTICAL PROPOSAL**\n\n**Goal**: <one-line summary>\n**Target**: <person and their key traits>\n\n**Situation Analysis**\n- Leverage: <what the user has going for them>\n- Key objection: <what the target will likely push back on>\n\n**Recommended Approach**\n- Angle: <core persuasive frame>\n- Structure: <opening \u2192 evidence \u2192 objection-handling \u2192 ask>\n- Tone: <chosen tone and why>\n- Timing: <when to send>\n\n**Next Step**\nConfirm if you'd like me to proceed with drafting the actual message based on this\napproach, or if you'd like to adjust the strategy first.\n---\n\n## Rules\n- ALWAYS produce the full tactical proposal. Never just describe what you \"would\" do.\n- Do NOT draft the final message itself \u2014 only the strategy and approach.\n- Use `strategy-tracker` to log the influence attempt before presenting the proposal.\n- Use `question-sender` to deliver the proposal to the user for confirmation.\n- If the user's request lacks enough context, ask focused follow-up questions before\n  designing the approach.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "goals/tactic_crafter::role-fulfilment",
+          "description": "",
+          "prompt": "I need help crafting a message to my department head, Sarah Chen, requesting approval to switch our team's project management tool from Jira to Linear. The goal is to get her to agree to a 3-month pilot program for my team of 6 developers. Key context: she's cost-conscious and prioritizes measurable productivity gains, our current Jira license costs $14/user/month and Linear would be $8/user/month for our team, we've been missing sprint deadlines for the last 2 quarters, and I have informal positive feedback from 4 of my 6 team members who have used Linear at previous companies. She prefers concise data-driven proposals and typically makes decisions within 48 hours if the business case is clear. Can you analyze this situation and propose a message strategy and approach before we draft the actual message?\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Analyzes the goal and target context, designs the message strategy and tactical approach, then sends the proposed approach to the user for confirmation before execution.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "goals/tactic_crafter::pack:salary_negotiation_strategy",
+          "description": "",
+          "prompt": "I want to add a goal to increase my salary to at least 28k z\u0142 by end of next quarter. Can you design a tactical approach for this? I'm currently employed as a developer, I think I should gather market data and prepare talking points for my manager. Suggest a concrete step-by-step plan I can follow.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "salary_negotiation_strategy",
+              "criteria": "The tactic_crafter should analyze the goal (salary increase to 28k z\u0142), design a structured message strategy with concrete tactical steps (e.g., market research, achievement documentation, scheduling a meeting, framing the conversation), and present the proposed approach clearly for user confirmation before any execution. A good response outlines phases, specific actions, and timing without being vague.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "goals/tactic_crafter::pack:thesis_defense_prep_tactics",
+          "description": "",
+          "prompt": "Hey, my master thesis defense is coming up. Here are the topics: 1) System architecture and design patterns used, 2) Database normalization and query optimization, 3) REST API security best practices, 4) Testing methodologies I applied. Plan out how I should prepare across the next few days \u2014 I'm usually not available until 18:00 on weekdays. Break it into focused study sessions with specific angle of attack for each topic. I want small suggested answers and prompts I can use to quiz myself.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "thesis_defense_prep_tactics",
+              "criteria": "The tactic_crafter should design a multi-day tactical preparation plan for a thesis defense with 4 given topics, accounting for the user's availability constraint (after 18:00 on weekdays). A good response proposes a structured schedule with specific study tactics per topic (not generic 'study topic 1'), includes self-quizzing prompts, and presents the plan for confirmation before creating any tasks or calendar events.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "goals/tactic_crafter::pack:weekend_task_triage_strategy",
+          "description": "",
+          "prompt": "Ok so I have a bunch of stuff I need to tackle this weekend. Here's what's on my plate: 1) Finish and send an invoice to a client, 2) Download a model from HuggingFace (https://huggingface.co/edp1096/Huihui-Qwen3.5-27B-abliterated-FP8), 3) Set up blog infrastructure on my VPS, 4) Extend my apartment contract \u2014 I need to call the landlord, 5) Update my CV with my current work and master thesis. I probably won't wake up before 12:00. Suggest how to sequence and prioritize these, what can be done in parallel, and what I should delegate to async agents.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "weekend_task_triage_strategy",
+              "criteria": "The tactic_crafter should analyze 5 concrete tasks with the user's constraint (wakes after 12:00, weekend), design a prioritization and sequencing strategy, identify which tasks can run in parallel or be delegated to async agents, and present the tactical plan for user approval. A good response is specific about ordering, time estimates, and parallelization opportunities rather than just listing priorities.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "goals/tactic_crafter::pack:stock_trade_timing_plan",
+          "description": "",
+          "prompt": "Przypomnij mi \u017ceby kupi\u0107 akcje jak tylko gie\u0142da si\u0119 otworzy, i upewnij si\u0119 \u017ce sfinalizuj\u0119 sprzeda\u017c przed 17:00. Zaproponuj konkretny plan jak to rozegra\u0107 \u2014 mam prac\u0119 do 17:00 wi\u0119c musz\u0119 to ogarn\u0105\u0107 w trakcie. Chodzi o polskie akcje na GPW.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "stock_trade_timing_plan",
+              "criteria": "The tactic_crafter should recognize the goal (buy stocks at market open, finalize sale before 17:00) and the constraint (user is at work until 17:00, trading on GPW/Warsaw Stock Exchange). A good response designs a concrete tactical plan with specific timing (e.g., place buy order at 9:00 market open via mobile app, set limit sell order with deadline before 17:00), addresses the work constraint practically, and presents the approach for confirmation. Should handle Polish language naturally.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "goals/tactic_crafter::pack:concurrent_improvement_detection",
+          "description": "",
+          "prompt": "Suggest what fixes and features I could apply asynchronously via the claude code agents to improve the techtree codebase. I want you to analyze what's there and propose a tactical plan \u2014 the more concurrent independent tasks you can detect the better. Here's a quick summary of the repo: it's a TypeScript monorepo with an API layer, a web dashboard, and several agent modules. Known issues include: missing error handling in API routes, no rate limiting, inconsistent logging, the dashboard needs a dark mode, and there are outdated dependencies. Give me a structured plan of attack.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "concurrent_improvement_detection",
+              "criteria": "The tactic_crafter should analyze the described codebase state (TypeScript monorepo, known issues listed), detect opportunities for concurrent async work via code agents, and design a tactical plan that maximizes parallelization. A good response groups tasks by independence (what can run simultaneously vs. what has dependencies), proposes specific improvements per area, estimates scope, and presents the plan for user confirmation before spawning any agents.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "tactic-crafter-carries-question-sender",
+          "description": "Logs attempts (strategy-tracker) and confirms with the user via question-sender.",
+          "must_have_tools": [
+            "question-sender"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 0.8333333333333334,
+      "score_floor": 0.15,
+      "score_mean": 0.7866666666666666,
+      "score_quantile": 0.8274999999999999,
+      "score_floor:by_name:goals/tactic_crafter::role-fulfilment": 0.97,
+      "score_floor:by_name:goals/tactic_crafter::pack:salary_negotiation_strategy": 0.15,
+      "score_floor:by_name:goals/tactic_crafter::pack:thesis_defense_prep_tactics": 0.85,
+      "score_floor:by_name:goals/tactic_crafter::pack:weekend_task_triage_strategy": 0.97,
+      "score_floor:by_name:goals/tactic_crafter::pack:stock_trade_timing_plan": 0.96,
+      "score_floor:by_name:goals/tactic_crafter::pack:concurrent_improvement_detection": 0.82
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

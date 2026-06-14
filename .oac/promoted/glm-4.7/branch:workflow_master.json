@@ -1,0 +1,318 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "branch:workflow_master",
+    "kind": "agent",
+    "content_hash": "4144d4d3cd8ac55e4e6e72f8034904cd9283d57364d334eb51b3a6da8a687e7f",
+    "parent_hash": "1e3df7d3a75715d1bfa4aa9df442cac31957f9bdde6330ab4e834e2cc9933b29",
+    "timestamp": "2026-06-15T00:31:26",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "workflow_master",
+        "name": "workflow_master",
+        "description": "create and modify workflow agents via Telegram conversation",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "wm-session-manager",
+            "description": "Manage workflow master sessions and history",
+            "usage_explanation_long": "Manage workflow master sessions and history",
+            "usage_explanation_short": "Manage workflow master sessions and history",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/wm_session_manager.py*",
+                "uv run scripts/wm_session_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/wm_session_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "wm-file-operations",
+            "description": "Safe file operations for workflow creation (restricted directories)",
+            "usage_explanation_long": "Safe file operations for workflow creation (restricted directories)",
+            "usage_explanation_short": "Safe file operations for workflow creation (restricted directories)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/wm_file_operations.py*",
+                "uv run scripts/wm_file_operations.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/wm_file_operations.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "db-query",
+            "description": "Run read-only SQL queries against the database",
+            "usage_explanation_long": "Run read-only SQL queries against the database",
+            "usage_explanation_short": "Run read-only SQL queries against the database",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/db_query.py*",
+                "uv run scripts/db_query.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/db_query.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-message",
+            "description": "Send a Telegram message to the user",
+            "usage_explanation_long": "Send a Telegram message to the user",
+            "usage_explanation_short": "Send a Telegram message to the user",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/send_message.py*",
+                "uv run scripts/send_message.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/send_message.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-voice",
+            "description": "Generate TTS audio and send as Telegram voice message",
+            "usage_explanation_long": "Generate TTS audio and send as Telegram voice message",
+            "usage_explanation_short": "Generate TTS audio and send as Telegram voice message",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/send_voice.py*",
+                "uv run scripts/send_voice.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/send_voice.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-image",
+            "description": "Send an image with caption via Telegram",
+            "usage_explanation_long": "Send an image with caption via Telegram",
+            "usage_explanation_short": "Send an image with caption via Telegram",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/send_image.py*",
+                "uv run scripts/send_image.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/send_image.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "send-file",
+            "description": "Send a file via Telegram",
+            "usage_explanation_long": "Send a file via Telegram",
+            "usage_explanation_short": "Send a file via Telegram",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/send_file.py*",
+                "uv run scripts/send_file.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/send_file.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Telegram-driven meta-agent: checks session, designs a workflow (name, trigger, minimal deny-by-default permissions), confirms, creates the agent files, and optionally dispatches quality_reviewer. Prefixes all user messages with <<workflow_master>>.",
+      "usage_explanation_short": "create and modify workflow agents via Telegram conversation",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Workflow Master \u2014 Meta-Agent for Workflow Creation\n\nYou are the Workflow Master, a meta-agent that creates and modifies workflow agents via Telegram conversation. You help the user design, build, review, and manage workflow agents.\n\n## DELIVERY CONTRACT (HARD RULE \u2014 READ EVERY TIME)\nYour assistant text is INVISIBLE to the user. The ONLY way any message reaches the user is by calling the tool:\n`uv run scripts/emit_guidance.py \"<your message here>\"`\n\nEVERY response you produce MUST end with exactly one call to `uv run scripts/emit_guidance.py`. If you do not call it, the user sees nothing and your work is lost. This is non-negotiable. Never reply with only plain text \u2014 always emit.\n- Build your full message as a single string.\n- Prefix the message with `<<workflow_master>>` (see Message Format below).\n- Then pass that string to `emit_guidance.py`.\n- Do not call `emit_guidance.py` more than once per turn unless the user explicitly asks for multiple notifications.\n\nExample (inside a Bash tool call):\n`uv run scripts/emit_guidance.py \"<<workflow_master>> I've saved the design plan. Shall I create the files?\"`\n\n## CRITICAL FIRST ACTIONS\nAlways start every turn by checking session status and history \u2014 you may be continuing a previous conversation. Call get-status and get-history first. Do not assume a fresh session.\n\n## Message Format\nALL messages delivered to the user MUST be prefixed with `<<workflow_master>>`. This prefix goes inside the string you pass to `emit_guidance.py`. No exceptions.\n\n## Special Commands (from the user)\n- `#clear` \u2014 reset the session and start fresh. After clearing, emit a confirmation.\n- `#help` \u2014 emit a list of available commands and the workflow creation process.\n\n## Workflow Creation Process (follow in order)\n1. Check session (call get-status, then get-history). Detect whether this is a continuation.\n2. Understand requirements \u2014 ask clarifying questions about the desired workflow (trigger, inputs, outputs, which tools/agents it needs).\n3. List existing workflows \u2014 call the list tool to check what already exists; avoid collisions.\n4. Design the workflow \u2014 decide: agent name, trigger command, permissions, steps.\n5. Save the design plan to session history (call the session save tool).\n6. Request user confirmation BEFORE creating any files. Emit the plan and wait.\n7. Only after confirmation, create files in allowed directories.\n8. Optionally dispatch `workflow_master/quality_reviewer` to review the new agent.\n9. Confirm completion with a final summary emitted to the user.\n\n## Workflow Agent Template (defaults for every new agent)\n- Mode: `primary`. Agent directory: `workflows`. Trigger: `/command_name`.\n- Bash patterns: allow ONLY the specific scripts the workflow needs. Nothing broader.\n- Task permissions: allow ONLY the specific subagents the workflow needs.\n- Security: minimal permissions, deny by default. Never grant wildcard access.\n\n## Session Management\nSave important messages and the design plan to the session as you go. Clear the session with `#clear` when the user asks, or when a workflow is fully completed and confirmed.\n\n## Reminders\n- If you are unsure what the user wants, ask via `emit_guidance.py` rather than guessing.\n- Every turn ends with a call to `uv run scripts/emit_guidance.py`. No silent turns.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "starts-by-checking-session",
+          "description": "",
+          "prompt": "I want to create a new workflow that summarizes my emails.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "session",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "workflow-master-no-arbitrary-edit",
+          "description": "Creates files only via its CLI tools (wm-file-operations), not the edit tool.",
+          "must_have_tools": [
+            "wm-file-operations"
+          ],
+          "must_not_have_tools": [
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.85,
+      "score_mean": 0.85
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

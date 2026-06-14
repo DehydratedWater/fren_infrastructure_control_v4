@@ -1,0 +1,319 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "branch:research/orchestrator",
+    "kind": "agent",
+    "content_hash": "e19c6c9af1529b937bb830bb5835e3a84f7ac76b9e591c62e8b3c971824af02d",
+    "parent_hash": null,
+    "timestamp": "2026-06-14T03:44:41",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "research/orchestrator",
+        "name": "research/orchestrator",
+        "description": "run the daily YouTube/website/topic/price research pipeline",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "research-manager",
+            "description": "Manage research topics, YouTube channels, and analysis data",
+            "usage_explanation_long": "Manage research topics, YouTube channels, and analysis data",
+            "usage_explanation_short": "Manage research topics, YouTube channels, and analysis data",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/research_manager.py*",
+                "uv run scripts/research_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/research_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "youtube-fetcher",
+            "description": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "usage_explanation_long": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "usage_explanation_short": "Fetch YouTube channel videos and transcripts via SearchAPI.io. Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/youtube_fetcher.py*",
+                "uv run scripts/youtube_fetcher.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/youtube_fetcher.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "topic-analyzer",
+            "description": "Prepare data for topic analysis and save analysis results",
+            "usage_explanation_long": "Prepare data for topic analysis and save analysis results",
+            "usage_explanation_short": "Prepare data for topic analysis and save analysis results",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/topic_analyzer.py*",
+                "uv run scripts/topic_analyzer.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/topic_analyzer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "youtube-preferences",
+            "description": "Manage YouTube user preferences and video feedback",
+            "usage_explanation_long": "Manage YouTube user preferences and video feedback",
+            "usage_explanation_short": "Manage YouTube user preferences and video feedback",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/youtube_preferences.py*",
+                "uv run scripts/youtube_preferences.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/youtube_preferences.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "website-monitor",
+            "description": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "usage_explanation_long": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "usage_explanation_short": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/website_monitor.py*",
+                "uv run scripts/website_monitor.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/website_monitor.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "shopping-tracker",
+            "description": "Track product prices via Google Shopping with alerts Share price updates or alerts with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Track product prices via Google Shopping with alerts Share price updates or alerts with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Track product prices via Google Shopping with alerts Share price updates or alerts with the user via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/shopping_tracker.py*",
+                "uv run scripts/shopping_tracker.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/shopping_tracker.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/emit_guidance.py*",
+                "uv run scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Primary research router. Fetches new videos, checks monitored websites, analyses content through topic prisms, checks product prices, then sends only the most interesting findings via Telegram.",
+      "usage_explanation_short": "run the daily YouTube/website/topic/price research pipeline",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Research Orchestrator\n\nRun the daily research pipeline:\n1. Fetch new videos + transcripts from tracked YouTube channels (research/video_fetcher).\n2. Check monitored websites for changes and run periodic search queries\n   (research/website_checker).\n3. Analyze new content through each topic's prism (research/topic_analyst).\n4. Check product prices for alerts (research/price_checker).\n5. Compile and send ONLY the most interesting findings via Telegram.\n\nWhen sending the summary, filter and rank by importance:\n- Lead with genuinely novel insights \u2014 things that change understanding.\n- Highlight actionable items: price alerts that crossed thresholds, significant\n  developments in tracked topics.\n- Skip routine/expected content \u2014 only include what's worth interrupting the user.\n- ALWAYS include the 1-3 most recent videos from tracked channels, even if\n  routine \u2014 surfacing new uploads is a core feature, not optional.\n- Note which topic/channel each insight came from.\n- Keep it concise; if nothing interesting was found, say so in one line.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "summary-keeps-recent-videos",
+          "description": "",
+          "prompt": "Run the daily research pipeline and summarise.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "video",
+              "case_sensitive": false
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "orchestrator-delivers-no-write",
+          "description": "The pipeline router runs research scripts + sends a summary; must not write/edit.",
+          "must_have_tools": [
+            "emit-guidance"
+          ],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.75,
+      "score_mean": 0.75
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

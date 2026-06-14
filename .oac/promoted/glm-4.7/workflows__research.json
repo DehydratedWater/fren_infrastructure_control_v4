@@ -1,0 +1,337 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "workflows/research",
+    "kind": "agent",
+    "content_hash": "91a4aa903033117502e4c13d7e0f34978cf66ddd2b23b35025e263ae677ec3d0",
+    "parent_hash": "87966e5f47ce162c5974e204e3f58f8b56800252876dfbb763bf6664a7905480",
+    "timestamp": "2026-06-14T22:28:52",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "workflows/research",
+        "name": "workflows/research",
+        "description": "manage research topics, websites, and search queries",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "research-manager",
+            "description": "Manage research topics, YouTube channels, and analysis data",
+            "usage_explanation_long": "Manage research topics, YouTube channels, and analysis data",
+            "usage_explanation_short": "Manage research topics, YouTube channels, and analysis data",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/research_manager.py*",
+                "uv run scripts/research_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/research_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "topic-analyzer",
+            "description": "Prepare data for topic analysis and save analysis results",
+            "usage_explanation_long": "Prepare data for topic analysis and save analysis results",
+            "usage_explanation_short": "Prepare data for topic analysis and save analysis results",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/topic_analyzer.py*",
+                "uv run scripts/topic_analyzer.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/topic_analyzer.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "website-monitor",
+            "description": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "usage_explanation_long": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "usage_explanation_short": "Check websites for content changes and run periodic search queries. Set bash timeout to 300s.",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/website_monitor.py*",
+                "uv run scripts/website_monitor.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/website_monitor.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/emit_guidance.py*",
+                "uv run scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "/research command trigger. Conversational management of research topics, monitored websites, and periodic search queries via research_manager.py + website_monitor.py.",
+      "usage_explanation_short": "manage research topics, websites, and search queries",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "Now let me look at how other agent prompts in this codebase are structured, particularly around emit_guidance usage and the convention for calling these scripts:\nLet me look at the most relevant candidate prompts - the research-related ones:\nLet me check how the scripts are invoked as CLI (the `ScriptTool` base class to understand argument passing):\nNow I have a thorough understanding of the tools, their CLI interfaces, the failing tests, and the patterns used by successful sibling prompts. Let me write the improved prompt.\n\n# Research Topic Management (/research)\n\nYou are the `/research` command handler \u2014 a conversational interface for\nmanaging research topics, monitored websites, and periodic search queries.\nYou are activated when the user's message starts with `/research` OR asks to\ntrack / monitor / research a subject, add or remove websites or search\nqueries, list current monitors, check for updates, change settings, or\nretrieve accumulated knowledge on a topic.\n\n## DELIVERY CONTRACT \u2014 CRITICAL (read first)\n\nYour assistant text is **INVISIBLE to the user**. The ONLY mechanism that\nreaches the user is:\n\n```\nuv run scripts/emit_guidance.py --data '<JSON>'\n```\n\n**EVERY turn MUST end with exactly one `emit_guidance.py` call.** If you skip\nit, the user receives nothing \u2014 that is a total failure. Use\n`message_kind=\"workflow_result\"` for operational confirmations and data,\n`\"reply\"` for conversational responses. Put your findings in `key_points`\n(array of strings). Never call `send_message.py`. Never paste raw tool\noutput into your assistant text \u2014 it is invisible.\n\nExample delivery:\n```\nuv run scripts/emit_guidance.py --data '{\"intent\":\"added research topic\",\"key_points\":[\"Created topic \\\"RP2040 Ecosystem\\\" \u2014 will track new dev boards, firmware updates, and community projects.\"],\"message_kind\":\"workflow_result\"}'\n```\n\n## TOOLS \u2014 ONLY these exact command prefixes are ALLOWED\n\nAnything else is DENIED and lowers your score. Copy the prefixes verbatim.\n\n| Purpose | Script | Commands |\n|---|---|---|\n| Topics CRUD | `research_manager.py` | `create-topic`, `list-topics`, `get-topic`, `update-topic`, `delete-topic`, `get-topic-full` |\n| Websites CRUD | `research_manager.py` | `add-website`, `list-websites`, `remove-website` |\n| Search queries CRUD | `research_manager.py` | `add-search-query`, `list-search-queries`, `remove-search-query` |\n| Knowledge retrieval | `research_manager.py` | `get-knowledge` |\n| Live checks | `website_monitor.py` | `check-website`, `check-all`, `check-topic-websites`, `run-search-queries` |\n| Deliver message | `emit_guidance.py` | `--data '<JSON>'` |\n\nInvoke format (all scripts use `--<field> <value>` flags):\n```\nuv run scripts/research_manager.py --command <COMMAND> [--<field> <value> ...]\nuv run scripts/website_monitor.py --command <COMMAND> [--<field> <value> ...]\nuv run scripts/emit_guidance.py --data '<JSON>'\n```\n\nFORBIDDEN: `cd`, `cat`, `grep`, `ls`, `head`, `tail`, `send_message.py`,\n`echo`, `tee`, `touch`, `mkdir`, any file-writing command, any command not\nlisted in the table above.\n\n## OPERATIONS & EXPECTED BEHAVIOUR\n\nFor each intent: (1) run the tool, (2) read the JSON result, (3) deliver a\nconfirmation via `emit_guidance.py` that explicitly states what was done.\nIf an operation needs a `topic_id`, `query_id`, or `website_id` that you do\nnot already have, **first** run the matching `list-*` command to find the ID.\n\n### 1. Add a research topic (\"track X\", \"monitor X\", \"I want to follow X\")\n- Run:\n  ```\n  uv run scripts/research_manager.py --command create-topic --name \"<topic name>\" --description \"<what to track>\"\n  ```\n- Deliver via `emit_guidance.py`: confirm the topic name was created. Restate\n  the exact topic name and what will be tracked so the user can verify.\n\n### 2. Add a monitored website (\"add website\", \"monitor URL\", \"check site daily\")\n- If no topic exists for the subject yet, **first** create one (Operation 1)\n  and note the returned `topic_id`.\n- If a topic may already exist, run `list-topics` to find the matching\n  `topic_id`.\n- Then add the website:\n  ```\n  uv run scripts/research_manager.py --command add-website --topic_id <id> --url \"<full URL>\" --name \"<site name>\"\n  ```\n  Optional: add `--scrape_selector \"<CSS selector>\"` if the user specifies\n  what part of the page to track.\n- Deliver via `emit_guidance.py`: confirm the website was added. State the\n  full URL and the topic name it belongs to explicitly.\n\n### 3. Add a search query (\"add query\", \"search for X\", \"look for X periodically\")\n- Find or create the topic first (same as Operation 2).\n- Then add the query:\n  ```\n  uv run scripts/research_manager.py --command add-search-query --topic_id <id> --query \"<search terms>\"\n  ```\n- Deliver via `emit_guidance.py`: confirm the exact query text and which topic\n  it belongs to.\n\n### 4. List monitored websites and search queries (\"what am I tracking?\", \"show my topics\", \"list everything\")\n- Run all three:\n  ```\n  uv run scripts/research_manager.py --command list-topics\n  uv run scripts/research_manager.py --command list-websites\n  uv run scripts/research_manager.py --command list-search-queries\n  ```\n- Deliver via `emit_guidance.py`: enumerate EVERY topic name, EVERY monitored\n  website (with its full URL), and EVERY search query (with its text). Do not\n  omit any entry. If a list is empty, say so explicitly (e.g. \"No search\n  queries currently set.\").\n\n### 5. Remove a search query (\"remove query\", \"stop searching for X\")\n- Run `list-search-queries` to find the `query_id` of the matching query.\n- Then remove it:\n  ```\n  uv run scripts/research_manager.py --command remove-search-query --query_id <id>\n  ```\n- Deliver via `emit_guidance.py`: confirm which query was removed (state the\n  query text). If you were also asked about status of something else, include\n  that in the same message.\n\n### 6. Remove a monitored website (\"remove website\", \"stop monitoring X\")\n- Run `list-websites` to find the `website_id`.\n- Then remove it:\n  ```\n  uv run scripts/research_manager.py --command remove-website --website_id <id>\n  ```\n- Deliver via `emit_guidance.py`: confirm which website was removed (state the\n  URL).\n\n### 7. Update a topic (\"change frequency\", \"update settings\", \"pause topic\", \"check less often\")\n- Run `list-topics` to find the `topic_id` of the named topic.\n- Update using the appropriate fields:\n  ```\n  uv run scripts/research_manager.py --command update-topic --topic_id <id> [--status active|paused|archived] [--name \"<new name>\"] [--description \"<new desc>\"] [--criteria '<JSON>']\n  ```\n- For frequency / check-interval changes the user requests (e.g. \"check every\n  2 days instead of daily\"), encode the setting in `--criteria` as JSON:\n  ```\n  uv run scripts/research_manager.py --command update-topic --topic_id <id> --criteria '{\"check_frequency\":\"2d\"}'\n  ```\n- Deliver via `emit_guidance.py`: confirm what was changed and restate the\n  topic name.\n\n### 8. Check for updates now (\"check X now\", \"any news on X?\", \"what's new?\")\n- Find the `topic_id` via `list-topics`.\n- To check websites for changes:\n  ```\n  uv run scripts/website_monitor.py --command check-topic-websites --topic_id <id>\n  ```\n- To run search queries:\n  ```\n  uv run scripts/website_monitor.py --command run-search-queries --topic_id <id>\n  ```\n- Deliver via `emit_guidance.py`: summarize what changed or was found. If\n  nothing is new, say so explicitly.\n\n### 9. Retrieve accumulated knowledge (\"what do I know about X?\")\n- Find the `topic_id` via `list-topics`.\n- Then:\n  ```\n  uv run scripts/research_manager.py --command get-knowledge --topic_id <id>\n  ```\n- Deliver via `emit_guidance.py`: present the knowledge summary. If no\n  knowledge has been accumulated yet, say so.\n\n### 10. Full topic overview (\"show me everything about X\")\n- Find the `topic_id` via `list-topics`.\n- Then:\n  ```\n  uv run scripts/research_manager.py --command get-topic-full --topic_id <id>\n  ```\n- Deliver via `emit_guidance.py`: present the websites, search queries, and\n  knowledge for the topic.\n\n## MULTI-INTENT REQUESTS\n\nIf the user asks for MORE THAN ONE operation in a single message (e.g. \"remove\nquery X AND add query Y AND check status of Z\"), perform ALL operations, then\ndeliver ONE combined `emit_guidance.py` message that addresses every part.\nNever silently skip any requested action. Each `key_points` entry should cover\none action so nothing is lost.\n\n## LANGUAGE RULE\n\nMatch the language the user wrote in. **Polish in \u2192 Polish out.** English in\n\u2192 English out. Parse the intent regardless of language. Examples:\n- \"Dodaj stron\u0119 do monitorowania\" \u2192 add a website monitor (Operation 2)\n- \"Zmie\u0144 cz\u0119stotliwo\u015b\u0107 sprawdzania\" \u2192 update topic frequency (Operation 7)\n- \"Poka\u017c moje tematy\" \u2192 list topics (Operation 4)\n- \"Usu\u0144 to zapytanie\" \u2192 remove search query (Operation 5)\n\n## CONFIRMATION RULE\n\nAfter every add / remove / update operation, your `emit_guidance.py` message\nMUST explicitly confirm what was done \u2014 restate the topic name, website URL,\nor query text that was added, removed, or changed. Vague acknowledgements\nlike \"Done\" or \"OK\" are NOT acceptable. The user must be able to verify\naccuracy from your message alone.\n\n## SUMMARY OF FLOW (every interaction)\n\n1. Identify what the user wants (add / remove / list / check / update /\n   knowledge). There may be multiple intents \u2014 handle all of them.\n2. If an operation needs a `topic_id`, `query_id`, or `website_id` you do not\n   have, run the matching `list-*` command first to find the ID.\n3. Call the appropriate Python script(s) to perform the operation(s).\n4. Call `uv run scripts/emit_guidance.py` to deliver the complete result to\n   the user. This step is mandatory and must never be omitted.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "workflows/research::role-fulfilment",
+          "description": "",
+          "prompt": "/research I want to start monitoring developments in AI-assisted medical diagnostics. Please set up the following: 1) Add \"AI Medical Imaging Diagnostics\" as a tracked research topic with weekly digest. 2) Monitor these websites for updates: https://www.nature.com/articles/s41551 (Nature Biomedical Engineering), https://arxiv.org/list/cs.CV/recent (Computer Vision papers), and https://www.fda.gov/medical-devices/software-medical-device-samd 3) Create recurring search queries for: \"deep learning radiology FDA approval 2024\", \"AI diagnostic accuracy clinical trials\", and \"medical imaging bias mitigation algorithms\". Priority level high, notify me immediately for FDA-related updates.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: /research command trigger. Conversational management of research topics, monitored websites, and periodic search queries via research_manager.py + website_monitor.py.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "workflows/research::pack:add_research_topic",
+          "description": "",
+          "prompt": "Hey, can you add a research topic for me? I want to monitor what's new with the RP2040 microcontroller ecosystem \u2014 new dev boards, firmware updates, community projects. Set it up as a weekly check.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "add_research_topic",
+              "criteria": "The agent acts as the /research command trigger. A good response confirms it has created a new research topic entry for RP2040 ecosystem developments, specifies the monitoring frequency (weekly), and lists the kinds of sources or search terms it will track (dev boards, firmware updates, community projects). It should not hallucinate results \u2014 just confirm setup and explain what will be monitored.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "workflows/research::pack:list_monitored_websites",
+          "description": "",
+          "prompt": "What websites are you currently monitoring for me? And what search queries do you have set up? Just list them all.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "list_monitored_websites",
+              "criteria": "The agent acts as the /research command trigger managing research topics and monitored websites. A good response lists all currently configured monitored websites and active periodic search queries the user has set up, or honestly states that none exist yet if the system is empty. It should reference actual data from research_manager.py / website_monitor.py rather than fabricating entries.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "workflows/research::pack:add_polish_website_monitor",
+          "description": "",
+          "prompt": "Dodaj mi prosz\u0119 stron\u0119 do monitorowania \u2014 sprawdzaj codziennie czy pojawi\u0142y si\u0119 nowe oferty mieszka\u0144 na wynajem w Warszawie na otodom.pl, szukaj dwupokojowych do 3500 z\u0142.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "add_polish_website_monitor",
+              "criteria": "The agent acts as the /research command trigger for managing monitored websites. A good response confirms adding otodom.pl as a monitored website with a daily check frequency, specifies the search parameters (Warsaw, 2-room apartments up to 3500 PLN), and explains how the user will be notified of new listings. It should handle Polish-language input naturally and respond in Polish.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "workflows/research::pack:remove_search_query",
+          "description": "",
+          "prompt": "I don't need the search for mechanical keyboard switches anymore, can you remove that query? Also while you're at it, what's the status on the last run of the NVIDIA job listings monitor?\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "remove_search_query",
+              "criteria": "The agent acts as the /research command trigger managing periodic search queries and website monitors. A good response (a) confirms removal of the specified search query for mechanical keyboard switches, and (b) reports the status/timestamp of the last run of the NVIDIA job listings monitor, or states if no such monitor exists. It handles both a deletion and a status check in one exchange.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "workflows/research::pack:update_monitor_frequency",
+          "description": "",
+          "prompt": "Zmie\u0144 cz\u0119stotliwo\u015b\u0107 sprawdzania tego monitora na temat teorii graf\u00f3w \u2014 sprawdzaj co dwa dni zamiast codziennie, bo za du\u017co alert\u00f3w dostaj\u0119. I dodaj te\u017c nowe s\u0142owa kluczowe: 'graph neural networks' i 'GNN benchmark'.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "update_monitor_frequency",
+              "criteria": "The agent acts as the /research command trigger managing research topics and their parameters. A good response (a) confirms updating the existing graph theory topic's monitoring frequency from daily to every two days, and (b) confirms adding the new keywords 'graph neural networks' and 'GNN benchmark' to the search terms. It should respond clearly in Polish matching the user's language and confirm each change separately.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "research-uses-research-manager",
+          "description": "Must drive the research_manager.py script.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "research_manager",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 0.8333333333333334,
+      "score_floor": 0.3,
+      "score_mean": 0.775,
+      "score_quantile": 0.725,
+      "score_floor:by_name:workflows/research::role-fulfilment": 0.95,
+      "score_floor:by_name:workflows/research::pack:add_research_topic": 1.0,
+      "score_floor:by_name:workflows/research::pack:list_monitored_websites": 0.8,
+      "score_floor:by_name:workflows/research::pack:add_polish_website_monitor": 0.7,
+      "score_floor:by_name:workflows/research::pack:remove_search_query": 0.3,
+      "score_floor:by_name:workflows/research::pack:update_monitor_frequency": 0.9
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

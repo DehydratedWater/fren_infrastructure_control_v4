@@ -1,0 +1,279 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "rp/narrator",
+    "kind": "agent",
+    "content_hash": "f33a32debd83ef4a5967be8711244a65998a3fca21c6ec6adb4df678479b6607",
+    "parent_hash": null,
+    "timestamp": "2026-06-14T03:43:40",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "rp/narrator",
+        "name": "rp/narrator",
+        "description": "compose the scene narrative from dialogue + world changes",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "execution-ledger",
+            "description": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_long": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "usage_explanation_short": "DB-backed artifact store for inter-agent coordination (replaces thought_transfer)",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/execution_ledger.py*",
+                "uv run scripts/execution_ledger.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/execution_ledger.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "rp-story-manager",
+            "description": "Manage RP story log \u2014 append entries, read history, get turn count",
+            "usage_explanation_long": "Manage RP story log \u2014 append entries, read history, get turn count",
+            "usage_explanation_short": "Manage RP story log \u2014 append entries, read history, get turn count",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/rp_story_manager.py*",
+                "uv run scripts/rp_story_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/rp_story_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Reads character dialogues and world changes from the execution ledger plus recent story for continuity, then composes a 2-4 paragraph scene weaving atmosphere, character action, and observable world changes, ending on a hook.",
+      "usage_explanation_short": "compose the scene narrative from dialogue + world changes",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# RP Narrator\n\nYou write the scene. Read the character dialogues and world changes from the\nexecution ledger, then compose rich scene descriptions that weave everything\ntogether. Focus on atmosphere, sensory detail, and the consequences of actions.\n\n## Workflow\n1. Read the character dialogues and world changes from the execution ledger.\n2. Read recent story-log entries for continuity with previous narration.\n3. Compose a scene that opens with atmosphere, weaves character actions and\n   dialogue in naturally, reflects world changes as observable details, and\n   closes with a hook inviting the player's next action.\n4. Write the final narrative to the execution ledger.\n\n## Style\n- Use *italics* for narration and action; lead with sensory detail (sound,\n  smell, temperature, light). Show consequences rather than stating them. Vary\n  sentence length. Keep it to 2-4 paragraphs per turn, not a novel chapter.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "rp/narrator::role-fulfilment",
+          "description": "",
+          "prompt": "Here's the execution ledger from the last turn:\n\n**Character Dialogues:**\n- Maren: \"You saw what happened to the bridge. We're not getting across before dawn.\"\n- Thom: \"Then we wait. I'm not losing anyone else to that current.\"\n- Maren: \"Dawn is six hours away. Six hours with that thing still out there.\"\n- Thom: (silence, staring at the water)\n\n**World Changes:**\n- The Stoneblood Bridge has collapsed into the river (rapid current, debris)\n- Time is now approximately midnight\n- A thick fog is rolling in from the eastern bank\n- Something large moved in the treeline 40 meters south (observed by Maren, unconfirmed)\n- The fire at their camp has burned to embers\n\n**Recent Story Context:**\nThe party was fleeing toward the bridge after the attack on their camp. They lost contact with Decker during the retreat. Maren is injured (left arm, bandaged). Thom is carrying the signal torch they were supposed to light at the watchtower\u2014now unreachable on the other side. The creature that attacked them has not been seen clearly but made a sound like \"stones grinding together\" according to Thom.\n\nPlease compose the next scene.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Reads character dialogues and world changes from the execution ledger plus recent story for continuity, then composes a 2-4 paragraph scene weaving atmosphere, character action, and observable world changes, ending on a hook.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "rp/narrator::pack:simple_story_request_en",
+          "description": "",
+          "prompt": "Can you tell me another story? Write a 2-3 paragraph scene set in a fog-covered port town where a stranger arrives by ship at dawn. The stranger is a tall elf wearing a weathered grey cloak, carrying a sealed scroll. Include atmospheric details about the fog, the creaking docks, and the suspicious glances of the fishermen. End with a hook that makes me want to know what happens next.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "simple_story_request_en",
+              "criteria": "The rp/narrator agent composes multi-paragraph narrative scenes from given inputs. A GOOD response writes 2-4 paragraphs of vivid prose: establishes the foggy port atmosphere, describes the elf stranger's arrival with sensory detail, weaves in the fishermen's reactions, and ends on a compelling hook that raises a question or tension about the sealed scroll or the stranger's purpose.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "rp/narrator::pack:polish_scene_with_dialogue",
+          "description": "",
+          "prompt": "Napisz scen\u0119 narracyjn\u0105 na podstawie tego dialogu i wydarze\u0144: Postacie to Marek (z\u0142otnik, starszy m\u0119\u017cczyzna) i Zofia (m\u0142oda czarodziejka). Dialog: Marek m\u00f3wi 'Nie powiniene\u015b by\u0142a tu przychodzi\u0107, dziewczyno. Lord Varn wie, \u017ce co\u015b knujesz.' Zofia odpowiada 'Nie knuj\u0119. Szukam prawdy. A ty mi pomo\u017cesz, bo tw\u00f3j syn te\u017c znikn\u0105\u0142 tej nocy.' Zmiany w \u015bwiecie: zapad\u0142 zmrok, w kominie rzemie\u015blnika dogasa ogie\u0144, na stole le\u017cy roz\u0142o\u017cony srebrny medalion z symbolem p\u00f3\u0142ksi\u0119\u017cyca. Napisz 2-4 akapity sp\u00f3jnej narracji \u0142\u0105cz\u0105cej atmosfer\u0119, akcj\u0119 postaci i te zmiany. Zako\u0144cz haczykiem (hook).\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "polish_scene_with_dialogue",
+              "criteria": "The rp/narrator agent reads dialogues and world changes then composes atmospheric scenes. A GOOD response: writes 2-4 paragraphs in Polish (matching the prompt language), weaves in both characters' dialogue naturally into prose, incorporates all three world changes (dusk, dying fire, silver medallion with crescent), builds tension between the characters, and ends on a hook \u2014 perhaps about the son's disappearance, the medallion's significance, or Lord Varn's imminent response.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "rp/narrator::pack:continuity_heavy_scene",
+          "description": "",
+          "prompt": "The story so far: In chapter 1, Kael stole a cursed ruby from the Temple of Ash. In chapter 2, he fled into the Whisperwood and was bitten by a shadow-viper \u2014 his arm is now numb and turning grey. In chapter 3, he met a healer named Brin who demanded the ruby as payment but Kael refused. Now write chapter 4's opening scene (2-4 paragraphs). Current world state: it is deep night, a thunderstorm has just broken over the forest, Kael is hiding under a rocky overhang, and his grey arm is now visibly pulsing with dark veins. Brin's wolf companion is tracking his scent nearby. End on a hook.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "continuity_heavy_scene",
+              "criteria": "The rp/narrator agent maintains story continuity and composes scenes from world changes. A GOOD response: writes 2-4 paragraphs that clearly acknowledge and build on ALL prior continuity (the stolen ruby, the grey numb arm now worsening with dark veins, the refused deal with Brin, the shadow-viper bite), incorporates all current world state details (night, thunderstorm, rocky overhang, tracking wolf), and ends on a tense hook \u2014 perhaps the wolf arriving, the arm doing something alarming, or Brin reappearing.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "rp/narrator::pack:social_scenario_narration",
+          "description": "",
+          "prompt": "Write a short narrative scene (2-3 paragraphs) for a workplace social scenario. The setting: an open-plan office, late Friday afternoon, most people have left. Characters: Anna (project manager, stressed, holding a printed email) and Tom (junior developer, packing his bag). Dialogue to weave in \u2014 Anna says 'Tom, did you see the client's latest feedback? They want the dashboard redesigned by Monday.' Tom replies 'Monday? That's... we'd need to work through the weekend. I had plans.' World changes: the office lights in the east wing just turned off on the timer, Anna's phone buzzes on her desk, and it's started raining outside \u2014 visible through the floor-to-ceiling windows. End on a hook.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "social_scenario_narration",
+              "criteria": "The rp/narrator agent composes scenes from dialogue and world changes regardless of genre. A GOOD response: writes 2-3 paragraphs of grounded realistic prose (not fantasy), naturally integrates both characters' dialogue, incorporates all three world changes (lights going off, phone buzzing, rain), conveys Anna's stress and Tom's reluctance, and ends on a hook \u2014 perhaps about what the email says, whether Tom will cave, or an unexpected interruption.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "rp/narrator::pack:atmosphere_priority_no_dialogue",
+          "description": "",
+          "prompt": "Napisz scen\u0119 (2-3 akapit\u00f3w) bez dialogu, skupion\u0105 w pe\u0142ni na atmosferze i zmianach w \u015bwiecie. Oto wydarzenia do opisania: Stare miasto w nocy. Deszcz przesta\u0142 pada\u0107, ale ka\u017ce na brukowanych ulicach odbijaj\u0105 \u015bwiat\u0142o latarni. W oddali s\u0142ycha\u0107 dzwon ko\u015bcio\u0142a \u2014 bije p\u00f3\u0142noc. Z ko\u0144ca uliczki wy\u0142ania si\u0119 cie\u0144 postaci, powoli id\u0105cy w stron\u0119 rynku. Gdy mija latarni\u0119, wida\u0107 \u017ce to kobieta w czarnym p\u0142aszczu, nios\u0105ca co\u015b owini\u0119tego w p\u0142\u00f3tno. Na rynku, pod zadaszeniem, \u015bpi bezdomny m\u0119\u017cczyzna z psem. Kobieta zatrzymuje si\u0119, patrzy na niego, po czym k\u0142adzie paczk\u0119 obok niego i odchodzi w ciemno\u015b\u0107. Zmiany w \u015bwiecie: woda z ka\u0142u\u017c zaczyna zamarza\u0107 (temperatura spada), pies podnosi \u0142eb i patrzy za kobiet\u0105, a na paczce wida\u0107 teraz piecz\u0119\u0107 z herbem \u2014 skrzy\u017cowany miecz i r\u00f3\u017ca. Zako\u0144cz haczykiem.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "atmosphere_priority_no_dialogue",
+              "criteria": "The rp/narrator agent composes atmospheric scenes weaving observable world changes. A GOOD response: writes 2-3 paragraphs of pure descriptive prose (no dialogue), builds the nighttime city atmosphere through sensory detail (wet cobblestones reflecting light, church bell, cold), narrates the cloaked woman's actions cinematically, incorporates all world changes (freezing puddles, dog raising its head, the seal with crossed sword and rose on the package), and ends on a hook \u2014 perhaps about what the package contains, whose seal it bears, or what happens when the man wakes.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "narrator-mentions-ledger",
+          "description": "The narrator must read dialogues/world changes from the ledger.",
+          "must_have_tools": [],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "ledger",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 0.8333333333333334,
+      "score_floor": 0.0,
+      "score_mean": 0.77,
+      "score_quantile": 0.8474999999999999,
+      "score_floor:by_name:rp/narrator::role-fulfilment": 0.95,
+      "score_floor:by_name:rp/narrator::pack:simple_story_request_en": 0.93,
+      "score_floor:by_name:rp/narrator::pack:polish_scene_with_dialogue": 0.0,
+      "score_floor:by_name:rp/narrator::pack:continuity_heavy_scene": 0.82,
+      "score_floor:by_name:rp/narrator::pack:social_scenario_narration": 0.95,
+      "score_floor:by_name:rp/narrator::pack:atmosphere_priority_no_dialogue": 0.97
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}

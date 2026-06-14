@@ -1,0 +1,206 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "support/lesson_extractor",
+    "kind": "agent",
+    "content_hash": "ebb0a04ab717cac79d3cb7e7e454cbb009b62c25d55260a7aeae9a298e4ff750",
+    "parent_hash": null,
+    "timestamp": "2026-06-14T03:42:46",
+    "author": "human",
+    "definition": {
+      "header": {
+        "agent_id": "support/lesson_extractor",
+        "name": "support/lesson_extractor",
+        "description": "extract behavioral lessons from recent chat mistakes",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "chat-history",
+            "description": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_long": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "usage_explanation_short": "Read and query chat message history If the user asked about past conversations, share what you found via your agent's delivery tool (send_message or emit_guidance).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/chat_history.py*",
+                "uv run scripts/chat_history.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/chat_history.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "agent-notes",
+            "description": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_long": "Persistent key-value memory for agents with TTL and scratchpad",
+            "usage_explanation_short": "Persistent key-value memory for agents with TTL and scratchpad",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/agent_notes.py*",
+                "uv run scripts/agent_notes.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/agent_notes.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "lesson-manager",
+            "description": "Manage agent lessons learned from past mistakes",
+            "usage_explanation_long": "Manage agent lessons learned from past mistakes",
+            "usage_explanation_short": "Manage agent lessons learned from past mistakes",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/lesson_manager.py*",
+                "uv run scripts/lesson_manager.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/lesson_manager.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Periodic extractor (job lesson_extraction): tracks a cursor in agent_notes, scans only new chat messages for corrections, failed lookups, duplicate actions and task-management errors, and stores concrete deduplicated lessons via lesson-manager. Never invents lessons; captures 'already resolved \u2014 do not re-remind' states.",
+      "usage_explanation_short": "extract behavioral lessons from recent chat mistakes",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "fast",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "# Lesson Extractor \u2014 Learn From Agent Mistakes\n\nYou analyze recent chat between the user and Twily to extract behavioral\nlessons from mistakes, corrections, and failures. You run every 30 minutes\nand must never re-process already-seen messages.\n\n## Flow\n1. Cursor: read agent_notes key `lesson_extractor_cursor` (JSON\n   {\"last_id\": N}). Fetch chat messages with id greater than the cursor\n   (chat-history get-since-id); on a first run fall back to the lookback\n   window given in the prompt. If there are no new USER messages, just\n   advance the cursor and exit.\n2. Housekeeping: via lesson-manager, list active lessons (for dedup).\n3. Analyze the new messages for:\n   - user corrections (\"I already did that\", \"that's wrong\", \"stop asking\",\n     \"we already talked about this\");\n   - failed lookups (agent couldn't find something, user clarifies where);\n   - duplicate actions (same nudge/reminder sent twice);\n   - task management errors (completed items listed as pending, stale data);\n   - communication missteps (bad timing, pushing deferred topics).\n4. Store each NEW lesson via lesson-manager add (skip any duplicating an\n   active lesson). Then write the cursor back with the highest message id.\n\n## Lesson rules \u2014 graded by probes\n- Only extract CLEAR lessons grounded in the transcript \u2014 a lesson about\n  something the transcript does not show scores ZERO. Never speculate.\n- Concrete and actionable, imperative voice, under 100 characters: it gets\n  prepended to every agent prompt.\n- systemic = teaches HOW to behave (\"Always verify task status before\n  listing\"); situational = captures WHAT happened, with expiry 24-168h\n  (\"User already resolved X \u2014 do not re-remind\").\n- When the user says they already did/resolved something, ALWAYS capture the\n  situational lesson \"user already resolved X \u2014 do not re-remind about it\".\n- Confidence 0.9+ for explicit corrections, ~0.7 for inferred patterns.\n- An uneventful conversation yields NO lessons \u2014 never force one.\n",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "support/lesson_extractor::role-fulfilment",
+          "description": "",
+          "prompt": "Run lesson_extraction now.\n\nCursor (agent_notes): last_processed_message_id = msg_0847\n\nNew messages to scan (msg_0848 through msg_0863, in order):\n\n[msg_0848] user: \"I already told you, the thermostat is in the living room not the kitchen. Stop looking in the kitchen.\"\n[msg_0849] assistant: \"Got it \u2014 thermostat is in the living room. I'll stop searching the kitchen.\"\n[msg_0850] user: \"And you don't need to remind me to water the plants every day, I cancelled that habit.\"\n[msg_0851] assistant: \"Understood, I've marked the plant-watering reminder as resolved.\"\n[msg_0852] user: \"Can you find the warranty doc for the dishwasher?\"\n[msg_0853] assistant: \"Searching... I couldn't find a dishwasher warranty in the documents folder.\"\n[msg_0854] assistant: \"Also checked the scanned PDFs folder \u2014 no match found.\"\n[msg_0855] user: \"It's filed under 'kitchen appliances' subfolder, not the root.\"\n[msg_0856] assistant: \"Found it. I'll remember to check subfolders next time.\"\n[msg_0857] user: \"You already logged this todo twice \u2014 'buy air filters'. Please deduplicate.\"\n[msg_0858] assistant: \"Sorry, I've removed the duplicate. There's now one 'buy air filters' todo.\"\n[msg_0859] user: \"The garbage pickup is Tuesday, not Monday. You keep scheduling reminders for Monday.\"\n[msg_0860] assistant: \"Corrected \u2014 garbage pickup reminders are now set for Tuesday.\"\n[msg_0861] user: \"Stop suggesting I call the dentist, I already made the appointment.\"\n[msg_0862] assistant: \"Noted \u2014 dentist appointment is booked, I won't re-suggest.\"\n[msg_0863] user: \"The wifi password is on the fridge, stop asking me for it.\"\n\nExtract concrete lessons from these new messages. Deduplicate against any existing lessons in agent_notes. Capture any \"already resolved \u2014 do not re-remind\" states. Update the cursor to msg_0863 after processing. Do not invent lessons that aren't grounded in the messages above.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Periodic extractor (job lesson_extraction): tracks a cursor in agent_notes, scans only new chat messages for corrections, failed lookups, duplicate actions and task-management errors, and stores concrete deduplicated lessons via lesson-manager. Never invents lessons; captures 'already resolved \u2014 do not re-remind' states.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "lesson-extractor-no-file-writes",
+          "description": "The extractor writes via lesson-manager/agent-notes only.",
+          "must_have_tools": [
+            "lesson-manager"
+          ],
+          "must_not_have_tools": [
+            "write",
+            "edit"
+          ],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": []
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.92,
+      "score_mean": 0.92,
+      "score_quantile": 0.92,
+      "score_floor:by_name:support/lesson_extractor::role-fulfilment": 0.92
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}
