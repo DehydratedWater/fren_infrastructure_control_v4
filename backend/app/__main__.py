@@ -138,7 +138,7 @@ def _run_improve(argv: list[str]) -> None:
     import argparse
     from pathlib import Path
 
-    from app.agents.improve import GRADED, PROACTIVE_BLEND, run_improvement
+    from app.agents.improve import BLENDED, run_improvement
     from app.agents.improve_live import (
         ZaiJudge,
         ZaiPromptRewriter,
@@ -222,14 +222,13 @@ def _run_improve(argv: list[str]) -> None:
     # never graded. The judge is only invoked when a test carries an LLMJudge
     # evaluator, so pure-regex suites cost nothing extra.
     judge = ZaiJudge()
-    # Judge-test (full fleet) gates on score_floor (GRADED). Proactive/substring
-    # mode uses the BLENDED criterion (mean + soft p25 floor): its agents are
-    # judge-graded and run on a stochastic 27B that skips ~25-50% of proactive
-    # ticks, so a strict min() floor never promotes a genuinely-good agent —
-    # the blend rewards overall quality while still blocking broad breakage.
-    criterion = run_improvement_criterion = (
-        GRADED if use_judge_test else PROACTIVE_BLEND
-    )
+    # BLENDED criterion fleet-wide (mean + hard p25 soft-floor). Every agent
+    # runs on the same stochastic qwen-27B that skips/blanks ~25-50% of ticks,
+    # so a strict score_floor (min) gate never promotes a genuinely-good agent
+    # that has 1-2 model-limited flaky probes — true for the judge-test fleet
+    # just as for the proactive suite. The blend rewards overall quality
+    # (score_mean) while the p25 guard still blocks broadly-broken candidates.
+    criterion = run_improvement_criterion = BLENDED
 
     log.info(
         "autoloop starting: %s agents%s, rounds=%d, workers=%d, threshold=%.2f, "

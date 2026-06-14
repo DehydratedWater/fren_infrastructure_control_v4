@@ -477,7 +477,7 @@ GRADED = OptimisationCriterion(
 # agent that is BROADLY broken (many low probes tank the 25th percentile,
 # whereas one flaky probe barely moves it). Verified: nudge_strategist mean
 # 0.84 / p25~0.6 promotes; a many-zeros agent (low p25) does not.
-PROACTIVE_BLEND = OptimisationCriterion(
+BLENDED = OptimisationCriterion(
     name="mean-with-soft-floor",
     aggregation="weighted",
     criteria=(
@@ -488,6 +488,8 @@ PROACTIVE_BLEND = OptimisationCriterion(
                   weight=0.0, hard=True),
     ),
 )
+# Back-compat alias (was proactive-only before being adopted fleet-wide).
+PROACTIVE_BLEND = BLENDED
 
 
 def _default_mutators(marker_hint: str = ""):
