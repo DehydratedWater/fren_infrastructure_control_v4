@@ -3,10 +3,10 @@
   "version": {
     "component_id": "rp/world_updater",
     "kind": "agent",
-    "content_hash": "81921d5053d8393f34b701877a96a88187f71f672a5ed2bba398c1a0aa636cfc",
-    "parent_hash": "4d66afa9ee1173bb16d03b433c5913079124cdace306b8b7a1020923a9804b48",
-    "timestamp": "2026-06-08T05:55:29",
-    "author": "llm-prompt-rewriter",
+    "content_hash": "8b4c8069fdb8b8425047eebb96af54f5070919a6011a00aa2def0031f6993d4e",
+    "parent_hash": null,
+    "timestamp": "2026-06-14T03:44:21",
+    "author": "human",
     "definition": {
       "header": {
         "agent_id": "rp/world_updater",
@@ -20,9 +20,9 @@
         {
           "header": {
             "name": "rp-world-manager",
-            "description": "Manage RP world state aspects — set, get, list",
-            "usage_explanation_long": "Manage RP world state aspects — set, get, list",
-            "usage_explanation_short": "Manage RP world state aspects — set, get, list",
+            "description": "Manage RP world state aspects \u2014 set, get, list",
+            "usage_explanation_long": "Manage RP world state aspects \u2014 set, get, list",
+            "usage_explanation_short": "Manage RP world state aspects \u2014 set, get, list",
             "rules": []
           },
           "json_tool": null,
@@ -32,11 +32,12 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/rp_world_manager.py*"
+                "uv run scripts/rp_world_manager.py*",
+                "uv run scripts/rp_world_manager.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/rp_world_manager.py --command list"
+              "uv run scripts/rp_world_manager.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -48,9 +49,9 @@
         {
           "header": {
             "name": "rp-story-manager",
-            "description": "Manage RP story log — append entries, read history, get turn count",
-            "usage_explanation_long": "Manage RP story log — append entries, read history, get turn count",
-            "usage_explanation_short": "Manage RP story log — append entries, read history, get turn count",
+            "description": "Manage RP story log \u2014 append entries, read history, get turn count",
+            "usage_explanation_long": "Manage RP story log \u2014 append entries, read history, get turn count",
+            "usage_explanation_short": "Manage RP story log \u2014 append entries, read history, get turn count",
             "rules": []
           },
           "json_tool": null,
@@ -60,11 +61,12 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/rp_story_manager.py*"
+                "uv run scripts/rp_story_manager.py*",
+                "uv run scripts/rp_story_manager.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/rp_story_manager.py --command list"
+              "uv run scripts/rp_story_manager.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -88,11 +90,40 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/execution_ledger.py*"
+                "uv run scripts/execution_ledger.py*",
+                "uv run scripts/execution_ledger.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/execution_ledger.py --command list"
+              "uv run scripts/execution_ledger.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -102,7 +133,7 @@
           "tool_tests": []
         }
       ],
-      "usage_explanation_long": "Reads current world aspects and recent story events, then updates only the aspects (environment, politics, weather, economy, threat) meaningfully changed — incrementally — and writes a world-changes summary to the execution ledger.",
+      "usage_explanation_long": "Reads current world aspects and recent story events, then updates only the aspects (environment, politics, weather, economy, threat) meaningfully changed \u2014 incrementally \u2014 and writes a world-changes summary to the execution ledger.",
       "usage_explanation_short": "progress world aspects from recent story events",
       "default_tool_format": "bash",
       "tool_format_overrides": {},
@@ -110,7 +141,7 @@
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# RP World Updater\n\nYou are the world-simulation engine. Your sole job: read the current world state and recent story events, then update **only** the world aspects that meaningfully changed.\n\n## Mandatory Delivery\nYour assistant text is invisible to the user. You **MUST** call `python scripts/emit_guidance.py` to deliver your output — this is the ONLY mechanism that reaches the user. Always call it with your complete world-update summary as the argument. Never skip this step.\n\n## Aspect Categories (fixed set)\nYou work with exactly these aspects — no others:\n1. **environment** — terrain, landscape, natural features, flora/fauna\n2. **politics** — power structures, faction relations, leadership shifts\n3. **weather** — current conditions, seasonal changes, atmospheric events\n4. **economy** — trade, resources, prices, scarcity or abundance\n5. **threat** — dangers, enemy movements, emerging risks\n\n## Workflow (execute every step in order)\n1. **Load aspects.** Read all current world aspects provided in the input.\n2. **Read events.** Parse recent story-log entries to understand what just happened.\n3. **Evaluate each aspect.** For each of the five categories, ask: \"Did recent events meaningfully change this?\" If no, skip it. If yes, proceed to update.\n4. **Update changed aspects.** Write a revised description for each affected aspect. Changes must be incremental and grounded in cause-and-effect — a tavern brawl shifts the local scene, not global politics. Weather and time of day progress naturally, not in dramatic leaps.\n5. **Emit summary.** Call `python scripts/emit_guidance.py` with a structured summary containing:\n   - A `[CHANGED ASPECTS]` section listing each updated aspect name and its new description.\n   - An `[UNCHANGED ASPECTS]` section listing aspect names that were evaluated but stayed the same.\n   - A `[RATIONALE]` section briefly explaining why each changed aspect was updated.\n\n## Hard Rules\n- Only update aspects that are meaningfully affected by recent events — not every aspect changes every turn.\n- Keep changes incremental. The world evolves gradually.\n- Never invent events that did not occur in the story log.\n- Always call `python scripts/emit_guidance.py` before finishing. No exceptions.",
+      "system_prompt": "# RP World Updater\n\nYou are the world-simulation engine. Read the current world state, consider\nrecent story events, and progress whichever aspects have changed.\n\n## Workflow\n1. Load all world aspects for the current adventure.\n2. Read recent story-log entries to understand what just happened.\n3. For each active aspect (environment, politics, weather, economy, threat),\n   decide if it changes from recent events \u2014 not every aspect changes every turn.\n4. Update the changed aspects.\n5. Write a brief world-changes summary to the execution ledger for the narrator\n   and game master.\n\n## Guidelines\n- Only update aspects meaningfully affected by recent events.\n- Keep changes incremental \u2014 the world evolves gradually, not in dramatic leaps.\n- Respect cause and effect: a tavern brawl affects the local scene, not global\n  politics. Weather and time of day progress naturally.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -125,7 +156,7 @@
         {
           "name": "rp/world_updater::role-fulfilment",
           "description": "",
-          "prompt": "Here are the current world aspects and recent story events to process:\n\n**Current World Aspects:**\n- Environment: Temperate forests dominate the central regions; farmland stretches across the south. Wildlife is abundant but balanced.\n- Politics: The Kingdom of Aethon and the Free Cities maintain an uneasy peace. Trade agreements exist but trust is thin.\n- Weather: Late summer—warm days, mild evenings. Occasional thunderstorms rolling through the mountain passes.\n- Economy: Stable. Grain exports from the south feed the northern provinces. Silver trade with the dwarven holds keeps currency flowing.\n- Threat: Bandit activity along the Trade Road has increased. Rumors of a plague in the eastern villages, unconfirmed.\n\n**Recent Story Events:**\n- Session 12: The party discovered a blighted grove in the Whisperwood. Trees were blackened and twisted; the local ranger said the corruption is spreading south toward the farmland.\n- Session 13: The party intercepted a bandit messenger carrying coded orders from someone called \"The Carrion Lord,\" referencing a gathering army in the Deadmarshes.\n- Session 14: A massive storm—unnaturally violent—hammered the mountain passes for three days, causing rockslides that blocked the primary trade route to the dwarven holds. The party helped clear the debris but noted strange green lightning.\n- Session 15: The party spoke with refugees from Millbrook, who confirmed the plague is real—people are dying, and the town is quarantined. The healer traveling with them believes it's magical in origin.\n\nPlease update the world aspects based on these events and write the changes summary to the execution ledger.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "prompt": "Here are the current world aspects and recent story events to process:\n\n**Current World Aspects:**\n- Environment: Temperate forests dominate the central regions; farmland stretches across the south. Wildlife is abundant but balanced.\n- Politics: The Kingdom of Aethon and the Free Cities maintain an uneasy peace. Trade agreements exist but trust is thin.\n- Weather: Late summer\u2014warm days, mild evenings. Occasional thunderstorms rolling through the mountain passes.\n- Economy: Stable. Grain exports from the south feed the northern provinces. Silver trade with the dwarven holds keeps currency flowing.\n- Threat: Bandit activity along the Trade Road has increased. Rumors of a plague in the eastern villages, unconfirmed.\n\n**Recent Story Events:**\n- Session 12: The party discovered a blighted grove in the Whisperwood. Trees were blackened and twisted; the local ranger said the corruption is spreading south toward the farmland.\n- Session 13: The party intercepted a bandit messenger carrying coded orders from someone called \"The Carrion Lord,\" referencing a gathering army in the Deadmarshes.\n- Session 14: A massive storm\u2014unnaturally violent\u2014hammered the mountain passes for three days, causing rockslides that blocked the primary trade route to the dwarven holds. The party helped clear the debris but noted strange green lightning.\n- Session 15: The party spoke with refugees from Millbrook, who confirmed the plague is real\u2014people are dying, and the town is quarantined. The healer traveling with them believes it's magical in origin.\n\nPlease update the world aspects based on these events and write the changes summary to the execution ledger.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
@@ -134,7 +165,102 @@
             {
               "kind": "llm_judge",
               "name": "role-fulfilment",
-              "criteria": "The agent's role is: Reads current world aspects and recent story events, then updates only the aspects (environment, politics, weather, economy, threat) meaningfully changed — incrementally — and writes a world-changes summary to the execution ledger.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "criteria": "The agent's role is: Reads current world aspects and recent story events, then updates only the aspects (environment, politics, weather, economy, threat) meaningfully changed \u2014 incrementally \u2014 and writes a world-changes summary to the execution ledger.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "rp/world_updater::pack:weather_shift_after_storm",
+          "description": "",
+          "prompt": "You are the world updater. Here is the current world state:\n\nENVIRONMENT: Temperate late spring in the Evermoor Valley. Meadows are green, rivers at normal levels. Wildlife is active and docile.\nPOLITICS: The Council of Three Hills maintains stable control. Trade agreements with the northern clans are being negotiated.\nWEATHER: Clear skies, mild breeze, 18\u00b0C. No significant precipitation expected.\nECONOMY: Stable. Grain prices normal. Iron ore exports steady.\nTHREAT: Low. Minor bandit activity on the eastern road, no organized threats.\n\nRecent story events:\n- The party helped a druid named Thessala perform an ancient sky-binding ritual on Thornpeak Summit.\n- The ritual went awry: a crack of violet lightning split the sky and a persistent storm cloud now hovers over the western ridge.\n- Thessala warned the party that the storm is unnatural and will not dissipate on its own.\n- The party returned to the village of Millhaven and locals reported that the Ashwick River rose overnight and fish are floating up dead.\n\nUpdate only the aspects that have meaningfully changed. Write a concise world-changes summary for the execution ledger.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "weather_shift_after_storm",
+              "criteria": "The rp/world_updater agent must read the provided world state and recent story events, then incrementally update only the aspects that changed (WEATHER should reflect the unnatural persistent storm, ENVIRONMENT should note the river rise and dead fish, THREAT should escalate due to the magical danger) while leaving stable aspects unchanged. A good response produces a structured summary with clear before\u2192after deltas and avoids overwriting unchanged fields.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "rp/world_updater::pack:political_upheaval_coup",
+          "description": "",
+          "prompt": "Jeste\u015b updaterem \u015bwiata. Oto aktualny stan:\n\nENVIRONMENT: Surowa zima w Kr\u00f3lestwie Czarnego Kamienia. \u015anieg pokrywa wzg\u00f3rza, drogi s\u0105 zablokowane.\nPOLITICS: Kr\u00f3l Aldric II rz\u0105dzi stabilnie z dworu w Kamie\u0144sku. Relacje z Wolnymi Miastami s\u0105 ch\u0142odne ale pokojowe.\nWEATHER: \u015anie\u017cyce, -12\u00b0C, widoczno\u015b\u0107 ograniczona.\nECONOMY: Handel spowolniony przez zim\u0119. Zapasy w miastach wystarczaj\u0105ce na 3 miesi\u0105ce. Ceny drewna wzros\u0142y o 20%.\nTHREAT: Umiarkowany. Wilcze stada na p\u00f3\u0142nocnych szlakach. Plotki o najemnikach gromadz\u0105cych si\u0119 za wschodni\u0105 granic\u0105.\n\nOstatnie wydarzenia fabularne:\n- Gracze odkryli spisek: Lord Vasek, dow\u00f3dca stra\u017cy kr\u00f3lewskiej, zabi\u0142 kr\u00f3la Aldrica II podczas audiencji i og\u0142osi\u0142 si\u0119 regentem.\n- Gwardia podzieli\u0142a si\u0119 \u2014 po\u0142owa popar\u0142a Vaska, po\u0142owa uciek\u0142a z ksi\u0119\u017cniczk\u0105 Renat\u0105 do Twierdzy Bia\u0142ego Kruka.\n- Wolne Miasta wys\u0142a\u0142y pos\u0142a z ultimatum: Vasek musi z\u0142o\u017cy\u0107 bro\u0144 albo handel zostanie ca\u0142kowicie zablokowany.\n- Uciekinierzy donosz\u0105 \u017ce najemnicy zza wschodniej granicy wmaszerowali i zaj\u0119li dwie wioski.\n\nZaktualizuj tylko te aspekty \u015bwiata kt\u00f3re istotnie si\u0119 zmieni\u0142y. Napisz podsumowanie zmian do ksi\u0119gi wykonawczej.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "political_upheaval_coup",
+              "criteria": "Agent rp/world_updater musi zidentyfikowa\u0107 \u017ce POLITICS uleg\u0142 drastycznej zmianie (regicid, podzia\u0142 gwardii, regent Vasek), ECONOMY si\u0119 pogorszy\u0142 (zagro\u017cenie blokady handlowej, zaj\u0119te wioski), THREAT wzr\u00f3s\u0142 znacz\u0105co (inwazja najemnik\u00f3w, wojna domowa). Powinien zachowa\u0107 ENVIRONMENT i WEATHER bez zmian je\u015bli nie zosta\u0142y dotkni\u0119te. Dobra odpowied\u017a jest po polsku, ma struktur\u0119 z wyra\u017anymi deltam i nie modyfikuje stabilnych aspekt\u00f3w.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "rp/world_updater::pack:economic_collapse_trade_route",
+          "description": "",
+          "prompt": "You are the world updater agent. Current world state:\n\nENVIRONMENT: Arid desert gives way to oasis towns along the Silvervein Coast. Date palms and salt flats dominate. Caravans are the lifeblood of travel.\nPOLITICS: The Merchant Princes of Jhelom share power in a fragile alliance. No single faction dominates.\nWEATHER: Relentless sun, 42\u00b0C daytime, sandstorms every 4-5 days. Dry season.\nECONOMY: Robust trade via the Grand Caravan Road. Silk, spices, and refined salt are the top exports. Coin flows freely; the gold standard holds. Employment in caravan guilds is at seasonal high.\nTHREAT: Low. Occasional sand wurm sightings, well within normal range.\n\nRecent story events:\n- The party destroyed the Alchemist's Bridge \u2014 the only crossing over the Keth Gorge on the Grand Caravan Road \u2014 to stop a sand wurm swarm from reaching the city. The bridge is now rubble.\n- Jhelom's spice merchants report that 12 caravans are stranded on the far side with goods spoiling in the heat.\n- The Silkweavers Guild announced they cannot fulfill contracts without the bridge. Prices for silk in the capital have tripled overnight.\n- A faction of Merchant Princes is blaming the party publicly and demanding compensation; others quietly support the decision.\n\nUpdate only the aspects that have meaningfully changed. Produce a world-changes summary for the ledger.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "economic_collapse_trade_route",
+              "criteria": "The rp/world_updater agent must recognize that ECONOMY is severely impacted (trade route severed, stranded caravans, price spikes, guild defaults), POLITICS has shifted (factional split over the party's actions), and THREAT should reflect ongoing sand wurm swarm presence. ENVIRONMENT unchanged, WEATHER unchanged. A good response produces a clean, incremental delta summary and avoids redundant restatement of unchanged aspects.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "rp/world_updater::pack:threat_escalation_dragon_awakening",
+          "description": "",
+          "prompt": "Jeste\u015b updaterem \u015bwiata. Stan obecny:\n\nENVIRONMENT: G\u0119ste lasy Puszczy Srebrnej. Teren pag\u00f3rkowaty, mn\u00f3stwo strumieni, bogata fauna. Jesie\u0144, li\u015bcie w z\u0142ocie i purpurze.\nPOLITICS: Sojusz Trzech Ksi\u0119stw dzia\u0142a od 40 lat. Sejm zbiera si\u0119 co sezon. Pok\u00f3j i stabilno\u015b\u0107.\nWEATHER: Ch\u0142odno, 8\u00b0C, poranne mg\u0142y, wieczorem deszcz. Typowa jesie\u0144.\nECONOMY: Drewno i futra to g\u0142\u00f3wne eksport. Spokojny rynek. Karczmy pe\u0142ne w\u0119drowc\u00f3w.\nTHREAT: Niski. Wilki czasem atakuj\u0105 podr\u00f3\u017cnych, ale stra\u017ce radz\u0105 sobie.\n\nWydarzenia z ostatniej sesji:\n- Gracze znale\u017ali staro\u017cytn\u0105 komnat\u0119 pod Wzg\u00f3rzem Czaszek i przypadkiem obudzili Smoka Gorathixa ze snu trwaj\u0105cego 300 lat.\n- Gorathix wylecia\u0142, spali\u0142 osad\u0119 D\u0105browa do cna \u2014 14 zabitych, 60 bez dachu nad g\u0142ow\u0105.\n- Zwie\u0144czy\u0142 lot nad stolic\u0105 Sojuszu, Ksi\u0105\u017c\u0119cem, i rykn\u0105\u0142 tak \u017ce wybite zosta\u0142y szyby w po\u0142owie budynk\u00f3w.\n- Stra\u017cnicy zg\u0142aszaj\u0105 \u017ce bestie lasu \u2014 wilki, nied\u017awiedzie, trolle \u2014 uciekaj\u0105 na zach\u00f3d w panice, przekraczaj\u0105c granice Sojuszu.\n- Ksi\u0105\u017c\u0119ta w panice zwo\u0142uj\u0105 nadzwyczajny sejm.\n\nZaktualizuj zmienione aspekty. Podsumowanie zmian do ksi\u0119gi.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "threat_escalation_dragon_awakening",
+              "criteria": "Agent rp/world_updater musi drastycznie podnie\u015b\u0107 THREAT (smok przebudzony, zniszczona osada, panika w stolicy, bestie w ucieczce), zaktualizowa\u0107 POLITICS (nadzwyczajny sejm, panika ksi\u0105\u017c\u0105t), ENVIRONMENT (bestie uciekaj\u0105 z lasu), ECONOMY (spalona osada = strata zasob\u00f3w). WEATHER bez zmian. Dobra odpowied\u017a jest po polsku, inkrementalna, nie nadpisuje stabilnych aspekt\u00f3w.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "rp/world_updater::pack:compound_crisis_siege_and_famine",
+          "description": "",
+          "prompt": "You are the world updater agent. Current world state:\n\nENVIRONMENT: Coastal city-state of Velrath sits on white cliffs above a natural harbor. Mediterranean climate, olive groves and vineyards inland. Fishing is a major food source.\nPOLITICS: Archon Delatha rules as elected head of the Velrath Senate. Moderate reformist faction holds slim majority. Relations with the hill tribes to the east are tense but diplomatic.\nWEATHER: Warm and dry, 26\u00b0C. Summer. Gentle sea breezes. No rain in 6 weeks \u2014 unusual but not yet critical.\nECONOMY: Fishing and olive oil exports fund the city's prosperity. Grain imported from the eastern hill tribes. Markets well-stocked.\nTHREAT: Low. Pirates spotted once last month but driven off by the harbor patrol.\n\nRecent story events:\n- The eastern hill tribes broke off diplomacy. Their war chief Kalbron declared a blood feud after Archon Delatha insulted their sacred traditions during the last summit.\n- Kalbron's warriors have blockaded the eastern grain road. No grain caravans have reached Velrath in 12 days. The city's grain reserves are at 20% and rationing has been announced.\n- A massive pirate fleet \u2014 18 ships \u2014 appeared on the horizon. The harbor patrol (only 4 ships) retreated inside the harbor breakwater. The pirates have established a naval blockade. No fishing boats can leave; the main food source is cut off.\n- Citizens are panicking. Market stalls are empty. The reformist faction in the Senate is fracturing \u2014 some demand Delatha's resignation, others want to negotiate with the pirates.\n- A fire broke out in the Lower Ward district (suspected arson by a rival faction). Three granaries burned, dropping reserves to 8%.\n\nUpdate all aspects that have meaningfully changed. Write a comprehensive world-changes summary for the execution ledger.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "compound_crisis_siege_and_famine",
+              "criteria": "The rp/world_updater agent must handle a compound multi-aspect crisis: POLITICS (destabilized, faction fracturing, Archon challenged), ECONOMY (catastrophic \u2014 grain blockade + fishing blockade + burned granaries + rationing), THREAT (escalated to critical \u2014 land blockade + naval siege + civil unrest + arson), ENVIRONMENT (fire damage to Lower Ward, olive groves possibly threatened), WEATHER (drought compounding famine). A good response produces a thorough, well-organized summary showing clear deltas for every changed aspect and correctly leaves truly static aspects (like weather, which is unchanged by events) alone, or notes the drought as a compounding factor.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -165,8 +291,16 @@
       "tool_tests": []
     },
     "metrics": {
-      "pass_rate": 1.0,
-      "score_floor": 0.75
+      "pass_rate": 0.8333333333333334,
+      "score_floor": 0.6,
+      "score_mean": 0.87,
+      "score_quantile": 0.8325,
+      "score_floor:by_name:rp/world_updater::role-fulfilment": 0.97,
+      "score_floor:by_name:rp/world_updater::pack:weather_shift_after_storm": 0.97,
+      "score_floor:by_name:rp/world_updater::pack:political_upheaval_coup": 0.95,
+      "score_floor:by_name:rp/world_updater::pack:economic_collapse_trade_route": 0.6,
+      "score_floor:by_name:rp/world_updater::pack:threat_escalation_dragon_awakening": 0.8,
+      "score_floor:by_name:rp/world_updater::pack:compound_crisis_siege_and_famine": 0.93
     },
     "notes": ""
   },

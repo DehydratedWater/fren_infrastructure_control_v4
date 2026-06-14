@@ -5,7 +5,7 @@
     "kind": "agent",
     "content_hash": "001ab23983a4a160760cd97815602162c3c60b621732e3134ecd48c0af949504",
     "parent_hash": null,
-    "timestamp": "2026-06-11T02:08:29",
+    "timestamp": "2026-06-14T03:43:02",
     "author": "human",
     "definition": {
       "header": {
@@ -173,13 +173,15 @@
     },
     "metrics": {
       "pass_rate": 1.0,
-      "score_floor": 0.85,
-      "score_floor:by_name:support/stt_processor::role-fulfilment": 0.9,
-      "score_floor:by_name:support/stt_processor::pack:polish_fillers_to_english": 0.95,
-      "score_floor:by_name:support/stt_processor::pack:english_false_starts_cleanup": 0.9,
-      "score_floor:by_name:support/stt_processor::pack:mixed_polish_english_code_switch": 0.85,
+      "score_floor": 0.9,
+      "score_mean": 0.9466666666666667,
+      "score_quantile": 0.9125,
+      "score_floor:by_name:support/stt_processor::role-fulfilment": 0.95,
+      "score_floor:by_name:support/stt_processor::pack:polish_fillers_to_english": 0.98,
+      "score_floor:by_name:support/stt_processor::pack:english_false_starts_cleanup": 1.0,
+      "score_floor:by_name:support/stt_processor::pack:mixed_polish_english_code_switch": 0.9,
       "score_floor:by_name:support/stt_processor::pack:polish_disfluent_run_on_sentence": 0.95,
-      "score_floor:by_name:support/stt_processor::pack:english_with_mid_sentence_cutoff": 1.0
+      "score_floor:by_name:support/stt_processor::pack:english_with_mid_sentence_cutoff": 0.9
     },
     "notes": ""
   },

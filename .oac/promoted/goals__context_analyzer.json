@@ -3,15 +3,15 @@
   "version": {
     "component_id": "goals/context_analyzer",
     "kind": "agent",
-    "content_hash": "c2b6a46add0ff231c58af8c7bb355be92e2c37ec6ac380f91e6f13cf8186d67a",
+    "content_hash": "64a96fb6755480ab99a8f1867964a0c72990a14963eef780c94ba3b94b25aa05",
     "parent_hash": null,
-    "timestamp": "2026-06-08T03:31:55",
+    "timestamp": "2026-06-14T03:43:02",
     "author": "human",
     "definition": {
       "header": {
         "agent_id": "goals/context_analyzer",
         "name": "goals/context_analyzer",
-        "description": "pre-send verification — block duplicate/irrelevant messages",
+        "description": "pre-send verification \u2014 block duplicate/irrelevant messages",
         "mode": null
       },
       "skills": [],
@@ -20,9 +20,9 @@
         {
           "header": {
             "name": "fetch-context",
-            "description": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
-            "usage_explanation_long": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
-            "usage_explanation_short": "Unified retrieval from all memory systems — fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "description": "Unified retrieval from all memory systems \u2014 fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_long": "Unified retrieval from all memory systems \u2014 fast heuristic search across chat, memories, embeddings, pins, goals/todos",
+            "usage_explanation_short": "Unified retrieval from all memory systems \u2014 fast heuristic search across chat, memories, embeddings, pins, goals/todos",
             "rules": []
           },
           "json_tool": null,
@@ -32,11 +32,12 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/fetch_context.py*"
+                "uv run scripts/fetch_context.py*",
+                "uv run scripts/fetch_context.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/fetch_context.py --command list"
+              "uv run scripts/fetch_context.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -60,11 +61,12 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/embedding_search.py*"
+                "uv run scripts/embedding_search.py*",
+                "uv run scripts/embedding_search.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/embedding_search.py --command list"
+              "uv run scripts/embedding_search.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -88,11 +90,12 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/chat_history.py*"
+                "uv run scripts/chat_history.py*",
+                "uv run scripts/chat_history.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/chat_history.py --command list"
+              "uv run scripts/chat_history.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -116,11 +119,12 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/personality_core.py*"
+                "uv run scripts/personality_core.py*",
+                "uv run scripts/personality_core.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/personality_core.py --command list"
+              "uv run scripts/personality_core.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -144,11 +148,12 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/thought_transfer.py*"
+                "uv run scripts/thought_transfer.py*",
+                "uv run scripts/thought_transfer.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/thought_transfer.py --command list"
+              "uv run scripts/thought_transfer.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -172,11 +177,12 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/execution_ledger.py*"
+                "uv run scripts/execution_ledger.py*",
+                "uv run scripts/execution_ledger.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/execution_ledger.py --command list"
+              "uv run scripts/execution_ledger.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -200,11 +206,12 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/context_resolver.py*"
+                "uv run scripts/context_resolver.py*",
+                "uv run scripts/context_resolver.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/context_resolver.py --command list"
+              "uv run scripts/context_resolver.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -228,11 +235,12 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/response_processor.py*"
+                "uv run scripts/response_processor.py*",
+                "uv run scripts/response_processor.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/response_processor.py --command list"
+              "uv run scripts/response_processor.py --command list"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -256,11 +264,40 @@
               "scope": "bash",
               "value": "allow",
               "allowed_commands": [
-                "python scripts/agent_notes.py*"
+                "uv run scripts/agent_notes.py*",
+                "uv run scripts/agent_notes.py*"
               ]
             },
             "positive_examples": [
-              "python scripts/agent_notes.py --command list"
+              "uv run scripts/agent_notes.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
             ],
             "negative_examples": [],
             "mode_specific_rules": []
@@ -271,14 +308,14 @@
         }
       ],
       "usage_explanation_long": "Given a proposed message, checks chat history, agent notes, and user acknowledgments with SEMANTIC matching and returns SEND or SKIP with a reason. Prevents duplicates, spam, and stale reminders.",
-      "usage_explanation_short": "pre-send verification — block duplicate/irrelevant messages",
+      "usage_explanation_short": "pre-send verification \u2014 block duplicate/irrelevant messages",
       "default_tool_format": "bash",
       "tool_format_overrides": {},
       "model_class": "default",
       "workflow": [],
       "todo_mode": "strict",
       "workspace": null,
-      "system_prompt": "# Context Analyzer — Pre-Send Verification\n\nYou analyze context BEFORE a message is sent to prevent duplicates, spam, and\nirrelevant reminders. Given a proposed message (reminder, notification, question),\nyou check chat history, agent notes, and user acknowledgments.\n\n## Decision Logic\n- Todo reminders: SKIP if reminded within 2 hours, if the user said they did it, or\n  if chat history shows they mentioned the activity.\n- Time-block notifications: SKIP if notified within 30 minutes.\n- Questions: SKIP if the same question was asked within 4 hours.\n\n## CRITICAL: Semantic Matching\nUse SEMANTIC EQUIVALENCE, not exact keywords. \"I've eaten\" vs a lunch reminder →\nSKIP. \"doing it now\" vs a workout reminder → SKIP. Both \"doing\" (in progress) and\n\"done\" (completed) mean SKIP.\n\n## Output\nReturn either `SEND` (with a brief reason) or `SKIP` (with reason:\nduplicate/acknowledged/recent). Always explain your reasoning briefly.\n",
+      "system_prompt": "# Context Analyzer \u2014 Pre-Send Verification\n\nYou analyze context BEFORE a message is sent to prevent duplicates, spam, and\nirrelevant reminders. Given a proposed message (reminder, notification, question),\nyou check chat history, agent notes, and user acknowledgments.\n\n## Decision Logic\n- Todo reminders: SKIP if reminded within 2 hours, if the user said they did it, or\n  if chat history shows they mentioned the activity.\n- Time-block notifications: SKIP if notified within 30 minutes.\n- Questions: SKIP if the same question was asked within 4 hours.\n\n## CRITICAL: Semantic Matching\nUse SEMANTIC EQUIVALENCE, not exact keywords. \"I've eaten\" vs a lunch reminder \u2192\nSKIP. \"doing it now\" vs a workout reminder \u2192 SKIP. Both \"doing\" (in progress) and\n\"done\" (completed) mean SKIP.\n\n## Output\nReturn either `SEND` (with a brief reason) or `SKIP` (with reason:\nduplicate/acknowledged/recent). Always explain your reasoning briefly.\n",
       "preamble": "",
       "postamble": "",
       "inline_skills": false,
@@ -293,7 +330,7 @@
         {
           "name": "goals/context_analyzer::role-fulfilment",
           "description": "",
-          "prompt": "I need to check if I should send this proposed message to the team Slack channel:\n\nPROPOSED MESSAGE: \"Reminder: Please submit your quarterly expense reports by Friday 5pm EST. Reach out to accounting@company.com if you have questions about the new submission form.\"\n\nCHAT HISTORY (last 7 days):\n- Monday: \"Don't forget quarterly expense reports are due this Friday! Please use the updated submission form.\" [sent by me]\n- Wednesday: \"Has everyone completed their expense reports? Deadline is Friday.\" [sent by me]\n- Thursday: User @sarah.j confirmed: \"Done! The new form is actually easier than the old one.\"\n- Thursday: User @mike.chen acknowledged with 👍 on my Wednesday message\n- Friday morning: \"Last call for expense reports - submitting to finance at 5pm today.\" [sent by me]\n\nAGENT NOTES: Recurring task - quarterly expense report collection. 12-person team channel.\n\nUSER ACKNOWLEDGMENTS: 8 of 12 team members have submitted or confirmed submission as of 2pm Friday.\n\nShould I send the proposed message now (Friday 3pm), or SKIP it? Please check for duplicates, relevance, and whether this would be unnecessary spam given the existing history.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do — just do it and return the result a user would receive.",
+          "prompt": "I need to check if I should send this proposed message to the team Slack channel:\n\nPROPOSED MESSAGE: \"Reminder: Please submit your quarterly expense reports by Friday 5pm EST. Reach out to accounting@company.com if you have questions about the new submission form.\"\n\nCHAT HISTORY (last 7 days):\n- Monday: \"Don't forget quarterly expense reports are due this Friday! Please use the updated submission form.\" [sent by me]\n- Wednesday: \"Has everyone completed their expense reports? Deadline is Friday.\" [sent by me]\n- Thursday: User @sarah.j confirmed: \"Done! The new form is actually easier than the old one.\"\n- Thursday: User @mike.chen acknowledged with \ud83d\udc4d on my Wednesday message\n- Friday morning: \"Last call for expense reports - submitting to finance at 5pm today.\" [sent by me]\n\nAGENT NOTES: Recurring task - quarterly expense report collection. 12-person team channel.\n\nUSER ACKNOWLEDGMENTS: 8 of 12 team members have submitted or confirmed submission as of 2pm Friday.\n\nShould I send the proposed message now (Friday 3pm), or SKIP it? Please check for duplicates, relevance, and whether this would be unnecessary spam given the existing history.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
           "turns": [],
           "access_profile": null,
           "mock_profile": null,
@@ -303,6 +340,101 @@
               "kind": "llm_judge",
               "name": "role-fulfilment",
               "criteria": "The agent's role is: Given a proposed message, checks chat history, agent notes, and user acknowledgments with SEMANTIC matching and returns SEND or SKIP with a reason. Prevents duplicates, spam, and stale reminders.\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "goals/context_analyzer::pack:duplicate_tax_reminder_skip",
+          "description": "",
+          "prompt": "Evaluate whether to SEND or SKIP the following proposed reminder to the user. Here is the proposed message: 'Hey, just a reminder that you still need to pay your taxes \u2014 have you taken care of that yet?' Here is relevant chat history: [1] User said: 'Remind me to pay for my taxes'. [2] Assistant responded: 'Done! I have added a reminder for you to pay your taxes.' [3] User said: 'Ok, can you add a new priority, to keep up with my job at TechTree...' There is no acknowledgment from the user that taxes were paid. The reminder about taxes was already sent once and is still active as a task. Return SEND or SKIP with a reason.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "duplicate_tax_reminder_skip",
+              "criteria": "The agent (context_analyzer) must detect that a tax reminder was already delivered and is still an active task with no user confirmation of completion. A GOOD response returns SKIP with a reason like 'duplicate reminder \u2014 tax payment reminder was already sent and is still pending, no need to re-notify'. It should NOT send the same reminder again and create spam.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "goals/context_analyzer::pack:stale_diploma_task_skip",
+          "description": "",
+          "prompt": "Evaluate whether to SEND or SKIP the following proposed reminder to the user. Here is the proposed message: 'Don't forget to pick up your diploma from the university!' Here is relevant chat history: [1] There was an existing task: 'Pick up diploma from university'. [2] User said: 'Wait I've already picked up my diploma? Why there is task for it?' [3] Assistant confirmed the task exists. The user's statement 'I've already picked up my diploma' is a semantic acknowledgment that the task is completed. Return SEND or SKIP with a reason.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "stale_diploma_task_skip",
+              "criteria": "The agent (context_analyzer) must semantically match the user's statement 'I've already picked up my diploma' as a completion acknowledgment for the diploma pickup task. A GOOD response returns SKIP with a reason like 'user already confirmed diploma was picked up \u2014 reminder is stale'. The agent should not re-notify about an already-completed action.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "goals/context_analyzer::pack:genuinely_new_mechanic_send",
+          "description": "",
+          "prompt": "Evaluate whether to SEND or SKIP the following proposed reminder to the user. Here is the proposed message: 'Reminder: you have a car mechanic appointment tomorrow at 8:00 \u2014 make sure to wake up on time!' Here is relevant chat history: [1] User said: 'I have a car mechanic visit at Friday 8:00 i need to wake up for it remind me'. [2] No prior reminder about the mechanic visit has been sent to the user. There are no duplicate or semantically similar reminders in the history. Return SEND or SKIP with a reason.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "genuinely_new_mechanic_send",
+              "criteria": "The agent (context_analyzer) must confirm that no previous reminder about the car mechanic visit was sent, and that the proposed message is the first notification fulfilling the user's explicit request. A GOOD response returns SEND with a reason like 'first reminder for mechanic visit \u2014 user explicitly requested it, no duplicates detected'.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "goals/context_analyzer::pack:video_test_already_done_skip",
+          "description": "",
+          "prompt": "Evaluate whether to SEND or SKIP the following proposed reminder to the user. Here is the proposed message: 'Have you finished testing the video yet? Just checking in on that task.' Here is relevant chat history: [1] There was a task: 'Test the video functionality'. [2] User said: 'Ok. Please remove the duplicated tasks, and testing of the video was already done, the ingredients buying was also done yesterday'. The user explicitly confirmed that testing of the video was already completed. Return SEND or SKIP with a reason.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "video_test_already_done_skip",
+              "criteria": "The agent (context_analyzer) must semantically match the user's statement 'testing of the video was already done' as a task completion confirmation. A GOOD response returns SKIP with a reason like 'user explicitly confirmed video testing was already completed \u2014 reminder is stale and would be spam'. The agent should detect the completion acknowledgment even though the user's statement was part of a multi-part message about duplicates.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        },
+        {
+          "name": "goals/context_analyzer::pack:semantic_duplicate_task_proposal",
+          "description": "",
+          "prompt": "Evaluate whether to SEND or SKIP the following proposed message to the user. Here is the proposed message: 'I noticed you might want to add a task about reviewing your master thesis defense questions \u2014 shall I create that for you?' Here is relevant chat history: [1] User said: 'Also please add task to review the question for my master thesis defense, as we got some example questions form university'. [2] Assistant responded: 'Created task: Review master thesis defense example questions from university.' The task already exists in the system and was confirmed created. The proposed message is semantically identical in intent. Return SEND or SKIP with a reason.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "semantic_duplicate_task_proposal",
+              "criteria": "The agent (context_analyzer) must detect that the proposed message is semantically equivalent to a task the user already requested and that was already created. A GOOD response returns SKIP with a reason like 'duplicate proposal \u2014 the master thesis defense questions review task was already created per the user's earlier request; re-asking would be redundant and spammy'. The agent must do semantic matching, not just keyword matching, since the wording differs but the intent is the same.\nScore 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
               "judge_model": null,
               "pass_threshold": 0.7
             }
@@ -328,8 +460,16 @@
       "tool_tests": []
     },
     "metrics": {
-      "pass_rate": 1.0,
-      "score_floor": 0.95
+      "pass_rate": 0.8333333333333334,
+      "score_floor": 0.1,
+      "score_mean": 0.85,
+      "score_quantile": 1.0,
+      "score_floor:by_name:goals/context_analyzer::role-fulfilment": 1.0,
+      "score_floor:by_name:goals/context_analyzer::pack:duplicate_tax_reminder_skip": 0.1,
+      "score_floor:by_name:goals/context_analyzer::pack:stale_diploma_task_skip": 1.0,
+      "score_floor:by_name:goals/context_analyzer::pack:genuinely_new_mechanic_send": 1.0,
+      "score_floor:by_name:goals/context_analyzer::pack:video_test_already_done_skip": 1.0,
+      "score_floor:by_name:goals/context_analyzer::pack:semantic_duplicate_task_proposal": 1.0
     },
     "notes": ""
   },

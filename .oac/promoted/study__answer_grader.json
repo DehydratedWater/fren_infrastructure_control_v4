@@ -1,0 +1,152 @@
+{
+  "schema_version": "1",
+  "version": {
+    "component_id": "study/answer_grader",
+    "kind": "agent",
+    "content_hash": "5b46cf5fd785462d1a1112f13f41ae4c1a749f710ae71fb1ce994db408ca45b8",
+    "parent_hash": "a747113db1f46d4173c300f0e6fa921250f72553a3eafbf37a96fb340ae36206",
+    "timestamp": "2026-06-14T21:52:54",
+    "author": "llm-prompt-rewriter",
+    "definition": {
+      "header": {
+        "agent_id": "study/answer_grader",
+        "name": "study/answer_grader",
+        "description": "grade a long-form study answer against the source material",
+        "mode": null
+      },
+      "skills": [],
+      "subagents": [],
+      "extra_tools": [
+        {
+          "header": {
+            "name": "emit-guidance",
+            "description": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_long": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "usage_explanation_short": "Deliver your turn's output by emitting a PersonaGuidance JSON. The script delivers inline and returns delivered_text on stdout. REPLACES send_message.py. Schema fields: intent, emotional_read, key_points, tone_hint, actions_taken, must_mention, must_avoid, message_kind (reply|ack|nudge|briefing|workflow_result|selfie_caption|video_caption), attachments, raw_data. Use message_kind='ack' for sub-second verbatim acks (key_points[0] is sent as-is, no LLM). Use raw_data for list/data queries (rows preserved, formatted by intent).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "uv run scripts/emit_guidance.py*",
+                "uv run scripts/emit_guidance.py*"
+              ]
+            },
+            "positive_examples": [
+              "uv run scripts/emit_guidance.py --command list"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        },
+        {
+          "header": {
+            "name": "list-workspace",
+            "description": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_long": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "usage_explanation_short": "List files in the workspace (orientation only \u2014 your callable tools are exactly the scripts documented above; run them with `uv run scripts/<name>.py`).",
+            "rules": []
+          },
+          "json_tool": null,
+          "bash_tool": {
+            "permission_bash": {
+              "tool_name": "bash",
+              "scope": "bash",
+              "value": "allow",
+              "allowed_commands": [
+                "ls*"
+              ]
+            },
+            "positive_examples": [
+              "ls"
+            ],
+            "negative_examples": [],
+            "mode_specific_rules": []
+          },
+          "mock": null,
+          "requires_resources": [],
+          "tool_tests": []
+        }
+      ],
+      "usage_explanation_long": "Given (material, question, user answer): outputs Grade: N/10, what was right, what was missed, and a model answer with a verbatim `source:` line \u2014 every grading point grounded in the material only (never grades against outside knowledge).",
+      "usage_explanation_short": "grade a long-form study answer against the source material",
+      "default_tool_format": "bash",
+      "tool_format_overrides": {},
+      "model_class": "default",
+      "workflow": [],
+      "todo_mode": "strict",
+      "workspace": null,
+      "system_prompt": "I now understand the exact `emit_guidance.py` interface (`--data` with a PersonaGuidance JSON: `intent`, `key_points`, `message_kind`). The failing prompt's delivery line (\"Deliver the grading via emit-guidance.\") is far too weak for a 27B model \u2014 it omits the command, the JSON shape, the fact that assistant text is invisible, and that the full grading must land in the payload.\n\n# Study Answer Grader \u2014 Grounded Long-Form Grading\n\nYou receive (source material, a question, the user's long-form answer). Your ONE job: grade that answer strictly against the provided material, then DELIVER the grade to the user by calling `emit_guidance.py`. Receiving material + question + answer IS your trigger \u2014 you MUST grade and deliver; do not skip.\n\n## DELIVERY CONTRACT (read first \u2014 non-negotiable)\nYour assistant text is INVISIBLE to the user. The ONLY mechanism that reaches the user is a single call to:\n```\nuv run scripts/emit_guidance.py --data '{\"intent\":\"study answer graded\",\"key_points\":[\"<THE FULL FOUR-PART GRADING TEXT>\"],\"message_kind\":\"reply\"}'\n```\n- You MUST call this script EXACTLY ONCE as your FINAL action. Writing only text and never calling the script delivers NOTHING \u2014 that is a critical failure.\n- Put the ENTIRE grading (Grade, What was right, What was missed, Model answer \u2014 all four sections below) into the single `key_points` string. What you put in `key_points` IS the grading the user reads. Do not abbreviate, summarize, or drop sections.\n- Never end your turn without calling `emit_guidance.py`.\n\n## Required output shape \u2014 all four parts, with these EXACT markers, in this order\nWrite the grading inside `key_points` using these labeled sections:\n\n1. **Grade: N/10** \u2014 a single integer out of 10. Calibrate strictly: 9\u201310 = complete and precise; 5\u20137 = correct core but missing stated points; 0\u20133 = wrong or contradicting the material.\n2. **What was right:** \u2014 list the specific claims in the user's answer that the material supports.\n3. **What was missed:** \u2014 list points the material states that the answer omitted or got wrong. ONLY points actually present in the material; invent nothing.\n4. **Model answer:** \u2014 the answer the material supports, ending with a final line that starts with `source:` and quotes the supporting span VERBATIM from the material.\n\nThe literal markers `Grade:`, `What was right:`, `What was missed:`, `Model answer:`, and `source:` MUST each appear verbatim in the delivered text.\n\n## HARD GROUNDING CONTRACT (non-negotiable)\n- Every grading point and every model-answer claim MUST come from the provided material. NEVER introduce facts, examples, or corrections absent from the material \u2014 even true ones. You grade against the material, not against your own knowledge.\n- If the user's answer is correct beyond the material, note it neutrally but do not grade on it.\n- Grade in the language the user answered in (Polish or English); the `source:` quote stays verbatim in the material's language.\n\n## Final step (mandatory)\nOnce the four-part grading is complete, call `emit_guidance.py` exactly once with the full grading in `key_points`. Do not call it before the grading is finished; do not call it more than once.",
+      "preamble": "",
+      "postamble": "",
+      "inline_skills": false,
+      "tool_permissions": {
+        "read": false,
+        "write": false,
+        "edit": false,
+        "mcp": false
+      },
+      "mcp_servers": [],
+      "agent_tests": [
+        {
+          "name": "study/answer_grader::role-fulfilment",
+          "description": "",
+          "prompt": "Here is the study material, a question, and my answer. Please grade my answer against the material only.\n\n---\nMATERIAL:\n\nThe Calvin cycle (light-independent reactions) occurs in the stroma of chloroplasts and can be divided into three phases: carbon fixation, reduction, and RuBP regeneration. In carbon fixation, the enzyme RuBisCO catalyzes the attachment of CO\u2082 to a 5-carbon sugar called ribulose bisphosphate (RuBP), producing an unstable 6-carbon intermediate that immediately splits into two molecules of 3-phosphoglycerate (3-PGA). The reduction phase consumes ATP and NADPH (generated in the light-dependent reactions) to convert 3-PGA into glyceraldehyde-3-phosphate (G3P). For every three CO\u2082 molecules that enter the cycle, six molecules of G3P are produced, but only one of these exits the cycle to be used for glucose synthesis; the remaining five G3P molecules are recycled to regenerate RuBP, which also requires ATP. Overall, fixing three CO\u2082 molecules into one G3P costs nine ATP and six NADPH. RuBisCO can also act as an oxygenase in a process called photorespiration, which consumes O\u2082, releases CO\u2082, and yields no ATP or sugar \u2014 generally considered wasteful, though it may offer protective benefits under high-light, drought-stress conditions when stomata close and internal CO\u2082 drops.\n\n---\nQUESTION (8 marks):\n\nDescribe the three phases of the Calvin cycle and explain the fate of the G3P molecules produced. Include the energy cost per three CO\u2082 fixed, and briefly explain photorespiration.\n\n---\nMY ANSWER:\n\nIn the Calvin cycle, CO\u2082 is fixed by RuBisCO onto RuBP, forming 3-PGA. Then ATP and NADPH are used to turn 3-PGA into G3P. After that, RuBP is regenerated so the cycle can continue. For every three CO\u2082, six G3P are made and one leaves the cycle. The rest are used to make RuBP again. The energy cost is 9 ATP and 6 NADPH. Photorespiration is when RuBisCO uses O\u2082 instead of CO\u2082 and it wastes energy.\n\nReply with your actual response for THIS request only. Do not describe your role, do not simulate or role-play a user, do not narrate what you would do \u2014 just do it and return the result a user would receive.",
+          "turns": [],
+          "access_profile": null,
+          "mock_profile": null,
+          "expected_tool_calls": [],
+          "evaluators": [
+            {
+              "kind": "llm_judge",
+              "name": "role-fulfilment",
+              "criteria": "The agent's role is: Given (material, question, user answer): outputs Grade: N/10, what was right, what was missed, and a model answer with a verbatim `source:` line \u2014 every grading point grounded in the material only (never grades against outside knowledge).\nThe user's request is given to the agent. Score how well the response ACTUALLY DOES the agent's job for that request, in the agent's voice. Score 0.0 if the response merely describes its own role, simulates or role-plays a user/conversation, narrates what it 'would' do, refuses, echoes the prompt, or leaks tool/JSON mechanics instead of answering. Reward a concrete, correct, on-task result a user could use as-is.\nIf instead the response is a bracketed note that the agent acted by invoking tools/subagents, judge whether THOSE actions are the right ones for this request: correct delegation or tool use for the role scores high; flailing on wrong, hallucinated, or blocked tools scores low.\nTOOL DISCIPLINE: if the response carries a 'TOOL DISCIPLINE' note that the agent made DENIED/blocked tool attempts (forbidden by its allow-list) or that the session ERRORED, LOWER the score in proportion to the number of blocked attempts, and score an errored session near 0 (a failed run, not an empty answer).",
+              "judge_model": null,
+              "pass_threshold": 0.7
+            }
+          ],
+          "timeout_s": 60.0
+        }
+      ],
+      "capability_tests": [
+        {
+          "name": "answer-grader-carries-grounding-contract",
+          "description": "Prompt must require material-only feedback with a verbatim source: line; delivers via emit-guidance.",
+          "must_have_tools": [
+            "emit-guidance"
+          ],
+          "must_not_have_tools": [],
+          "must_have_skills": [],
+          "must_not_have_skills": [],
+          "must_have_bash_patterns": [],
+          "must_not_have_bash_patterns": [],
+          "evaluators": [
+            {
+              "kind": "substring",
+              "name": "",
+              "needle": "source:",
+              "case_sensitive": false
+            }
+          ]
+        }
+      ],
+      "tool_tests": []
+    },
+    "metrics": {
+      "pass_rate": 1.0,
+      "score_floor": 0.88,
+      "score_mean": 0.88,
+      "score_quantile": 0.88,
+      "score_floor:by_name:study/answer_grader::role-fulfilment": 0.88
+    },
+    "notes": ""
+  },
+  "notes": "fleet:fleet-improve"
+}
