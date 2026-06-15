@@ -361,7 +361,7 @@ def opencode_errors(stdout: str) -> list[str]:
 
 async def run_agent_opencode(
     *, agent_dir: Path, agent_name: str, prompt: str, timeout_s: float = 120,
-    extra_env: dict[str, str] | None = None,
+    extra_env: dict[str, str] | None = None, background: bool = False,
 ) -> AgentRunResult:
     env = os.environ.copy()
     env["XDG_DATA_HOME"] = str(agent_dir / ".opencode" / "data")
@@ -370,7 +370,22 @@ async def run_agent_opencode(
     # (e.g. FREN_RUN_ID / FREN_MSG_HEADER / FREN_CLEARANCE / FREN_MODEL_POSTFIX).
     if extra_env:
         env.update({k: str(v) for k, v in extra_env.items()})
-    cmd = ["opencode", "run", "--agent", agent_name, "--format", "json", prompt]
+    cmd = ["opencode", "run", "--agent", agent_name, "--format", "json"]
+    # Background runs (cron/proactive) on the LOCAL qwen target are routed to the
+    # `-bg` model alias (same model, vLLM priority 100) so a concurrent user reply
+    # (priority 0) preempts them on the single :8082 endpoint. Only override when
+    # the compiled agent actually targets local-vllm-remote — z.ai/glm agents have
+    # no priority concept and must keep their own model. Best-effort: any failure
+    # to resolve the model just leaves the agent's default in place.
+    if background:
+        try:
+            md_path = _compiled_md_path(agent_dir, agent_name)
+            agent_model = load_compiled_agent(md_path).model or ""
+            if agent_model.startswith("local-vllm-remote/"):
+                cmd += ["--model", "local-vllm-remote/qwen35-27b-bg"]
+        except Exception:  # noqa: BLE001 — never block a run on model resolution
+            pass
+    cmd += [prompt]
     # A missing cwd raises the same FileNotFoundError as a missing binary —
     # surface the actual problem (this masked the /data/agents-on-host bug).
     if not Path(agent_dir).is_dir():

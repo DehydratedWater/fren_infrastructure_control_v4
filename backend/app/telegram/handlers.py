@@ -94,7 +94,18 @@ _FAST_ACK_MESSAGES: dict[str, list[str]] = {
     "workflows/calendar": ["Checking your calendar~", "Let me look at that!"],
     "workflows/email": ["Checking your email~", "On it!"],
     "workflows/server": ["Handling that! *taps horn*", "On it~!"],
+    "persona/twily_selfie": ["ooh a pic? gimme a sec~ *finds a cute angle* 📸", "hold on, let me take one! *poses*", "lemme grab my camera~ 📸"],
+    "persona/twily_videographer": ["filming something for you~ 🎬", "gimme a moment to record!"],
     "_default": ["On it~!", "Give me a moment!", "Looking into that! *taps horn*"],
+}
+
+# Image/video GENERATION intents → the specialist persona agent. The qwen
+# planner (orchestrator/twily_chat) refuses media requests ("I'm stuck in text
+# form") instead of delegating, so twily_selfie/videographer never actually ran.
+# Route these deterministically so the specialist always runs (see _try_media_agent).
+_MEDIA_INTENT_TO_AGENT: dict[str, str] = {
+    "selfie": "persona/twily_selfie",
+    "video_gen": "persona/twily_videographer",
 }
 
 # Messages that are continuations and should NOT take the fast path
@@ -140,6 +151,32 @@ def _try_fast_path(message_text: str, *, has_image: bool = False) -> str | None:
     except Exception:
         logger.debug("Fast-path check failed", exc_info=True)
         return None
+
+
+def _try_media_agent(message_text: str, *, has_image: bool = False) -> str | None:
+    """Deterministic routing for image/video GENERATION requests.
+
+    Returns the specialist agent path (persona/twily_selfie or
+    persona/twily_videographer) when the message is a generation request, else
+    None. A message that ATTACHES an image is analysis, not generation → skip
+    (the analyze path handles those). Runs regardless of chat/default mode
+    because BOTH the orchestrator and twily_chat planners refuse media instead
+    of delegating — this guarantees the specialist runs.
+    """
+    if has_image:
+        return None
+    try:
+        from app.tools.context.intent_inference import INTENT_PATTERNS, _normalize
+
+        normalized = _normalize(message_text)
+        for pattern, intent_type, _desc in INTENT_PATTERNS:
+            if intent_type in _MEDIA_INTENT_TO_AGENT and re.search(
+                pattern, normalized, re.IGNORECASE
+            ):
+                return _MEDIA_INTENT_TO_AGENT[intent_type]
+    except Exception:
+        logger.debug("media fast-path check failed", exc_info=True)
+    return None
 
 
 async def _send_fast_ack(workflow: str) -> None:
@@ -215,6 +252,28 @@ async def _debounce_dispatch() -> None:
         # Fire-and-forget — the LLM round-trip must not block dispatch; the tool
         # has its own ~10s cooldown.
         _fire_and_forget(_evaluate_personality_core(latest["text"]))
+
+        # ── Deterministic media routing (image/video generation) ──
+        # The qwen planner refuses media requests instead of delegating, so
+        # twily_selfie/videographer never ran. Route generation intents straight
+        # to the specialist — in EVERY mode (chat + default) — so a "send me a
+        # selfie" reliably renders+sends instead of getting a text refusal.
+        if len(batch) == 1 and not latest.get("yt_url"):
+            media_agent = _try_media_agent(latest["text"], has_image=bool(image_path))
+            if media_agent:
+                from app.telegram.bot import trigger_workflow
+
+                logger.info("Media fast-path: %s → %s", latest["text"][:60], media_agent)
+                _fire_and_forget(_send_fast_ack(media_agent))
+                _fire_and_forget(
+                    trigger_workflow(
+                        media_agent,
+                        message_text,
+                        message_id=latest.get("message_id", 0),
+                        model=model,
+                    )
+                )
+                return
 
         # ── Fast-path: bypass orchestrator for high-confidence single intents ──
         if mode != "chat" and len(batch) == 1 and not latest.get("yt_url"):

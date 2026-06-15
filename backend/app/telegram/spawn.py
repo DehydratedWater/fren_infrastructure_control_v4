@@ -92,6 +92,9 @@ async def spawn_agent(
         prompt=prompt,
         timeout_s=timeout_s,
         extra_env=env,
+        # Cron/proactive runs go to the low-priority vLLM lane so user replies
+        # preempt them on the shared :8082 endpoint (see runner.run_agent_opencode).
+        background=(trigger == "cron"),
     )
     result.run_id = run_id
 

@@ -1,0 +1,75 @@
+# v4-owned vLLM launcher for the local Qwen-27B thinking model (port 8082).
+#
+# Cloned from fren_infrastructure_control_v3/docker/vllm/docker-compose.coding.yml
+# (kept read-only as the parity reference) so v4 owns its own inference runtime.
+# The ONLY functional delta vs the v3 file is `--scheduling-policy priority`:
+# the bot tags background/cron requests with vLLM `priority: 100` and user-facing
+# requests with `priority: 0`, so a live reply preempts a cron burst on this
+# single shared endpoint without throttling the schedule or disabling thinking.
+# (lower priority value = served first; see app/opencode_config.py qwen35-27b-bg
+# and app/telegram/persona_prose.py extra_body priority.)
+#
+# Same project name + port + served-model-name as v3, so `docker compose -f
+# <this file> up -d vllm` cleanly takes over the existing vllm-thinking-vllm-1
+# container.
+
+name: vllm-thinking
+
+services:
+  vllm:
+    image: vllm/vllm-openai:v0.19.0
+    restart: unless-stopped
+    runtime: nvidia
+    shm_size: 8gb
+    ipc: host
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0,2,3,4
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - RAY_memory_monitor_refresh_ms=0
+      - NCCL_CUMEM_ENABLE=0
+      - NCCL_NVLINK_DISABLE=0
+      - VLLM_ENABLE_CUDAGRAPH_GC=1
+      - VLLM_USE_FLASHINFER_SAMPLER=1
+      - PYTORCH_ALLOC_CONF=expandable_segments:True
+    volumes:
+      - "/mnt/ssd-4tb/ai_models/models/hub:/root/.cache/huggingface/hub"
+    ports:
+      - "8082:8000"
+    command: >
+      --model Qwen/Qwen3.6-27B-FP8
+      --served-model-name cyankiwi/Qwen3.5-27B-AWQ-BF16-INT8
+      --port 8000
+      --host 0.0.0.0
+      --tensor-parallel-size 4
+      -O3
+      --max-model-len 262144
+      --gpu-memory-utilization 0.9
+      --dtype auto
+      --enable-auto-tool-choice
+      --tool-call-parser qwen3_coder
+      --reasoning-parser qwen3
+      --limit-mm-per-prompt '{"image":10,"video":2}'
+      --enable-prefix-caching
+      --disable-custom-all-reduce
+      --kv-cache-dtype fp8
+      --max-num-seqs 12
+      --max-num-batched-tokens 8192
+      --scheduling-policy priority
+      --compilation-config '{"cudagraph_capture_sizes":[1,2,4,8,12]}'
+      --trust-remote-code
+      --no-use-tqdm-on-load
+      --generation-config auto
+      --attention-backend FLASHINFER
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.42.0.0/16

@@ -7,6 +7,20 @@ import re
 from src import ScriptTool
 from pydantic import BaseModel, Field
 
+
+def _normalize(text: str) -> str:
+    """Lowercase + collapse whitespace for intent matching.
+
+    The single source of truth for how a message is normalised before the
+    INTENT_PATTERNS are searched. `_infer` and the bot's fast-path
+    (`app.telegram.handlers._try_fast_path` / `_try_media_agent`) both import
+    this — previously the fast-path imported a `_normalize` that did not exist,
+    so its import raised and the fast-path silently no-op'd (every message fell
+    through to the slow orchestrator). Defining it here revives the fast-path.
+    """
+    return re.sub(r"\s+", " ", str(text)).strip().lower()
+
+
 # Intent patterns: (regex, intent_type, description)
 # Order matters — first match per type wins. More specific patterns first.
 INTENT_PATTERNS: list[tuple[str, str, str]] = [
@@ -117,8 +131,16 @@ INTENT_PATTERNS: list[tuple[str, str, str]] = [
         "Product/price tracking",
     ),
     # ── Selfie/image/video generation ──
+    # Broadened: catches request-verb + media-noun ("get a cute photo", "send a
+    # pic", "gimme a selfie"), "photo/pic of you", and "waiting for the photo" —
+    # the real phrasings that previously fell through to the planner, which then
+    # refused ("I'm stuck in text form") instead of delegating to twily_selfie.
     (
-        r"\b(selfie|take.*(?:photo|picture)|show me.*(?:you|yourself)|send.*(?:photo|pic))\b",
+        r"\b(selfie"
+        r"|(?:take|send|get|give|show|want|need|make|generate|draw|gimme|grab)"
+        r".{0,25}(?:photo|pic|picture|image|selfie|yourself)"
+        r"|(?:photo|pic|picture|image)\s+of\s+(?:you|yourself|twily|twilight)"
+        r"|waiting for.{0,25}(?:photo|pic|picture|image|selfie))\b",
         "selfie",
         "User wants a selfie/image",
     ),
@@ -272,7 +294,7 @@ class IntentInferenceTool(ScriptTool[Input, Output]):
         if not message:
             return Output(success=False, error="No message provided")
 
-        lower = message.lower()
+        lower = _normalize(message)
         intents: list[dict] = []
         seen_types: set[str] = set()
 

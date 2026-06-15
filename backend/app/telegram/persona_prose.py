@@ -1620,6 +1620,14 @@ async def generate_persona_message(
             max_tokens = max(max_tokens, 32768)
         extra_kwargs["max_tokens"] = max_tokens
 
+    # vLLM request priority (lower = served first). A proactive render must yield
+    # to a live user reply on the shared :8082 endpoint; conversational renders
+    # stay at the top-priority lane. Mirrors the agent-run -bg routing in
+    # runner.run_agent_opencode. Harmless when vLLM runs FCFS (field ignored).
+    from app.delivery.gate import PROACTIVE_KINDS
+
+    extra_kwargs["extra_body"] = {"priority": 100 if kind in PROACTIVE_KINDS else 0}
+
     timeout_seconds = settings.persona_prose_timeout_seconds
     if has_raw_data:
         # Longer renders take longer; bump the per-call timeout.

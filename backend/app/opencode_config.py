@@ -58,12 +58,34 @@ def build_config(worker_model: str = "local-vllm-remote/qwen35-27b") -> dict:
                     "timeout": _VLLM_TIMEOUT,
                 },
                 "models": {
+                    # Interactive/default: priority 0 = served FIRST by vLLM's
+                    # priority scheduler (lower value = higher priority). User
+                    # replies use this so they preempt background work.
                     "qwen35-27b": {
                         "id": "cyankiwi/Qwen3.5-27B-AWQ-BF16-INT8",
                         "reasoning": True,
                         "interleaved": {"field": "reasoning_content"},
                         "limits": {"context": 262144, "output": 32768},
-                        "options": {"temperature": 0.6, "topP": 0.95, "topK": 20},
+                        "options": {
+                            "temperature": 0.6, "topP": 0.95, "topK": 20,
+                            "priority": 0,
+                        },
+                    },
+                    # Background alias — SAME model, priority 100 (lower priority).
+                    # Cron/proactive agent runs target this via `opencode run
+                    # --model …-bg`, so a user reply (priority 0) jumps ahead of
+                    # a cron burst on the single :8082 endpoint without throttling
+                    # the schedule or disabling thinking. Requires the vLLM server
+                    # to run with `--scheduling-policy priority`.
+                    "qwen35-27b-bg": {
+                        "id": "cyankiwi/Qwen3.5-27B-AWQ-BF16-INT8",
+                        "reasoning": True,
+                        "interleaved": {"field": "reasoning_content"},
+                        "limits": {"context": 262144, "output": 32768},
+                        "options": {
+                            "temperature": 0.6, "topP": 0.95, "topK": 20,
+                            "priority": 100,
+                        },
                     },
                 },
             },
