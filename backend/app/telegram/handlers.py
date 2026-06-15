@@ -293,8 +293,14 @@ async def _debounce_dispatch() -> None:
                 )
                 return
 
-        # Dispatch single agent
-        if mode == "chat":
+        # Dispatch single agent — TWO-TIER (v3 parity). The CONVERSATIONAL modes
+        # go to the fast tier-1 chat agent (persona/twily_chat), which answers
+        # most turns directly and ESCALATES to persona/orchestrator only when a
+        # task genuinely needs heavy multi-step orchestration. Routing every turn
+        # straight to the orchestrator (the old `mode != "chat"` default) spun up
+        # the slow/heavy tier for plain conversation (~215s replies). Special
+        # modes (rp/study) keep their own path.
+        if mode in ("chat", "work", "assistant"):
             from app.telegram.bot import trigger_chat_agent
 
             _fire_and_forget(
