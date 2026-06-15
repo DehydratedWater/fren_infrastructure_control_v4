@@ -12,13 +12,18 @@ jobs:
     enabled: true
     timeout: 1800
   periodic_check:
+    # The proactive autonomy heartbeat (day mode): one in-process thinking-on
+    # triage over rich evidence (pending_thoughts + agreements + deterministic
+    # triggers + strategies) → skip/message/escalate/act. Replaces the old
+    # goals/periodic_checker reminder agent (which never surfaced the agent's own
+    # forged thoughts). See docs/plans/proactive-autonomy-heartbeat.md.
+    # The heavy goals/periodic_checker remains as this mode's escalate target.
     cron: '*/5 8-21 * * *'
-    agent: goals/periodic_checker
-    prompt: Run periodic check. Check for overdue tasks, upcoming time blocks, and
-      decide if a reminder or question should be sent.
-    description: Periodic 5-minute check
+    agent: script:scripts/heartbeat.py
+    prompt: '--mode day'
+    description: Proactive autonomy heartbeat (day)
     enabled: true
-    timeout: 450
+    timeout: 300
   evening:
     cron: 0 21 * * *
     agent: goals/priority_orchestrator
