@@ -62,6 +62,21 @@ GLM_51 = _preset("glm-5.1", "zai-coding-plan", "glm-5.1", options=_ZAI)
 # the empty-postfix variant — so the primary fleet runs on the local qwen.
 QWEN35_27B = _preset("qwen35-27b", "local-vllm-remote", "qwen35-27b", options=_VLLM_REMOTE)
 
+# LIVE preset for the interactive (LangChain/in-process) first-contact tier.
+# Unlike the worker preset above, the interactive OpenAICompatClient calls vLLM
+# DIRECTLY (no opencode KEY→served-id mapping), so model_id MUST be the SERVED
+# id. temperature 1.0 is qwen3.5's optimal for conversational generation.
+QWEN35_27B_LIVE = _preset(
+    "qwen35-27b-live", "local-vllm-remote",
+    "cyankiwi/Qwen3.5-27B-AWQ-BF16-INT8",
+    temperature=1.0,
+    # enable_thinking=false: the FAST first-contact tier wants SNAP, not a
+    # reasoning trace — and Qwen3.x on vLLM returns EMPTY content unless thinking
+    # is disabled for the direct (non-interleaved) path. The heavy opencode tier
+    # keeps thinking ON; only this quick tier turns it off.
+    options={**_VLLM_REMOTE, "extra_body": '{"chat_template_kwargs": {"enable_thinking": false}}'},
+)
+
 # --- split-profile presets (simultaneous multi-model serving) ---------------
 # local-vllm-fast/qwen35-35b-a3b + local-vllm-analytical/qwen35-27b-heretic.
 SPLIT_FAST = _preset("qwen35-35b-a3b", "local-vllm-fast", "qwen35-35b-a3b", options=_VLLM_REMOTE,

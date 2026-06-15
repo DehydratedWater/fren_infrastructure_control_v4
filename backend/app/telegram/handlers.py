@@ -196,6 +196,31 @@ async def _send_fast_ack(workflow: str) -> None:
         logger.debug("Failed to send fast ack", exc_info=True)
 
 
+async def _first_contact_or_fallback(
+    message_text: str, *, username: str, model: str, content_class: str,
+) -> None:
+    """Tier-0 fast path: run the in-process first-contact agent; if it does not
+    deliver (error / skip / crash), fall back to the opencode chat agent so the
+    user is never left in silence."""
+    try:
+        from app.agents.first_contact import run_first_contact
+
+        result = await run_first_contact(message_text, username=username)
+        if result.get("delivered"):
+            return
+        logger.info(
+            "first_contact did not deliver (err=%s) — falling back to twily_chat",
+            result.get("error"),
+        )
+    except Exception:
+        logger.exception("first_contact crashed — falling back to twily_chat")
+    from app.telegram.bot import trigger_chat_agent
+
+    await trigger_chat_agent(
+        message_text, username=username, model=model, content_class=content_class,
+    )
+
+
 async def _debounce_dispatch() -> None:
     """Wait for debounce window, then dispatch accumulated messages as one agent call."""
     global _pending_messages
@@ -293,14 +318,19 @@ async def _debounce_dispatch() -> None:
                 )
                 return
 
-        # Dispatch single agent — TWO-TIER (v3 parity). The CONVERSATIONAL modes
-        # go to the fast tier-1 chat agent (persona/twily_chat), which answers
-        # most turns directly and ESCALATES to persona/orchestrator only when a
-        # task genuinely needs heavy multi-step orchestration. Routing every turn
-        # straight to the orchestrator (the old `mode != "chat"` default) spun up
-        # the slow/heavy tier for plain conversation (~215s replies). Special
-        # modes (rp/study) keep their own path.
-        if mode in ("chat", "work", "assistant"):
+        # Dispatch — TIERED (v3 parity). Conversational TEXT turns go to the FAST
+        # tier-0 first-contact agent (LangChain + local qwen, in-process): it
+        # answers most turns directly (~snappy) and HANDS OFF heavy work to the
+        # opencode suite. Falls back to the opencode chat agent if FC does not
+        # deliver. Image-bearing turns + special modes (rp/study) keep the
+        # opencode path (FC v1 is text-only; image analysis needs the suite).
+        if mode in ("chat", "work", "assistant") and not image_path:
+            _fire_and_forget(
+                _first_contact_or_fallback(
+                    message_text, username=username, model=model, content_class=content_class,
+                )
+            )
+        elif mode in ("chat", "work", "assistant"):
             from app.telegram.bot import trigger_chat_agent
 
             _fire_and_forget(
