@@ -363,11 +363,28 @@ async def _reply_process_count(update: Update) -> None:
         await update.effective_message.reply_text(f"({count} running)")  # type: ignore[union-attr]
 
 
+_warned_no_chat_id = False
+
+
 def _is_allowed(update: Update) -> bool:
-    """Check if the message is from the allowed chat."""
+    """Check if the message is from the allowed chat.
+
+    FAIL-CLOSED: if CHAT_ID is not configured we ignore EVERYONE (return False)
+    rather than answering the whole world. A missing/empty CHAT_ID (a bad deploy,
+    a dropped env var) must never silently open the bot to any Telegram user — so
+    the safe default is "respond to nobody". A one-time loud warning surfaces the
+    misconfiguration instead of failing open. Set CHAT_ID to your chat to enable.
+    """
+    global _warned_no_chat_id
     settings = get_settings()
     if not settings.chat_id:
-        return True
+        if not _warned_no_chat_id:
+            logger.warning(
+                "CHAT_ID is not set — refusing ALL Telegram messages (fail-closed). "
+                "Set CHAT_ID to your chat id to enable the bot."
+            )
+            _warned_no_chat_id = True
+        return False
     return str(update.effective_chat.id) == str(settings.chat_id)  # type: ignore[union-attr]
 
 
