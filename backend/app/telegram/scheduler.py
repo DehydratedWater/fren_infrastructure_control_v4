@@ -359,6 +359,10 @@ class Scheduler:
             "FREN_TTS_POSTFIX": get_postfix(get_tts_model()) if not is_script else "",
             "FREN_RUN_ID": run_id,
             "FREN_JOB_ID": job_id,
+            # Mark scheduler runs PROACTIVE so the delivery gate's background-
+            # cooldown (v3 parity) defers them when the user is actively chatting
+            # — a cron nudge must not interrupt a live conversation.
+            "FREN_MSG_KIND": "proactive",
         }
 
         logger.info("[%s] Starting agent %s (timeout=%ds)", job_id, agent, timeout)
@@ -460,7 +464,9 @@ class Scheduler:
                 from app.telegram.persona_prose import deliver_guidance_from_ledger, is_excluded_agent
 
                 if not is_excluded_agent(agent):
-                    await deliver_guidance_from_ledger(run_id=run_id, synth_fallback=False)
+                    await deliver_guidance_from_ledger(
+                        run_id=run_id, synth_fallback=False, kind="proactive",
+                    )
             except Exception:
                 logger.exception("[%s] post-run persona_prose delivery failed", job_id)
 

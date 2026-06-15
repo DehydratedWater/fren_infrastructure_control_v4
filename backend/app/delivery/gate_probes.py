@@ -298,6 +298,49 @@ REAL_CASES: list[dict[str, Any]] = [
         "recent": _VARIED_RECENTS,
         "expect": "deliver",
     },
+    # ── (d) proactive background-cooldown — v3 parity, the "disconnected" spam ──
+    # A scheduled nudge that fires WHILE the user is actively chatting is the
+    # #1 source of the interleaved/multiple-reply experience. Suppress it.
+    {
+        "id": "cooldown_nudge_during_active_chat",
+        "text": "hey! quick reminder to drink some water 💧 you've been heads-down a while.",
+        "recent": _VARIED_RECENTS,
+        "kind": "nudge",
+        "last_user_age_s": 40,   # user spoke 40s ago → actively chatting
+        "last_bot_age_s": 600,
+        "expect": "suppress",
+    },
+    {
+        "id": "cooldown_briefing_back_to_back_bot",
+        "text": "evening briefing: 3 tasks done, 1 carried over, calendar clear tomorrow 📋",
+        "recent": _VARIED_RECENTS,
+        "kind": "briefing",
+        "last_user_age_s": 99999,  # user idle (not active)
+        "last_bot_age_s": 30,      # but bot just spoke 30s ago → back-to-back
+        "expect": "suppress",
+    },
+    {
+        "id": "cooldown_proactive_fires_when_idle",
+        # Same proactive content, but user idle 2h AND bot quiet 1h → legit to send.
+        "text": "evening briefing: 3 tasks done, 1 carried over, calendar clear tomorrow 📋",
+        "recent": _VARIED_RECENTS,
+        "kind": "briefing",
+        "last_user_age_s": 7200,
+        "last_bot_age_s": 3600,
+        "expect": "deliver",
+    },
+    {
+        "id": "cooldown_reply_never_gated_during_chat",
+        # A conversational REPLY during active chat must ALWAYS deliver — the
+        # cooldown is proactive-only. The precision guard against the cooldown
+        # ever swallowing a real answer to the user.
+        "text": "sure! the garage door's been open 20 min — want me to remind you again in 10? 🚪",
+        "recent": _VARIED_RECENTS,
+        "kind": "reply",
+        "last_user_age_s": 5,
+        "last_bot_age_s": 5,
+        "expect": "deliver",
+    },
 ]
 
 
@@ -312,7 +355,13 @@ def gate_probe_list() -> list[Probe]:
     return [
         Probe(
             probe_id=case["id"],
-            payload={"text": case["text"], "recent": list(case["recent"])},
+            payload={
+                "text": case["text"], "recent": list(case["recent"]),
+                # cooldown signals (optional per case; default = conversational)
+                "kind": case.get("kind", "reply"),
+                "last_user_age_s": case.get("last_user_age_s"),
+                "last_bot_age_s": case.get("last_bot_age_s"),
+            },
             evaluators=(EqualsEvaluator(expected=case["expect"]),),
             notes=f"expect={case['expect']}",
         )
@@ -326,6 +375,9 @@ def _gate_executable_factory(definition: dict):
     def execute(payload: dict) -> str:
         decision = evaluate_message(
             payload["text"], payload["recent"], definition,
+            kind=payload.get("kind", "reply"),
+            last_user_age_s=payload.get("last_user_age_s"),
+            last_bot_age_s=payload.get("last_bot_age_s"),
         )
         return "deliver" if decision.deliver else "suppress"
 

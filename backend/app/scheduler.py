@@ -373,6 +373,11 @@ class Scheduler:
             "FREN_TTS_POSTFIX": get_postfix(get_tts_model()) if not is_script else "",
             "FREN_RUN_ID": run_id,
             "FREN_JOB_ID": job_id,
+            # Scheduler runs are unsolicited → proactive. send_message.py reads
+            # this and the delivery gate applies the background-cooldown (v3
+            # parity): don't interrupt an active conversation or stack proactive
+            # sends. (Agent jobs get the same tag via spawn_agent(trigger="cron").)
+            "FREN_MSG_KIND": "proactive",
         }
 
         logger.info("[%s] Starting agent %s (timeout=%ds)", job_id, agent, timeout)
@@ -478,7 +483,9 @@ class Scheduler:
                 from app.telegram.persona_prose import deliver_guidance_from_ledger, is_excluded_agent
 
                 if not is_excluded_agent(agent):
-                    await deliver_guidance_from_ledger(run_id=run_id, synth_fallback=False)
+                    await deliver_guidance_from_ledger(
+                        run_id=run_id, synth_fallback=False, kind="proactive",
+                    )
             except Exception:
                 logger.exception("[%s] post-run persona_prose delivery failed", job_id)
 

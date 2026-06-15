@@ -61,7 +61,7 @@ async def test_skip_guidance_delivers_nothing(monkeypatch):
     sent: list = []
     traced: list = []
 
-    async def fake_deliver(text, attachments):
+    async def fake_deliver(text, attachments, *, kind=""):
         sent.append(text)
 
     async def fake_trace(trace):
@@ -98,7 +98,7 @@ async def test_empty_guidance_is_treated_as_skip(monkeypatch):
 
     sent: list = []
     monkeypatch.setattr(pp, "_deliver_via_send_message",
-                        lambda t, a: sent.append(t))
+                        lambda t, a, *, kind="": sent.append(t))
 
     async def fake_trace(trace):
         return None
@@ -122,7 +122,7 @@ async def test_normal_reply_still_delivers(monkeypatch):
 
     sent: list = []
 
-    async def fake_deliver(text, attachments):
+    async def fake_deliver(text, attachments, *, kind=""):
         sent.append(text)
 
     async def fake_trace(trace):

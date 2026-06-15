@@ -70,7 +70,23 @@ DEFAULT_POLICY: dict = {
     ],
     # Anything shorter than this (stripped) is noise.
     "min_chars": 3,
+    # PROACTIVE COORDINATION (v3 parity — the missing "background cooldown").
+    # A scheduled/proactive message must NOT interrupt a live conversation or
+    # stack onto one the bot just sent. Suppress a proactive-kind send if:
+    #   - the USER spoke within proactive_user_active_window_s (actively
+    #     chatting — a cron nudge mid-conversation is the #1 "disconnected" spam), OR
+    #   - the BOT sent anything within proactive_min_gap_s (back-to-back proactive).
+    # Applies ONLY when the caller marks the send proactive; conversational
+    # replies are never gated by these.
+    "proactive_user_active_window_s": 300,
+    "proactive_min_gap_s": 120,
 }
+
+# message_kinds that are proactive (scheduler/background) → subject to cooldown.
+PROACTIVE_KINDS = frozenset({
+    "nudge", "briefing", "checkin", "check_in", "winddown", "winddown_nudge",
+    "reflection", "thought", "topic", "relationship", "proactive",
+})
 
 
 class GateDecision(BaseModel):
@@ -96,21 +112,46 @@ def evaluate_message(
     text: str,
     recent: list[str],
     policy: dict | None = None,
+    *,
+    kind: str = "reply",
+    last_user_age_s: float | None = None,
+    last_bot_age_s: float | None = None,
 ) -> GateDecision:
     """Decide whether `text` should be delivered. PURE — no I/O.
 
     `recent` is the list of recent Twily messages, most-recent-first
     (the order ChatMessagesRepo.get_recent returns). Check order:
 
-      1. leak  — internal jargon / raw errors (case-insensitive regex)
-      2. noop  — "nothing happened" notifications
-      3. too_short — below min_chars after strip
-      4. duplicate — normalized SequenceMatcher ratio >= dedup_similarity
+      1. proactive_cooldown — a PROACTIVE send (kind in PROACTIVE_KINDS) is
+         suppressed if the user is actively chatting (last_user_age_s within
+         proactive_user_active_window_s) or the bot just spoke (last_bot_age_s
+         within proactive_min_gap_s). Conversational replies skip this entirely.
+      2. leak  — internal jargon / raw errors (case-insensitive regex)
+      3. noop  — "nothing happened" notifications
+      4. too_short — below min_chars after strip
+      5. duplicate — normalized SequenceMatcher ratio >= dedup_similarity
          against each of the last `dedup_lookback` recents
 
-    Pure + dict-parameterised = directly probeable by the autoloop.
+    Pure + dict-parameterised (incl. the age signals) = directly probeable by
+    the autoloop. `last_*_age_s=None` means "unknown" → that cooldown is skipped,
+    so old 3-arg callers/probes are unaffected.
     """
     p = {**DEFAULT_POLICY, **(policy or {})}
+
+    # 1. proactive background-cooldown (v3 parity)
+    if kind in PROACTIVE_KINDS:
+        active_window = float(p.get("proactive_user_active_window_s", 300))
+        if last_user_age_s is not None and last_user_age_s < active_window:
+            return GateDecision(
+                deliver=False, reason="proactive_user_active",
+                matched=f"user spoke {int(last_user_age_s)}s ago (<{int(active_window)}s)",
+            )
+        min_gap = float(p.get("proactive_min_gap_s", 120))
+        if last_bot_age_s is not None and last_bot_age_s < min_gap:
+            return GateDecision(
+                deliver=False, reason="proactive_cooldown",
+                matched=f"bot spoke {int(last_bot_age_s)}s ago (<{int(min_gap)}s)",
+            )
 
     for pattern in p.get("leak_patterns", []):
         if _rx(pattern).search(text):

@@ -24,6 +24,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -1216,6 +1217,7 @@ async def generate_persona_message(
     override_model: str | None = None,
     prior_ack_text: str = "",
     run_id: str = "",
+    kind: str = "",
 ) -> dict[str, Any]:
     """Take guidance + chat context, produce the final Telegram reply.
 
@@ -1728,7 +1730,7 @@ async def generate_persona_message(
     if not delivered_text:
         logger.warning("persona_prose generated empty text — skipping delivery")
     else:
-        await _deliver_via_send_message(delivered_text, guidance.attachments)
+        await _deliver_via_send_message(delivered_text, guidance.attachments, kind=kind)
 
     # Build the trace dict.
     trace: dict[str, Any] = {
@@ -1840,16 +1842,27 @@ async def _write_trace_artifacts(trace: dict[str, Any]) -> None:
         logger.warning("persona_prose: jsonl trace append failed: %s", e)
 
 
-async def _deliver_via_send_message(text: str, attachments: list[str]) -> None:
+async def _deliver_via_send_message(
+    text: str, attachments: list[str], *, kind: str = "",
+) -> None:
     """Fire scripts/send_message.py (or send_image.py for attachments) as a subprocess.
 
     Matches the invocation pattern agents use today, so style_scorer + dedup +
     TTS + chat_messages save all run exactly as they do for the compiled-agent
     path.
+
+    `kind` is the delivery kind for the proactive cooldown gate. Default "" means
+    "inherit FREN_MSG_KIND from the current environment" — critical for the INLINE
+    path (this runs inside the agent subprocess, which already carries the right
+    FREN_MSG_KIND from spawn_agent). The post-run fallback hook runs in the
+    bot/scheduler process where that env is absent, so it passes kind explicitly.
     """
     from app.settings import get_settings
 
     settings = get_settings()
+    sub_env = {**os.environ}
+    if kind:
+        sub_env["FREN_MSG_KIND"] = kind
     # Scripts resolve from AGENTS_DIR (the entrypoint symlinks scripts/ there),
     # exactly like the compiled agents invoke `python scripts/<x>.py`. project_root
     # is the backend dir and has no scripts/ — using it broke delivery with
@@ -1865,6 +1878,7 @@ async def _deliver_via_send_message(text: str, attachments: list[str]) -> None:
                 text=True,
                 timeout=60,
                 check=False,
+                env=sub_env,
             )
             if result.returncode != 0:
                 logger.warning(
@@ -1901,6 +1915,7 @@ async def deliver_guidance_from_ledger(
     chat_id: int | None = None,
     *,
     synth_fallback: bool = True,
+    kind: str = "",
 ) -> bool:
     """Post-run safety net: ensure the user got SOMETHING for this run_id.
 
@@ -1981,7 +1996,7 @@ async def deliver_guidance_from_ledger(
             guidance = PersonaGuidance.from_dict(payload)
             ctx = await fetch_chat_context(chat_id=chat_id)
             try:
-                await generate_persona_message(guidance, ctx, run_id=run_id)
+                await generate_persona_message(guidance, ctx, run_id=run_id, kind=kind)
                 return True
             except Exception:
                 logger.exception("deliver_guidance_from_ledger: late delivery failed for %s", run_id)

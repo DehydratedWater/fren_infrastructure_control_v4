@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import re
 import sys
 
@@ -144,7 +145,11 @@ class SendMessageTool(ScriptTool[Input, Output]):
         except Exception as exc:  # noqa: BLE001 — policy load must not block sends
             print(f"[send_message] active_policy unavailable: {exc}", file=sys.stderr)
         recent_twily_texts: list[str] = []
+        last_user_age_s: float | None = None
+        last_bot_age_s: float | None = None
         try:
+            import time as _time
+
             from app.db.repos.chat import ChatMessagesRepo
 
             lookback = int((policy or {}).get("dedup_lookback", 8))
@@ -157,9 +162,31 @@ class SendMessageTool(ScriptTool[Input, Output]):
                 for m in recent
                 if m.get("sender") == "twily"
             ]
+            # Ages drive the proactive cooldown (v3 background-cooldown parity):
+            # most-recent user message age and most-recent bot message age.
+            now = _time.time()
+            for m in recent:  # most-recent-first
+                ts = m.get("timestamp_unix")
+                if ts is None:
+                    continue
+                age = now - float(ts)
+                sender = m.get("sender")
+                if sender == "twily" and last_bot_age_s is None:
+                    last_bot_age_s = age
+                elif sender != "twily" and last_user_age_s is None:
+                    last_user_age_s = age
+                if last_bot_age_s is not None and last_user_age_s is not None:
+                    break
         except Exception:
             pass
-        gated = _gate_message(message, recent_twily_texts, policy)
+        # Proactive runs mark themselves so the cooldown applies ONLY to them;
+        # conversational replies are never cooldown-gated. The scheduler/proactive
+        # spawn sets FREN_MSG_KIND (else default "reply").
+        kind = os.environ.get("FREN_MSG_KIND", "reply")
+        gated = _gate_message(
+            message, recent_twily_texts, policy,
+            kind=kind, last_user_age_s=last_user_age_s, last_bot_age_s=last_bot_age_s,
+        )
         if gated is not None:
             return gated
 

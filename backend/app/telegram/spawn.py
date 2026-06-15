@@ -76,6 +76,15 @@ async def spawn_agent(
         env["FREN_TTS_POSTFIX"] = tts_postfix
     if extra_env:
         env.update(extra_env)
+    # Proactive coordination (v3 background-cooldown parity): a cron-triggered
+    # run is unsolicited, so tag its inline delivery (emit_guidance ->
+    # send_message.py runs INSIDE this agent subprocess and inherits this env)
+    # as "proactive" — the delivery gate then suppresses it if the user is
+    # actively chatting or the bot just spoke. User-initiated triggers
+    # (chat/chatbot/workflow/...) stay "reply" and are never cooldown-gated.
+    # An explicit extra_env FREN_MSG_KIND wins over this default.
+    if trigger == "cron" and "FREN_MSG_KIND" not in env:
+        env["FREN_MSG_KIND"] = "proactive"
 
     result = await run_agent_opencode(
         agent_dir=fleet_dir(),

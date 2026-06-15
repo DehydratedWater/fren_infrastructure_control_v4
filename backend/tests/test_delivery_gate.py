@@ -55,7 +55,12 @@ def _fresh_policy_cache():
     "case", REAL_CASES, ids=[c["id"] for c in REAL_CASES],
 )
 def test_real_case_holds_under_default_policy(case):
-    decision = evaluate_message(case["text"], case["recent"], DEFAULT_POLICY)
+    decision = evaluate_message(
+        case["text"], case["recent"], DEFAULT_POLICY,
+        kind=case.get("kind", "reply"),
+        last_user_age_s=case.get("last_user_age_s"),
+        last_bot_age_s=case.get("last_bot_age_s"),
+    )
     got = "deliver" if decision.deliver else "suppress"
     assert got == case["expect"], (
         f"{case['id']}: expected {case['expect']}, got {got} "
@@ -71,9 +76,18 @@ def test_real_cases_cover_both_verdicts_and_all_failure_classes():
     assert len(REAL_CASES) >= 25
     assert len(deliver) >= 10
     reasons = {
-        evaluate_message(c["text"], c["recent"]).reason for c in suppress
+        evaluate_message(
+            c["text"], c["recent"],
+            kind=c.get("kind", "reply"),
+            last_user_age_s=c.get("last_user_age_s"),
+            last_bot_age_s=c.get("last_bot_age_s"),
+        ).reason
+        for c in suppress
     }
-    assert reasons == {"duplicate", "noop", "leak", "too_short"}
+    assert reasons == {
+        "duplicate", "noop", "leak", "too_short",
+        "proactive_user_active", "proactive_cooldown",
+    }
 
 
 # ── reason correctness + check order ──
@@ -121,6 +135,62 @@ def test_duplicate_normalizes_case_and_whitespace():
         ["door sensor: garage left open 🚪"],
     )
     assert (d.deliver, d.reason) == (False, "duplicate")
+
+
+# ── proactive background-cooldown (v3 parity) ──
+
+
+def test_proactive_suppressed_when_user_active():
+    # A nudge that fires while the user is mid-conversation is suppressed.
+    d = evaluate_message(
+        "drink some water 💧", [], kind="nudge", last_user_age_s=30,
+    )
+    assert (d.deliver, d.reason) == (False, "proactive_user_active")
+
+
+def test_proactive_suppressed_back_to_back_bot():
+    # User idle, but the bot just spoke → suppress the back-to-back proactive.
+    d = evaluate_message(
+        "evening briefing 📋", [], kind="briefing",
+        last_user_age_s=99999, last_bot_age_s=20,
+    )
+    assert (d.deliver, d.reason) == (False, "proactive_cooldown")
+
+
+def test_proactive_delivers_when_idle():
+    # Same proactive content, but everyone's been quiet → legitimate to send.
+    d = evaluate_message(
+        "evening briefing 📋", [], kind="briefing",
+        last_user_age_s=7200, last_bot_age_s=3600,
+    )
+    assert d.deliver is True
+
+
+def test_reply_never_gated_by_cooldown():
+    # The cooldown is proactive-only — a conversational reply during active
+    # chat must ALWAYS deliver (the precision guard).
+    d = evaluate_message(
+        "sure, want a reminder in 10? 🚪", [], kind="reply",
+        last_user_age_s=2, last_bot_age_s=2,
+    )
+    assert d.deliver is True
+
+
+def test_cooldown_unknown_ages_skip_cooldown():
+    # last_*_age_s=None (legacy callers) → cooldown is skipped entirely, even
+    # for a proactive kind. Backward-compatible by construction.
+    d = evaluate_message("evening briefing 📋", [], kind="nudge")
+    assert d.deliver is True
+
+
+def test_leak_still_wins_over_cooldown_skip():
+    # Even on the proactive path, a leak in an otherwise-deliverable proactive
+    # message is still caught (cooldown returning "ok" doesn't bypass leak).
+    d = evaluate_message(
+        "[Render Error] briefing failed", [], kind="briefing",
+        last_user_age_s=7200, last_bot_age_s=3600,
+    )
+    assert (d.deliver, d.reason) == (False, "leak")
 
 
 def test_dedup_respects_lookback_window():
@@ -302,7 +372,12 @@ def test_improve_gate_offline_promotes_into_tmp_root(tmp_path, monkeypatch, caps
     assert set(DEFAULT_POLICY) <= set(policy)
     # The promoted policy still passes every frozen real case.
     for case in REAL_CASES:
-        d = evaluate_message(case["text"], case["recent"], policy)
+        d = evaluate_message(
+            case["text"], case["recent"], policy,
+            kind=case.get("kind", "reply"),
+            last_user_age_s=case.get("last_user_age_s"),
+            last_bot_age_s=case.get("last_bot_age_s"),
+        )
         got = "deliver" if d.deliver else "suppress"
         assert got == case["expect"], f"promoted policy broke {case['id']}"
 
