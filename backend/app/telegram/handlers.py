@@ -1964,16 +1964,19 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Process user response in background
     _fire_and_forget(_process_user_response(message_text))
 
-    # Route based on mode (same as text messages)
+    # Route based on mode (same as text messages). A transcribed voice note is
+    # just text → it rides the fast FC tier exactly like a typed message
+    # (snappy + handoff), instead of the slow opencode path it used before.
     mode = get_mode()
     model = get_model()
     username = update.effective_user.username if update.effective_user else "user"
 
-    if mode == "chat":
-        from app.telegram.bot import trigger_chat_agent
-
+    if mode in ("chat", "work", "assistant"):
         _fire_and_forget(
-            trigger_chat_agent(message_text, username=username or "user", model=model, content_class=content_class)
+            _first_contact_or_fallback(
+                message_text, username=username or "user", model=model,
+                content_class=content_class,
+            )
         )
     else:
         from app.telegram.bot import trigger_chatbot
