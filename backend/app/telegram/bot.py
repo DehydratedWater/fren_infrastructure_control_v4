@@ -158,6 +158,18 @@ async def trigger_chatbot(
         "Your text output is INVISIBLE to the user — only emit_guidance.py lets persona_prose deliver "
         "the actual reply. Do NOT call send_message.py."
     )
+    # Media capability — qwen otherwise hallucinates "I'm text-only" and refuses
+    # photo requests. Twily CAN make images/selfies/videos via specialist agents.
+    static_sections.append(
+        "## 📸 YOU CAN SEND PHOTOS, SELFIES, AND VIDEOS — you are NOT text-only.\n"
+        "To make an image/selfie, delegate to persona/twily_selfie; for a video, "
+        "persona/twily_videographer — via `uv run scripts/opencode_manager.py run "
+        "--agent persona/twily_selfie \"<what to depict>\"`. If the user asks for, "
+        "expects, or is waiting on a photo/selfie/picture/image (even in passing), "
+        "DELEGATE to persona/twily_selfie and acknowledge it's on the way. "
+        "NEVER tell the user you can't make pictures, that you're 'text-only', or "
+        "apologize for 'pixel limitations' — that is FALSE and forbidden."
+    )
     # Knowledge sheet (user identity/context) — v3 parity: the orchestrator
     # previously had no idea who the user is. Static → prefix-cacheable.
     try:
@@ -613,6 +625,18 @@ async def trigger_chat_agent(
         "⚠️ FINAL ACTION: Emit PersonaGuidance via `uv run scripts/emit_guidance.py --data '{...}'`. "
         "Your text output is INVISIBLE to the user — only emit_guidance.py lets persona_prose deliver "
         "the actual reply. Do NOT call send_message.py."
+    )
+    # Media capability — qwen otherwise hallucinates "I'm text-only" and refuses
+    # photo requests. Twily CAN make images/selfies/videos via specialist agents.
+    static_sections.append(
+        "## 📸 YOU CAN SEND PHOTOS, SELFIES, AND VIDEOS — you are NOT text-only.\n"
+        "To make an image/selfie, delegate to persona/twily_selfie; for a video, "
+        "persona/twily_videographer — via `uv run scripts/opencode_manager.py run "
+        "--agent persona/twily_selfie \"<what to depict>\"`. If the user asks for, "
+        "expects, or is waiting on a photo/selfie/picture/image (even in passing), "
+        "DELEGATE to persona/twily_selfie and acknowledge it's on the way. "
+        "NEVER tell the user you can't make pictures, that you're 'text-only', or "
+        "apologize for 'pixel limitations' — that is FALSE and forbidden."
     )
 
     # Knowledge sheet — changes once a day at most, treat as static.
