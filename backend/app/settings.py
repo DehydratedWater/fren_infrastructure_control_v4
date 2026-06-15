@@ -124,8 +124,18 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="change-me", alias="JWT_SECRET")
     jwt_alg: str = Field(default="HS256", alias="JWT_ALG")
 
-    # --- openai (embeddings only) -------------------------------------------
+    # --- openai (legacy embedding fallback / other openai calls) ------------
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+
+    # --- embeddings: local bge-m3 on the A4000 (OpenAI-compatible vLLM) ------
+    # Private (memories never leave the box) + free. 1024-dim, 8192-token ctx.
+    # Falls back to OpenAI text-embedding-3-small only if base_url is cleared.
+    embedding_base_url: str = Field(
+        default="http://192.168.0.42:8083/v1", alias="EMBEDDING_BASE_URL",
+    )
+    embedding_model: str = Field(default="BAAI/bge-m3", alias="EMBEDDING_MODEL")
+    embedding_dims: int = Field(default=1024, alias="EMBEDDING_DIMS")
+    embedding_api_key: str = Field(default="EMPTY", alias="EMBEDDING_API_KEY")
 
     # --- google oauth2 (gmail + calendar services) --------------------------
     google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
