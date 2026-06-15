@@ -158,6 +158,18 @@ async def trigger_chatbot(
         "Your text output is INVISIBLE to the user — only emit_guidance.py lets persona_prose deliver "
         "the actual reply. Do NOT call send_message.py."
     )
+    # Knowledge sheet (user identity/context) — v3 parity: the orchestrator
+    # previously had no idea who the user is. Static → prefix-cacheable.
+    try:
+        from app.db.repos.user_config import UserConfigRepo
+
+        ks = await UserConfigRepo().get("knowledge_sheet")
+        if ks and ks.get("config_value"):
+            static_sections.append(
+                f"## User context (knowledge sheet):\n{ks['config_value']}"
+            )
+    except Exception:
+        pass
 
     # ── TIER 2: SEMI-STATIC ──
     try:
@@ -205,6 +217,21 @@ async def trigger_chatbot(
             if done:
                 lines.append("Done: " + ", ".join(r["title"][:40] for r in done[:5]))
             volatile_sections.append("\n".join(lines))
+    except Exception:
+        pass
+
+    # ── Persona volatile state (emotional state + vibe + inner thoughts +
+    # recent activity) ── v3 injected these into the agent prompt; v4 had moved
+    # them to a background task only persona_prose read, so the orchestrator
+    # planned/replied with no sense of Twily's current mood, voice blend, or what
+    # she'd been thinking. Reuse the SAME tested assembler the proactive path uses
+    # (includes an anti-fabrication guard so absent signals can't be invented).
+    try:
+        from app.telegram.persona_prose import build_proactive_context_block
+
+        state_block = await build_proactive_context_block()
+        if state_block:
+            volatile_sections.append(state_block)
     except Exception:
         pass
 
