@@ -244,8 +244,8 @@ class SendMessageTool(ScriptTool[Input, Output]):
             print(f"[send_message] style_scorer skipped: {scorer_exc}", file=sys.stderr)
 
         # Prepend header from env var (mode/model indicator) — excluded from TTS and chat history
-        import os
-
+        # (os is imported at module level; a local re-import here previously made
+        # `os` a function-local, breaking the earlier os.environ read in this method.)
         header = os.environ.get("FREN_MSG_HEADER", "")
         display_message = f"{header}\n{message}" if header else message
         tts_message = message  # Original without header for TTS
@@ -354,7 +354,6 @@ class SendMessageTool(ScriptTool[Input, Output]):
         Passes raw text via temp file — send_voice handles LLM formatting.
         """
         import logging
-        import os
         import subprocess
         import tempfile
         from pathlib import Path
