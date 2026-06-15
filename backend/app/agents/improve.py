@@ -936,8 +936,47 @@ def build_agent_units(
             agent = agent.model_copy(update={"agent_tests": _judge_test_suite(agent)})
         elif not agent.agent_tests:
             continue
+        baseline_defn = agent.model_dump()
+        # Structured-section optimisation: a rich, multi-section system_prompt is
+        # split into named PromptSections so the autoloop improves each section
+        # IN PLACE (rewrite one, keep the rest verbatim) instead of rewriting the
+        # whole string — which could silently drop hard-won structure. Only kicks
+        # in for genuinely structured prompts (>=3 sections); thin prompts keep
+        # the classic whole-prompt rewriter. An explicit `mutators` override
+        # (e.g. --preserve-prompt) bypasses this entirely.
+        unit_mutators = mutators
+        if unit_mutators is None:
+            from src.improvement.mutators import (
+                IdentityMutator,
+                make_section_mutators,
+            )
+            from src.improvement.prompt_sections import (
+                set_sections,
+                split_into_sections,
+            )
+
+            secs = split_into_sections(baseline_defn.get("system_prompt", "") or "")
+            # Freeze the load-bearing rails so the optimiser can never soften
+            # them: the delivery contract, the JSON-in-bash safety rule, the
+            # media-capability assertion. Match by keyword (section slugs are the
+            # full header text, so substring matching is robust to phrasing).
+            _FROZEN_KW = (
+                "delivery_contract", "json_in_bash", "media_", "_safety",
+                "final_action", "capability",
+            )
+            secs = [
+                s.model_copy(update={"mutable": False})
+                if any(k in s.name for k in _FROZEN_KW)
+                else s
+                for s in secs
+            ]
+            if len(secs) >= 3:
+                baseline_defn = set_sections(baseline_defn, secs)
+                unit_mutators = [IdentityMutator(), *make_section_mutators(baseline_defn)]
+            else:
+                unit_mutators = _default_mutators()
         baseline = ComponentVersion.of(
-            agent.header.agent_id, "agent", agent.model_dump(),
+            agent.header.agent_id, "agent", baseline_defn,
         )
         # Shared failures list: the evaluator writes failed-check evidence into
         # it; the MutationContext reads it so the LLM rewriter knows what to fix.
@@ -949,7 +988,7 @@ def build_agent_units(
             ctx = MutationContext(llm=llm, criterion=criterion, failures=failures)
         loop = IterativeLoop(
             baseline=baseline,
-            mutators=mutators or _default_mutators(),
+            mutators=unit_mutators,
             criterion=criterion,
             evaluator=build_agent_evaluator(
                 agent, runner_factory,
