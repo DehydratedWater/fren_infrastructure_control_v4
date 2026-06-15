@@ -19,7 +19,11 @@ import os
 import sys
 
 AGENT = "persona/thought_forger"
-TIMEOUT_S = 270.0  # under the schedule job's 300s budget
+# Heavy thinking-on persona agent on the low-priority `-bg` vLLM lane: under GPU
+# contention its first token is slow, and 270s starved it (zero output, 100%
+# timeouts at the :00/:30 cron herd). Widened to 480s (under the job's 510s
+# budget) — the same bump that recovered activity_summarizer (12:15/12:30 ✓).
+TIMEOUT_S = 480.0
 
 
 def build_prompt() -> str:

@@ -309,13 +309,16 @@ jobs:
     enabled: true
     timeout: 900
   thought_forger:
-    cron: '*/30 7-23 * * *'
+    # Offset 7,37 (was */30 at :00/:30) so this heavy bg agent does not fire INTO
+    # the global cron herd at :00/:30; budget 510s leaves headroom over the
+    # agent's own 480s cap (raised from 270s to stop bg-lane starvation timeouts).
+    cron: '7,37 7-23 * * *'
     agent: script:scripts/thought_forger.py
     prompt: ''
     description: Forge motivation-scored pending thoughts bridging persona × user
       topics
     enabled: true
-    timeout: 300
+    timeout: 510
   persona_curator:
     cron: 30 6 * * *
     agent: workflows/twily_curator

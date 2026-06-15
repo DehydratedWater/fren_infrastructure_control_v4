@@ -183,7 +183,8 @@ async def test_thought_forger_script_spawns_the_agent(_spawn_capture, monkeypatc
     assert _spawn_capture["agent"] == "persona/thought_forger"
     assert _spawn_capture["trigger"] == "cron"
     assert "create-thought" in _spawn_capture["prompt"]
-    assert _spawn_capture["timeout_s"] < 300
+    # Budget raised 300→510s (agent cap 270→480) to stop bg-lane starvation.
+    assert _spawn_capture["timeout_s"] < 510
 
 
 async def test_topic_synthesizer_full_mode_spawns_the_agent(_spawn_capture, monkeypatch):
@@ -233,7 +234,8 @@ def test_batch2_jobs_are_enabled_with_v3_schedules():
         "relationship_initiator": ("0 9,13,18,22 * * *", "scripts/relationship_initiator.py"),
         "relationship_reflector": ("0 20 * * 0", "scripts/relationship_reflector.py"),
         "topic_synthesizer": ("30 3 * * *", "scripts/topic_synthesizer.py"),
-        "thought_forger": ("*/30 7-23 * * *", "scripts/thought_forger.py"),
+        # staggered off the :00/:30 cron herd (was */30) to ease bg-lane contention
+        "thought_forger": ("7,37 7-23 * * *", "scripts/thought_forger.py"),
     }
     jobs = schedule_jobs()
     for name, (cron, script) in expected.items():
