@@ -113,11 +113,16 @@ def test_disabled_script_jobs_are_exactly_the_unported_set():
 
 
 def test_ported_cron_batch_jobs_are_enabled_with_v3_schedules():
-    """The six ported jobs are enabled and keep their v3 cron expressions."""
+    """The six ported jobs are enabled and keep their v3 cron expressions.
+
+    activity_daily_summary intentionally diverges from v3's */5: a *daily*
+    reconsolidation needs no 5-min cadence and at */5 it saturated the bg vLLM
+    lane (~57% timeouts). */15 keeps it fresh at a third of the load.
+    """
     from tests._parity_helpers import schedule_jobs
 
     expected_crons = {
-        "activity_daily_summary": "*/5 5-23,0-2 * * *",
+        "activity_daily_summary": "*/15 5-23,0-2 * * *",
         "lesson_extraction": "*/30 6-23,0-2 * * *",
         "event_habit_bridge": "*/10 5-23,0-4 * * *",
         "goal_progress_update": "0 */1 * * *",

@@ -14,7 +14,12 @@ The command convention matches how the runner invokes scripts:
 
 from __future__ import annotations
 
+import importlib
+import inspect
+import re
 from collections.abc import Sequence
+from functools import lru_cache
+from pathlib import Path
 
 from src import (
     BashToolPermission,
@@ -22,6 +27,75 @@ from src import (
     ToolDefinitionHeader,
     ToolDefinitionLogicBash,
 )
+
+_SCRIPT_RE = re.compile(r"(scripts/[A-Za-z0-9_]+\.py)")
+_IMPORT_RE = re.compile(r"from\s+(app\.tools\.[\w.]+)\s+import")
+_VERB_RE = re.compile(r"""command\s*==\s*["']([\w.\-]+)["']""")
+
+
+def _resolve_script_file(script: str) -> Path | None:
+    """Find the on-disk `scripts/<name>.py` across the layouts we compile in:
+    the container (`/app/scripts`, `_tooldefs` at `/app/backend/app/agents/`) and
+    a host checkout (`<repo>/scripts`). Best-effort — returns None if not found."""
+    name = Path(script).name
+    roots: list[Path] = []
+    try:
+        roots.append(Path(__file__).resolve().parents[3])  # repo root / /app
+    except IndexError:
+        pass
+    roots += [Path.cwd(), Path("/app")]
+    for r in roots:
+        cand = r / "scripts" / name
+        if cand.is_file():
+            return cand
+    return None
+
+
+@lru_cache(maxsize=None)
+def command_vocab(script: str) -> str:
+    """Best-effort valid `--command` verbs for a ScriptTool, so a compiled agent
+    is told the EXACT verbs instead of guessing a plausible-but-wrong one
+    (`list-active` for habit_manager's `list`; `get-extraction-state` for
+    event_manager's `get-state`) or burning a turn on `--help` — the runtime
+    tool-flail seen in the run traces.
+
+    Source priority: the tool's `Input.command` field description when it
+    enumerates verbs (contains '|'); else a scan of the tool module for
+    `command == "verb"` dispatch arms (covers tools whose field description is
+    bare, e.g. event_manager). Returns "" when neither yields verbs (tools with
+    no command field, e.g. send_message / ralf_spawn). Cached per script."""
+    try:
+        f = _resolve_script_file(script)
+        if not f:
+            return ""
+        m = _IMPORT_RE.search(f.read_text())
+        if not m:
+            return ""
+        mod = importlib.import_module(m.group(1))
+        inp = getattr(mod, "Input", None)
+        fields = getattr(inp, "model_fields", {}) or {}
+        if "command" in fields:
+            desc = fields["command"].description or ""
+            if "|" in desc:
+                return desc.strip()
+        verbs = sorted(set(_VERB_RE.findall(inspect.getsource(mod))))
+        return "|".join(verbs)
+    except Exception:  # noqa: BLE001 — vocab is advisory; never block a compile
+        return ""
+
+
+def script_of_tool(tool: ToolDefinition) -> str:
+    """The `scripts/<name>.py` a bash ToolDefinition is scoped to, or "" for a
+    non-script tool (raw command / no bash)."""
+    try:
+        cmds = tool.bash_tool.permission_bash.allowed_commands or []
+    except AttributeError:
+        return ""
+    for c in cmds:
+        m = _SCRIPT_RE.search(str(c))
+        if m:
+            return m.group(1)
+    return ""
 
 
 def build_tool(

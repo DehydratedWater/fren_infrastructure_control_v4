@@ -314,6 +314,57 @@ def with_skip_clause(agent: "AgentDefinition") -> "AgentDefinition":
     return agent.model_copy(update={"system_prompt": SKIP_CLAUSE + base})
 
 
+_TOOLCMD_MARKER = "## Tool commands (exact)"
+
+
+def with_tool_command_reference(agent: "AgentDefinition") -> "AgentDefinition":
+    """Append an EXACT `--command` verb reference for the agent's command-driven
+    tools to its system_prompt.
+
+    The run traces showed agents flailing: the prompt paraphrases an action
+    ("List active habits"), the model invents a plausible-but-wrong verb
+    (`list-active` vs the real `list`; `get-extraction-state` vs `get-state`),
+    the call is denied/errors, and 4-6 steps are burned on `ls` + `--help` to
+    recover. Where the prompt already named the exact verb (`get-since-id`) the
+    model nailed it first try — so handing every agent its tools' real verbs
+    removes the whole class.
+
+    Verbs are derived deterministically from each tool (field enum or dispatch
+    scan; see `_tooldefs.command_vocab`). Applied ONLY in build_registry (the
+    production compile), AFTER promotions — so it ships in every agent but never
+    enters the autoloop snapshot or the promotion cycle, and is recomputed fresh
+    each compile (can't drift). No-op for pure-prompt agents and tools without a
+    command field; idempotent."""
+    tools = list(getattr(agent, "extra_tools", []) or [])
+    if not tools:
+        return agent
+    base = agent.system_prompt or ""
+    if _TOOLCMD_MARKER in base:
+        return agent  # idempotent
+    from app.agents._tooldefs import command_vocab, script_of_tool
+
+    lines: list[str] = []
+    seen: set[str] = set()
+    for t in tools:
+        script = script_of_tool(t)
+        if not script or script in seen:
+            continue
+        seen.add(script)
+        vocab = command_vocab(script)
+        if vocab:
+            lines.append(f"- `{script}` — valid --command: {vocab}")
+    if not lines:
+        return agent
+    block = (
+        f"\n\n{_TOOLCMD_MARKER}\n"
+        "Call your scripts as `uv run scripts/<name>.py --command <verb>`. Use ONLY "
+        "the exact --command verbs below — do NOT invent or paraphrase them (a wrong "
+        "verb is denied or errors and wastes the turn; you do not need `--help` to "
+        "discover them):\n" + "\n".join(lines)
+    )
+    return agent.model_copy(update={"system_prompt": base.rstrip() + block})
+
+
 _INFRA_ERROR_MARKERS = (
     "timeout", "timed out", "connection", "econnreset", "session",
     "read operation", "cancelled", "canceled", "502", "503", "504",

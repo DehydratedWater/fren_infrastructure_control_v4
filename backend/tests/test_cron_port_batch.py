@@ -326,8 +326,9 @@ async def test_activity_summarizer_script_spawns_the_agent(_spawn_capture, monke
     assert _spawn_capture["model_postfix"] == "-glm51"
     assert _spawn_capture["trigger"] == "cron"
     assert "ctx_daily_2026-06-10" in _spawn_capture["prompt"]
-    # Stays under the schedule job's 300s budget.
-    assert _spawn_capture["timeout_s"] < 300
+    # Stays under the schedule job's budget (raised 300→510s when the agent's own
+    # cap was widened 270→480s to stop bg-lane starvation timeouts).
+    assert _spawn_capture["timeout_s"] < 510
 
 
 async def test_lesson_extractor_script_spawns_the_agent(_spawn_capture, monkeypatch):
