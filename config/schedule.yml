@@ -143,12 +143,17 @@ jobs:
     enabled: true
     timeout: 360
   activity_daily_summary:
-    cron: '*/5 5-23,0-2 * * *'
+    # A *daily* timeline reconsolidation does not need a 5-min cadence — that
+    # fired 12×/h, re-reading the whole (growing) day each time and saturating
+    # the bg vLLM lane (~57% timeouts). Every 15 min keeps the summary fresh
+    # (observations are still captured every 5 min by activity_observation) at a
+    # third of the load. Budget 510s leaves headroom over the agent's 480s cap.
+    cron: '*/15 5-23,0-2 * * *'
     agent: script:scripts/activity_summarizer.py
     prompt: ''
-    description: Activity summary consolidation (every 5 min)
+    description: Activity summary consolidation (every 15 min)
     enabled: true
-    timeout: 300
+    timeout: 510
   night_analysis:
     cron: 0 2 * * *
     agent: script:scripts/night_analyst.py

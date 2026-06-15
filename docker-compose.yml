@@ -81,20 +81,13 @@ services:
       bot:
         condition: service_started
 
-  # opencode session viewer — browse the agents' raw opencode sessions (v3-style,
-  # like docker-opencode-web). Reads the shared session store on fren_v4_data.
-  # Open http://<host>:4098
-  opencode-web:
-    <<: *backend
-    environment:
-      XDG_DATA_HOME: /data/agents/.opencode/data
-      SERVICE: opencode-web
-    entrypoint: ["opencode", "web", "--hostname", "0.0.0.0", "--port", "8000"]
-    ports:
-      - "4098:8000"
-    depends_on:
-      db:
-        condition: service_healthy
+  # NOTE: the opencode-web raw session viewer (port 4098) was retired. Agent
+  # runs now use a PRIVATE per-run XDG_DATA_HOME that is cleaned up after each run
+  # (the fix for opencode's "database is locked" under concurrency), so there is
+  # no longer a shared session store for it to browse. The DB-backed dashboard
+  # below (port 8090) is the monitoring surface: it reads execution_runs +
+  # run_trace artifacts, so it shows every run's status, full chronological
+  # trajectory, tool calls and persona decision regardless of opencode state.
 
   # Read-only monitoring dashboard (FastAPI + Jinja2 + HTMX). Browse what the
   # agents are doing: proactive persona_response messages, agent runs, the

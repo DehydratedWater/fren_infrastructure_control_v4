@@ -22,7 +22,12 @@ import sys
 from datetime import UTC, date, datetime
 
 AGENT = "support/activity_summarizer"
-TIMEOUT_S = 270.0  # under the schedule job's 300s budget
+# This agent reconsolidates the WHOLE day (activity observations + Garmin +
+# journal + chat history + prior summary) and runs on the low-priority `-bg`
+# vLLM lane, so on a contended GPU its first token can be slow. 270s starved it
+# (~57% timeouts producing zero output). Widened to 480s (under the schedule
+# job's 510s budget) so slow-but-completing runs finish instead of being reaped.
+TIMEOUT_S = 480.0
 
 
 def build_prompt(target: date) -> str:
