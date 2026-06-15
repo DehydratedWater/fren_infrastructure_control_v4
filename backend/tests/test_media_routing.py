@@ -23,12 +23,18 @@ SELFIE_REQUESTS = [
     "take a selfie",
     "Can i at least get some cute photo?",          # live refusal #1
     "Well I'm still waiting for the cute photo :)",  # live refusal #2
+    "Hi can you now try rendering image for me?",    # live refusal #3 (215s, no image)
+    "render me an image",
+    "render an image",
+    "create an image",
+    "can you make an image",
     "show me yourself",
     "send a pic",
     "can I get a picture of you",
     "make me a goodnight image",
     "draw yourself",
     "gimme a selfie",
+    "picture for me please",
 ]
 
 NON_MEDIA = [
@@ -36,7 +42,10 @@ NON_MEDIA = [
     "add a task to call mom",
     "remember that I like tea",
     "I need to buy groceries",
-    "the photo album is full",   # mentions photo but is not a request
+    "the photo album is full",      # mentions photo but is not a request
+    "render the report to pdf",     # 'render' but not an image
+    "I rendered the react component",
+    "what is this image",           # image ANALYSIS, not generation
 ]
 
 

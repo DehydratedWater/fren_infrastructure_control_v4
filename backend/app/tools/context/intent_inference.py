@@ -130,21 +130,36 @@ INTENT_PATTERNS: list[tuple[str, str, str]] = [
         "shopping",
         "Product/price tracking",
     ),
-    # ── Selfie/image/video generation ──
-    # Broadened: catches request-verb + media-noun ("get a cute photo", "send a
-    # pic", "gimme a selfie"), "photo/pic of you", and "waiting for the photo" —
-    # the real phrasings that previously fell through to the planner, which then
-    # refused ("I'm stuck in text form") instead of delegating to twily_selfie.
+    # ── Selfie/image generation ──
+    # A GENERATION request = a generation verb NEAR an image noun
+    # ("render(ing) an image", "make a picture", "send a pic", "draw me one"),
+    # OR an image noun + of/for you|me ("a photo of you", "picture for me"),
+    # OR "waiting for / where's the photo". Includes render/rendering/create so
+    # "try rendering image for me" routes here, NOT to video. Guards against
+    # false positives like "render the report to pdf" / "what is this image"
+    # (the latter is image analysis, and attached-image requests skip media
+    # routing via has_image). Order matters: this precedes video_gen so an
+    # image request never falls through to the videographer.
     (
-        r"\b(selfie"
-        r"|(?:take|send|get|give|show|want|need|make|generate|draw|gimme|grab)"
-        r".{0,25}(?:photo|pic|picture|image|selfie|yourself)"
-        r"|(?:photo|pic|picture|image)\s+of\s+(?:you|yourself|twily|twilight)"
-        r"|waiting for.{0,25}(?:photo|pic|picture|image|selfie))\b",
+        r"\b(?:selfie"
+        r"|(?:render|rendering|draw|sketch|paint|generate|create|make|take|send|get"
+        r"|give|show|want|need|gimme|grab)\b[^.?!\n]{0,30}\b(?:photo|pic|pics|picture"
+        r"|image|images|selfie|portrait|drawing|yourself)"
+        r"|(?:photo|pic|picture|image|selfie|portrait)\b[^.?!\n]{0,18}\b(?:of|for)\b"
+        r"[^.?!\n]{0,12}\b(?:you|yourself|me|us|twily|twilight)"
+        r"|(?:waiting for|where['’]?s)\b[^.?!\n]{0,22}\b(?:photo|pic|picture"
+        r"|image|selfie))\b",
         "selfie",
         "User wants a selfie/image",
     ),
-    (r"\b(make.*(?:video|animation|clip)|record|render)\b", "video_gen", "User wants generated video"),
+    # ── Video generation (requires an explicit video noun so bare "render"/
+    # "make" don't steal image requests above) ──
+    (
+        r"\b(?:make|create|generate|render|record|film)\b[^.?!\n]{0,25}"
+        r"\b(?:video|animation|clip|gif)\b",
+        "video_gen",
+        "User wants generated video",
+    ),
     # ── Image/video analysis (user sent media) ──
     (
         r"\b(what.*(?:this|that|the) (?:image|photo|picture)|describe.*(?:image|photo))\b",
