@@ -1434,11 +1434,29 @@ async def health() -> dict[str, Any]:
         "vibe_fresh": "",
         "interests_updated_at": None,
         "interests_fresh": "",
+        "embedding_ok": None,
+        "embedding_model": "",
+        "embedding_detail": "",
     }
     from app.settings import get_settings
 
     with contextlib.suppress(Exception):
         info["qwen_url"] = get_settings().local_llm_base_url
+
+    # Embedding backend reachability — so a down SHARED bge-m3 server is VISIBLE
+    # (otherwise new memories silently fail to embed). Cheap real-embed ping.
+    try:
+        import asyncio
+
+        from app.services.embeddings import active_model, ping
+
+        info["embedding_model"] = active_model().get("model", "")
+        ok, detail = await asyncio.to_thread(ping)
+        info["embedding_ok"] = ok
+        info["embedding_detail"] = detail
+    except Exception as exc:  # noqa: BLE001
+        info["embedding_ok"] = False
+        info["embedding_detail"] = str(exc)[:120]
 
     try:
         async with get_async_session() as s:

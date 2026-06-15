@@ -5,6 +5,9 @@
   <span class="pill {{ 'ok' if health.qwen_url else 'warn' }}">
     qwen {{ health.qwen_url or 'unset' }}
   </span>
+  <span class="pill {{ 'ok' if health.embedding_ok else 'bad' }}" title="{{ health.embedding_detail }}">
+    embed {{ health.embedding_model or '?' }} {{ 'ok' if health.embedding_ok else 'DOWN' }}
+  </span>
   <span class="pill">chat {{ health.chat_count }}</span>
   <span class="pill">runs {{ health.run_count }}</span>
   <span class="pill">persona_response {{ health.persona_count }}</span>
