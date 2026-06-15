@@ -180,10 +180,15 @@ def _try_media_agent(message_text: str, *, has_image: bool = False) -> str | Non
 
 
 async def _send_fast_ack(workflow: str) -> None:
-    """Send a deterministic personality-preserving ack via Telegram bot API."""
+    """Send a deterministic personality-preserving ack via Telegram bot API.
+
+    Renders markdown (the acks use *emote* asterisks) the same way send_message.py
+    does — telegramify → MarkdownV2, plain-text fallback — so they don't arrive
+    with literal asterisks."""
     import random
 
     from telegram import Bot
+    from telegram.constants import ParseMode
 
     settings = get_settings()
     ack_list = _FAST_ACK_MESSAGES.get(workflow, _FAST_ACK_MESSAGES["_default"])
@@ -191,7 +196,16 @@ async def _send_fast_ack(workflow: str) -> None:
     try:
         bot = Bot(token=settings.bot_token)
         await bot.initialize()
-        await bot.send_message(chat_id=settings.chat_id, text=ack_text)
+        try:
+            import telegramify_markdown
+
+            await bot.send_message(
+                chat_id=settings.chat_id,
+                text=telegramify_markdown.markdownify(ack_text),
+                parse_mode=ParseMode.MARKDOWN_V2,
+            )
+        except Exception:  # noqa: BLE001 — bad markdown → send the raw text
+            await bot.send_message(chat_id=settings.chat_id, text=ack_text)
     except Exception:
         logger.debug("Failed to send fast ack", exc_info=True)
 
