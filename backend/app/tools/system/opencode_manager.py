@@ -84,6 +84,34 @@ async def _spawn(inp: Input) -> dict:
     status = "completed" if result.ok else (
         "timeout" if result.error and "timeout" in result.error else "error"
     )
+    # Close out the run row + record a trace, so dispatched/handoff runs do not
+    # sit "running" forever in the ledger/web UI (ensure_run set them running but
+    # nothing completed them) and their trajectory is visible like spawn_agent's.
+    try:
+        from app.db.repos.execution_ledger import ExecutionLedgerRepo
+
+        repo = ExecutionLedgerRepo()
+        await repo.complete_run(
+            run_id, status=status, contract_passed=result.ok,
+        )
+        trace = {
+            "text": result.text or "",
+            "tool_calls": [
+                {"name": c.name, "command": "", "error": None}
+                for c in result.tool_calls
+            ],
+            "tool_call_count": len(result.tool_calls),
+            "trajectory": [
+                {"kind": "tool", "name": c.name, "command": "", "error": None}
+                for c in result.tool_calls
+            ],
+            "trajectory_count": len(result.tool_calls),
+            "ok": result.ok,
+            "error": result.error,
+        }
+        await repo.write_artifact(run_id, "run_trace", trace, producer="opencode_manager")
+    except Exception:  # noqa: BLE001 — ledger is observability, never blocks
+        pass
     return {
         "run_id": run_id,
         "status": status,

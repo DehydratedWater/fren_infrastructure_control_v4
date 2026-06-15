@@ -25,7 +25,7 @@ WORKDIR /app
 RUN pip install --upgrade pip && \
     pip install fastapi 'uvicorn[standard]' 'jinja2>=3.1' 'sqlalchemy[asyncio]' asyncpg alembic \
         'pydantic[email]>=2.6' pydantic-settings pyjwt python-dotenv \
-        httpx croniter apscheduler python-telegram-bot pyyaml \
+        httpx croniter apscheduler python-telegram-bot telegramify-markdown pyyaml \
         langchain-core langchain-openai \
         tinytuya 'pymupdf>=1.24' python-docx openai \
         google-api-python-client google-auth google-auth-oauthlib \
