@@ -85,7 +85,9 @@ tick(mode):                          # mode = day | evening | winddown | night
   {
     "decision": "skip | message | escalate | act",
     "category": "reminder | nudge | share_insight | agreement_followup |
-                 procrastination | dropped_thread | plan_execution |
+                 procrastination | dropped_thread | stale_task_review |
+                 event_connection | propose_task | self_research | self_plan |
+                 plan_execution | social_checkin | share_about_self | fun_remark |
                  winddown | other",
     "urgency": 0-5,                       // drives winddown escalation policy
     "reasoning": "why (thinking summary, for the dashboard + audit)",
@@ -140,6 +142,37 @@ timer elapsed). This is input-presence, not judgment — it cannot drop a
 semantic case because it fires only when there is literally no new input. Saves
 GPU on dead ticks. Always runs the full triage when in doubt.
 
+### 3.6 Autonomy scope & guardrails
+
+"The more autonomy the better" — the heartbeat is allowed to initiate, not just
+remind. In scope:
+
+- **Self-research** — investigate something on its own (spawn a research agent /
+  RALF) and surface what it found.
+- **Self-planning** — form a plan for *itself* (what to work on between ticks);
+  may execute via `act`/`route`.
+- **Propose tasks** — suggest todos worth doing. **GUARDRAIL: never CREATE a
+  todo/task unless the user explicitly asked.** `propose_task` only drafts a
+  suggestion in the message; task creation stays user-gated.
+- **Stale-task review** — investigate old/forgotten tasks that should actually be
+  covered and resurface the worthwhile ones.
+- **Event connections** — notice commitments or relationships between events and
+  surface the insight.
+- **Relationship-building / social** — if a lot of time has passed since contact,
+  a warm "hello" or something interesting is welcome; learn about the user, share
+  things about *itself*, build the relationship over time (`social_checkin`,
+  `share_about_self`, `fun_remark`).
+
+Anti-spam (the only real bound): the triage weighs **time since last contact** and
+recent message density; cooldowns/availability remain hard delivery guards. A fun
+remark or hello is fine *because* the gap was long — not every tick. When unsure
+whether something is worth the user's attention, prefer `skip` on a quiet day but
+`escalate` when there is genuine-but-nuanced signal.
+
+Write boundary: the heartbeat may write its OWN state (consume pending_thoughts,
+record decisions, its self-plans) and trigger research, but does NOT mutate the
+user's todos/goals/calendar without an explicit request.
+
 ### 3.5 Modes (unifies winddown / evening / night)
 
 One engine, a `mode` parameter sets policy + available actions:
@@ -164,9 +197,13 @@ guards** (so we don't re-ping), never as the wake decision.
 
 ## 5. Data / infra to build
 
-- **Agreements/commitments store + extractor** — lightweight: a cheap pass (can
-  ride the existing `event_extractor` or a small structured call) that maintains
-  open commitments from chat. New table or reuse `agent_notes`.
+- **Agreements/commitments — folded into `event_extractor`.** Extend its existing
+  new-message pass to also extract open commitments/agreements (no separate cron).
+  CRITICAL: **dedup against already-stored commitments** — match new extractions
+  against open ones (by normalized text / semantic similarity) and update rather
+  than insert, so the heartbeat never re-surfaces or double-counts the same
+  agreement. Store as a commitments table or `agent_notes` entries with status
+  (open/resolved).
 - **Procrastination signal** — derive from declared-important items + activity
   evidence; expose as an evidence field.
 - **Proactive `pending_thoughts` consumption** — the heartbeat reads top
@@ -215,9 +252,20 @@ removes dead-tick calls entirely. Net: comparable-or-lower per-tick cost, far
 higher role coverage. Runs on the local-qwen bg lane (priority 100) so user
 replies always preempt it.
 
-## 9. Open questions
+## 9. Decisions & open questions
 
-- Agreements: dedicated extractor vs fold into `event_extractor`'s pass?
-- `act` autonomy scope on day mode — which specialist spawns are allowed without
-  confirmation?
-- Per-mode tick cadence (day */5, winddown */5, night once) — keep or tune?
+Resolved:
+- Agreements → **folded into `event_extractor`** with hard **dedup** against
+  existing open commitments (§5).
+- Autonomy → **broad** (self-research, self-plan, stale-task review, event
+  connections, relationship-building/social, share-about-self). **Guardrail:
+  propose tasks, never create them unless the user asks; no writes to user
+  todos/goals/calendar without explicit request** (§3.6).
+
+Still open:
+- Per-mode tick cadence (day */5, winddown */5, night once) — keep or relax day
+  now that each tick is a real thinking call? (Novelty pre-gate makes */5 cheap on
+  dead ticks; leaning keep.)
+- `social_checkin`/`fun_remark` frequency ceiling — exact "long enough gap"
+  threshold + max per day, tuned in shadow mode.
+- Commitments storage: dedicated table vs `agent_notes` with status.
