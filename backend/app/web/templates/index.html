@@ -6,6 +6,7 @@
    dashboard degrades gracefully. With JS, clicking a tab shows only its panel. #}
 <nav class="tabbar" role="tablist" aria-label="dashboard sections">
   <a class="tab" role="tab" href="#proactive" data-tab="proactive">Proactive</a>
+  <a class="tab" role="tab" href="#heartbeat" data-tab="heartbeat">Heartbeat</a>
   <a class="tab" role="tab" href="#runs" data-tab="runs">Runs</a>
   <a class="tab" role="tab" href="#chat" data-tab="chat">Chat</a>
   <a class="tab" role="tab" href="#context" data-tab="context">Context</a>
@@ -32,6 +33,13 @@
     <h2 id="proactive">Proactive messages <span class="muted">(persona_response)</span></h2>
     <div id="proactive-body" hx-get="/partials/proactive" hx-trigger="every 10s" hx-swap="innerHTML">
       {% include "partials/proactive.html" %}
+    </div>
+  </section>
+
+  <section class="panel panel-wide tabpanel" id="panel-heartbeat" data-tab="heartbeat" role="tabpanel" aria-labelledby="heartbeat">
+    <h2 id="heartbeat">Heartbeat <span class="muted">(proactive autonomy ticks · decision per wake-up)</span></h2>
+    <div id="heartbeat-body" hx-get="/partials/heartbeat" hx-trigger="every 10s" hx-swap="innerHTML">
+      {% include "partials/heartbeat.html" %}
     </div>
   </section>
 

@@ -245,6 +245,46 @@ async def recent_runs(limit: int = 30) -> list[dict[str, Any]]:
         return await fetch_all(s, sql, {"limit": limit})
 
 
+async def recent_heartbeats(limit: int = 40) -> list[dict[str, Any]]:
+    """Recent proactive autonomy heartbeat ticks with their decision, for the
+    Heartbeat panel — so each wake-up is monitorable at a glance (mode, what it
+    decided, category, the message/reasoning) without opening every run."""
+    sql = """
+        SELECT r.run_id, r.owner, r.status, r.started_at,
+               a.payload AS decision
+        FROM execution_runs r
+        LEFT JOIN LATERAL (
+            SELECT payload FROM execution_artifacts
+            WHERE run_id = r.run_id AND artifact_type = 'persona_guidance'
+            ORDER BY version DESC LIMIT 1
+        ) a ON TRUE
+        WHERE r.interaction_mode = 'heartbeat'
+        ORDER BY r.started_at DESC
+        LIMIT :limit
+    """
+    async with get_async_session() as s:
+        rows = await fetch_all(s, sql, {"limit": limit})
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        d = row.get("decision")
+        if isinstance(d, str):
+            try:
+                d = json.loads(d)
+            except (ValueError, TypeError):
+                d = {}
+        d = d if isinstance(d, dict) else {}
+        out.append({
+            "run_id": row.get("run_id"),
+            "mode": (row.get("owner") or "").replace("persona/heartbeat-", "") or "—",
+            "status": row.get("status"),
+            "started_at": row.get("started_at"),
+            "decision": d.get("decision") or "—",
+            "category": d.get("category") or "—",
+            "message": str(d.get("draft") or d.get("reasoning") or "")[:240],
+        })
+    return out
+
+
 # ── single run detail (view-the-session) ──────────────────────────────────────
 
 

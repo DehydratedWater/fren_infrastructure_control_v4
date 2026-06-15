@@ -88,21 +88,25 @@ jobs:
     enabled: true
     timeout: 1800
   evening_focus:
+    # Autonomy heartbeat (evening mode): triage the evening — close the day / set
+    # up tomorrow / reflect — escalating to goals/evening_focus when a fuller pass
+    # is warranted. Replaces the always-heavy goals/evening_focus spawn.
     cron: 0 21 * * *
-    agent: goals/evening_focus
-    prompt: Run evening focus check. Review today's progress, highlight pending tasks,
-      and help plan the remaining evening hours.
-    description: Evening focus (21:00 UTC)
+    agent: script:scripts/heartbeat.py
+    prompt: '--mode evening'
+    description: Proactive autonomy heartbeat (evening)
     enabled: true
-    timeout: 1800
+    timeout: 300
   winddown:
+    # Autonomy heartbeat (winddown mode): cheap thinking-on triage each tick —
+    # skips when the user is clearly asleep/away (saves GPU), gentle-nudges via
+    # message, and ESCALATES to goals/winddown (camera/lights/selfie/firm
+    # escalation preserved) when real action is needed. Urgency scales with the
+    # local hour in the evidence. Replaces the always-heavy goals/winddown spawn.
     cron: '*/30 22,23,0 * * *'
-    agent: goals/winddown
-    prompt: Run winddown check. Help the user wind down and get to sleep. Adjust urgency
-      based on the current LOCAL time (Europe/Warsaw). Target bedtime is 01:00-02:00
-      Warsaw. This is the early phase — gentle to firm nudging. Skip if there's an
-      active overdue_todos trigger — let the user focus.
-    description: Winddown early phase (23:00-01:00 Warsaw / 22:00-00:00 UTC)
+    agent: script:scripts/heartbeat.py
+    prompt: '--mode winddown'
+    description: Proactive autonomy heartbeat (winddown)
     enabled: true
     timeout: 300
   winddown_late:

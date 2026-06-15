@@ -40,6 +40,7 @@ def create_app() -> FastAPI:
         ctx = {
             "health": await data.health(),
             "persona": await data.recent_persona_responses(),
+            "heartbeats": await data.recent_heartbeats(),
             "runs": await data.recent_runs(),
             "digest": await data.conversation_digest(),
             "monologue": await data.inner_monologue(),
@@ -108,6 +109,13 @@ def create_app() -> FastAPI:
     @app.get("/partials/runs", response_class=HTMLResponse)
     async def partial_runs(request: Request) -> HTMLResponse:
         return _render(request, "partials/runs.html", {"runs": await data.recent_runs()})
+
+    @app.get("/partials/heartbeat", response_class=HTMLResponse)
+    async def partial_heartbeat(request: Request) -> HTMLResponse:
+        return _render(
+            request, "partials/heartbeat.html",
+            {"heartbeats": await data.recent_heartbeats()},
+        )
 
     @app.get("/partials/context", response_class=HTMLResponse)
     async def partial_context(request: Request) -> HTMLResponse:

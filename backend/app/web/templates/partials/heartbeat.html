@@ -1,0 +1,20 @@
+{% if not heartbeats %}
+  <p class="empty">No heartbeat ticks yet.</p>
+{% else %}
+<table class="tbl">
+  <thead>
+    <tr><th>mode</th><th>decision</th><th>category</th><th>message / reasoning</th><th>started</th></tr>
+  </thead>
+  <tbody>
+  {% for h in heartbeats %}
+    <tr class="run-row" onclick="window.location='/run/{{ h.run_id }}'">
+      <td>{{ h.mode }}</td>
+      <td><span class="status {{ 'completed' if h.decision in ('message', 'act') else ('failed' if h.decision == 'escalate' else '') }}">{{ h.decision }}</span></td>
+      <td>{{ h.category }}</td>
+      <td>{{ h.message or '—' }}</td>
+      <td>{{ h.started_at.strftime('%m-%d %H:%M') if h.started_at else '—' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
