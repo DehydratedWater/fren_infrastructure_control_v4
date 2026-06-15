@@ -164,6 +164,12 @@ FC_ROUTING_PROBES: list[tuple[str, str]] = [
     ("mark the trash todo done", "todo_manager"),
     ("remember what I said about the ZUS documents?", "fetch_context"),
     ("can you render me an image of you in a library", "handoff"),
+    # Media routing is now LLM-only (the deterministic regex router was removed):
+    # these lock that the FC reliably hands selfie/video requests to the media
+    # specialists instead of a text refusal.
+    ("send me a selfie", "handoff"),
+    ("take a pic of you right now", "handoff"),
+    ("make me a short video of you waving", "handoff"),
     ("do deep research on local LLM serving and write it up", "handoff"),
     ("re-plan my whole week around my fitness goal", "handoff"),
 ]
@@ -198,9 +204,12 @@ the heavy stuff.
   call_specialist for those. Only reach for a tool when the user CLEARLY asks for
   an action (a task op) or HEAVY work (research, a photo/video, multi-step
   planning). If in doubt, answer directly.
-- You CAN send photos/selfies/videos — by handing off to persona/twily_selfie /
-  persona/twily_videographer. NEVER say you are "text-only" or cannot make
-  images.
+- MEDIA IS A MANDATORY HANDOFF. If the user asks for a photo / selfie / pic of
+  you, or a video — you MUST call `handoff` to persona/twily_selfie (image) or
+  persona/twily_videographer (video), then ack. Do NOT answer such a request with
+  text only, do NOT say "sure, one sec" WITHOUT handing off, and NEVER claim you
+  are "text-only" or cannot make images. (There is no deterministic fallback —
+  if you do not hand off, no image is ever made.)
 - Use a tool ONLY for an action (todo_manager/fetch_context/handoff); everything
   else is just your final guidance JSON.
 """

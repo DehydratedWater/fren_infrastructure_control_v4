@@ -69,145 +69,10 @@ def _active_agent_context() -> str:
     )
 
 
-# ── Deterministic Fast Path ──
-# Maps high-confidence single intents directly to workflow agents,
-# bypassing the orchestrator entirely. Preserves personality with pre-built acks.
-_INTENT_TO_WORKFLOW: dict[str, str] = {
-    "task_completion": "workflows/todo",
-    "task_creation": "workflows/todo",
-    "task_query": "workflows/todo_goals",
-    "habit_completion": "workflows/habit",
-    "habit_query": "workflows/habit",
-    "goal_management": "workflows/goal",
-    "scheduling": "workflows/cron_master",
-    "calendar": "workflows/calendar",
-    "email": "workflows/email",
-    "home_automation": "workflows/server",
-}
-
-_FAST_ACK_MESSAGES: dict[str, list[str]] = {
-    "workflows/todo": ["On it! *flips through task list*", "Let me handle that~", "Checking your tasks!"],
-    "workflows/todo_goals": ["Looking at your tasks~", "Let me pull that up!"],
-    "workflows/habit": ["Checking your habits! *sparkle*", "Updating that~"],
-    "workflows/goal": ["Looking at your goals! *determined horn glow*", "Checking on that!"],
-    "workflows/cron_master": ["Scheduling that! *sparkle*", "Setting that up~"],
-    "workflows/calendar": ["Checking your calendar~", "Let me look at that!"],
-    "workflows/email": ["Checking your email~", "On it!"],
-    "workflows/server": ["Handling that! *taps horn*", "On it~!"],
-    "persona/twily_selfie": ["ooh a pic? gimme a sec~ *finds a cute angle* 📸", "hold on, let me take one! *poses*", "lemme grab my camera~ 📸"],
-    "persona/twily_videographer": ["filming something for you~ 🎬", "gimme a moment to record!"],
-    "_default": ["On it~!", "Give me a moment!", "Looking into that! *taps horn*"],
-}
-
-# Image/video GENERATION intents → the specialist persona agent. The qwen
-# planner (orchestrator/twily_chat) refuses media requests ("I'm stuck in text
-# form") instead of delegating, so twily_selfie/videographer never actually ran.
-# Route these deterministically so the specialist always runs (see _try_media_agent).
-_MEDIA_INTENT_TO_AGENT: dict[str, str] = {
-    "selfie": "persona/twily_selfie",
-    "video_gen": "persona/twily_videographer",
-}
-
-# Messages that are continuations and should NOT take the fast path
-_CONTINUATION_RE = re.compile(
-    r"^\s*(?:yes|no|yeah|nah|yep|nope|ok|sure|that one|this one|the first|the second)\s*[.!?]*\s*$",
-    re.IGNORECASE,
-)
-
-
-def _try_fast_path(message_text: str, *, has_image: bool = False) -> str | None:
-    """Check if message qualifies for deterministic fast-path routing.
-
-    Returns the workflow agent path if fast-path applies, None otherwise.
-    Guard conditions: single clear intent, no image, no continuation, no emotional signals.
-    """
-    if has_image:
-        return None
-    if _CONTINUATION_RE.match(message_text):
-        return None
-    # Skip if message is very short (likely greeting) or very long (likely complex)
-    if len(message_text.strip()) < 5 or len(message_text.strip()) > 300:
-        return None
-
-    try:
-        from app.tools.context.intent_inference import INTENT_PATTERNS, _normalize
-
-        normalized = _normalize(message_text)
-        matches: list[str] = []
-        for pattern, intent_type, _desc in INTENT_PATTERNS:
-            if re.search(pattern, normalized, re.IGNORECASE):
-                matches.append(intent_type)
-        # Deduplicate while preserving order
-        seen: set[str] = set()
-        unique: list[str] = []
-        for m in matches:
-            if m not in seen:
-                seen.add(m)
-                unique.append(m)
-        if len(unique) != 1:
-            return None  # Ambiguous or no match — let orchestrator handle
-        intent = unique[0]
-        return _INTENT_TO_WORKFLOW.get(intent)
-    except Exception:
-        logger.debug("Fast-path check failed", exc_info=True)
-        return None
-
-
-def _try_media_agent(message_text: str, *, has_image: bool = False) -> str | None:
-    """Deterministic routing for image/video GENERATION requests.
-
-    Returns the specialist agent path (persona/twily_selfie or
-    persona/twily_videographer) when the message is a generation request, else
-    None. A message that ATTACHES an image is analysis, not generation → skip
-    (the analyze path handles those). Runs regardless of chat/default mode
-    because BOTH the orchestrator and twily_chat planners refuse media instead
-    of delegating — this guarantees the specialist runs.
-    """
-    if has_image:
-        return None
-    try:
-        from app.tools.context.intent_inference import INTENT_PATTERNS, _normalize
-
-        normalized = _normalize(message_text)
-        for pattern, intent_type, _desc in INTENT_PATTERNS:
-            if intent_type in _MEDIA_INTENT_TO_AGENT and re.search(
-                pattern, normalized, re.IGNORECASE
-            ):
-                return _MEDIA_INTENT_TO_AGENT[intent_type]
-    except Exception:
-        logger.debug("media fast-path check failed", exc_info=True)
-    return None
-
-
-async def _send_fast_ack(workflow: str) -> None:
-    """Send a deterministic personality-preserving ack via Telegram bot API.
-
-    Renders markdown (the acks use *emote* asterisks) the same way send_message.py
-    does — telegramify → MarkdownV2, plain-text fallback — so they don't arrive
-    with literal asterisks."""
-    import random
-
-    from telegram import Bot
-    from telegram.constants import ParseMode
-
-    settings = get_settings()
-    ack_list = _FAST_ACK_MESSAGES.get(workflow, _FAST_ACK_MESSAGES["_default"])
-    ack_text = random.choice(ack_list)
-    try:
-        bot = Bot(token=settings.bot_token)
-        await bot.initialize()
-        try:
-            import telegramify_markdown
-
-            await bot.send_message(
-                chat_id=settings.chat_id,
-                text=telegramify_markdown.markdownify(ack_text),
-                parse_mode=ParseMode.MARKDOWN_V2,
-            )
-        except Exception:  # noqa: BLE001 — bad markdown → send the raw text
-            await bot.send_message(chat_id=settings.chat_id, text=ack_text)
-    except Exception:
-        logger.debug("Failed to send fast ack", exc_info=True)
+# NOTE: the deterministic fast-path + media-intent regex routers (and their
+# pre-built acks) were removed — ALL routing is now LLM-decided by the
+# first-contact tier (it answers directly or hands off to the right specialist).
+# No regex/keyword intent → agent mapping remains in the live path.
 
 
 async def _first_contact_or_fallback(
@@ -297,45 +162,13 @@ async def _debounce_dispatch() -> None:
         # has its own ~10s cooldown.
         _fire_and_forget(_evaluate_personality_core(latest["text"]))
 
-        # ── Deterministic media routing (image/video generation) ──
-        # The qwen planner refuses media requests instead of delegating, so
-        # twily_selfie/videographer never ran. Route generation intents straight
-        # to the specialist — in EVERY mode (chat + default) — so a "send me a
-        # selfie" reliably renders+sends instead of getting a text refusal.
-        if len(batch) == 1 and not latest.get("yt_url"):
-            media_agent = _try_media_agent(latest["text"], has_image=bool(image_path))
-            if media_agent:
-                from app.telegram.bot import trigger_workflow
-
-                logger.info("Media fast-path: %s → %s", latest["text"][:60], media_agent)
-                _fire_and_forget(_send_fast_ack(media_agent))
-                _fire_and_forget(
-                    trigger_workflow(
-                        media_agent,
-                        message_text,
-                        message_id=latest.get("message_id", 0),
-                        model=model,
-                    )
-                )
-                return
-
-        # ── Fast-path: bypass orchestrator for high-confidence single intents ──
-        if mode != "chat" and len(batch) == 1 and not latest.get("yt_url"):
-            fast_workflow = _try_fast_path(latest["text"], has_image=bool(image_path))
-            if fast_workflow:
-                from app.telegram.bot import trigger_workflow
-
-                logger.info("Fast-path routing: %s → %s", latest["text"][:60], fast_workflow)
-                _fire_and_forget(_send_fast_ack(fast_workflow))
-                _fire_and_forget(
-                    trigger_workflow(
-                        fast_workflow,
-                        message_text,
-                        message_id=latest.get("message_id", 0),
-                        model=model,
-                    )
-                )
-                return
+        # ── ALL routing is LLM-decided (no regex/keyword intent pre-routing) ──
+        # Every conversational turn goes to the first-contact tier (qwen), which
+        # reasons about intent and either answers directly or HANDS OFF to the
+        # right specialist — media → persona/twily_selfie / twily_videographer,
+        # heavy/multi-step → persona/orchestrator / research / RALF. The previous
+        # deterministic media + fast-path routers (regex over intent_inference
+        # patterns) are removed: the model decides, never a string match.
 
         # Dispatch — TIERED (v3 parity). Conversational TEXT turns go to the FAST
         # tier-0 first-contact agent (LangChain + local qwen, in-process): it
