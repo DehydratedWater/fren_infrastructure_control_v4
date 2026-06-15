@@ -180,6 +180,13 @@ def _run_improve(argv: list[str]) -> None:
                         "drill — the autoloop then adapts prompts to THAT model. "
                         "GLM models route via opencode (never raw API).")
     p.add_argument("--list", action="store_true", help="list improvable agents and exit")
+    p.add_argument("--preserve-prompt", action="store_true",
+                   help="ADDITIVE-ONLY mode: use the identity mutator alone (no LLM "
+                        "rewriter), so the autoloop VALIDATES the current baseline "
+                        "against its probes and re-promotes it if it clears the "
+                        "threshold — but can NEVER shrink/rewrite the prompt. Use "
+                        "after hand-authoring a rich prompt you must not let the "
+                        "optimiser gut.")
     args = p.parse_args(argv)
 
     # Model-switch: re-point the tuning target BEFORE settings is first read
@@ -260,6 +267,13 @@ def _run_improve(argv: list[str]) -> None:
     kw = {}
     if criterion is not None:
         kw["criterion"] = criterion
+    if args.preserve_prompt:
+        # Identity-only: validate the (rich, hand-authored) baseline against its
+        # probes and re-promote it if it clears threshold; never rewrite/shrink.
+        from src.improvement.mutators import IdentityMutator
+
+        kw["mutators"] = [IdentityMutator()]
+        log.info("preserve-prompt: identity-only mutator (no rewriter) — prompts cannot be shrunk")
     result = run_improvement(
         agent_runner_factory=live_agent_runner_factory,
         branch_invoker_factory_for=live_branch_invoker_factory_for,

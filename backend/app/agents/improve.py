@@ -1242,24 +1242,27 @@ def run_improvement(
     use_judge_test: bool = False,
     samples: int = 1,
     namespace: str | None = None,
+    mutators=None,
 ):
     """Run the full fleet improvement (agents + branches) and (optionally) promote.
 
     `llm` is the LLMMutatorClient that powers prompt rewriting (the research).
     `judge` is the JudgeClient that scores LLMJudge tests live. `criterion`
     selects the scoring goal (use GRADED for judge-scored continuous lift).
-    `only` restricts to a subset of agent/branch ids.
+    `only` restricts to a subset of agent/branch ids. `mutators` overrides the
+    default [identity + LLM-rewriter] set — pass [IdentityMutator()] for a
+    validate-and-lock-in pass that can never shrink a hand-authored prompt.
     """
     units = build_agent_units(
         agent_runner_factory, llm=llm, judge=judge, only=only,
         max_rounds=max_rounds, criterion=criterion, use_judge_test=use_judge_test,
-        samples=samples,
+        samples=samples, mutators=mutators,
     )
     if include_branches:
         units += build_branch_units(
             branch_invoker_factory_for, llm=llm, judge=judge, only=only,
             max_rounds=max_rounds, criterion=criterion,
-            use_judge_test=use_judge_test,
+            use_judge_test=use_judge_test, mutators=mutators,
         )
     return run_fleet(
         units,
