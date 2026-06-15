@@ -434,6 +434,44 @@ async def run_first_contact(message: str, *, username: str = "user") -> dict:
         except Exception:  # noqa: BLE001 — never crash the turn on delivery
             logger.exception("first_contact: persona_prose delivery failed")
 
+    # run_trace artifact so the FC turn is fully visible in the web UI /traces
+    # view (the runs list already shows it via execution_runs; opencode runs get
+    # their trajectory from spawn.py — this gives the FC turn the same).
+    try:
+        from app.db.repos.execution_ledger import ExecutionLedgerRepo
+
+        traj: list[dict] = []
+        for tc in result.tool_calls:
+            traj.append({
+                "kind": "tool", "name": tc.name,
+                "command": json.dumps(tc.args, default=str)[:2000],
+                "error": (str(tc.error)[:200] if tc.error else None),
+            })
+            if tc.output:
+                traj.append({"kind": "result", "name": tc.name,
+                             "output": str(tc.output)[:2000], "status": ""})
+        if guidance:
+            traj.append({"kind": "text",
+                         "text": "GUIDANCE: " + " | ".join(str(k) for k in (guidance.get("key_points") or []))})
+        trace_payload = {
+            "text": result.output_text or "",
+            "tool_calls": [
+                {"name": tc.name, "command": json.dumps(tc.args, default=str)[:2000],
+                 "error": (str(tc.error)[:200] if tc.error else None)}
+                for tc in result.tool_calls
+            ],
+            "tool_call_count": len(result.tool_calls),
+            "trajectory": traj,
+            "trajectory_count": len(traj),
+            "ok": delivered,
+            "error": result.error,
+        }
+        await ExecutionLedgerRepo().write_artifact(
+            run_id, "run_trace", trace_payload, producer="first_contact",
+        )
+    except Exception:  # noqa: BLE001 — trace is observability, never blocks
+        logger.debug("first_contact: run_trace write failed", exc_info=True)
+
     try:
         from app.db.repos.execution_ledger import ExecutionLedgerRepo
 
