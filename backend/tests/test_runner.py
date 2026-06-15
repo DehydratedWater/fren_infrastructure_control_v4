@@ -6,15 +6,21 @@ is exercised against a compiled .md with httpx monkeypatched.
 
 from __future__ import annotations
 
+import asyncio
 import json
+import os
+import time
+from pathlib import Path
 
 import pytest
 
+from app.runtime import runner
 from app.runtime.runner import (
     AgentRunResult,
     parse_opencode_events,
     parse_opencode_trajectory,
     run_agent_direct,
+    run_agent_opencode,
 )
 
 
@@ -178,3 +184,110 @@ async def test_direct_backend_calls_provider(tmp_path, monkeypatch):
 async def test_direct_backend_missing_md_errors(tmp_path):
     result = await run_agent_direct(agent_dir=tmp_path, agent_name="nope", prompt="x")
     assert not result.ok and "not found" in result.error
+
+
+# ── per-run opencode state isolation (the `database is locked` fix) ───────────
+
+
+class _FakeProc:
+    """Stand-in for the opencode subprocess: emits one text part, exits 0."""
+
+    returncode = 0
+
+    async def communicate(self):
+        return (b'{"part": {"type": "text", "text": "ok"}}\n', b"")
+
+    def kill(self):  # pragma: no cover - only on timeout path
+        pass
+
+
+def _agent_dir(tmp_path: Path) -> Path:
+    (tmp_path / ".opencode" / "agents").mkdir(parents=True)
+    return tmp_path
+
+
+async def test_run_uses_private_per_run_data_home_and_cleans_up(tmp_path, monkeypatch):
+    agent_dir = _agent_dir(tmp_path)
+    captured: dict = {}
+
+    async def _fake_exec(*cmd, cwd=None, env=None, **kw):
+        captured["xdg"] = env["XDG_DATA_HOME"]
+        captured["pwd"] = env["PWD"]
+        captured["existed_during"] = Path(env["XDG_DATA_HOME"]).is_dir()
+        return _FakeProc()
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", _fake_exec)
+
+    res = await run_agent_opencode(agent_dir=agent_dir, agent_name="x", prompt="hi")
+    assert res.ok and res.text == "ok"
+
+    xdg = Path(captured["xdg"])
+    # NOT the shared data dir — a private per-run dir under .opencode/runs, so
+    # concurrent runs never share one opencode.db (no lock contention).
+    assert xdg != agent_dir / ".opencode" / "data"
+    assert xdg.parent == agent_dir / ".opencode" / "runs"
+    assert captured["pwd"] == str(agent_dir)
+    assert captured["existed_during"] is True
+    # cleaned up after the run — no leak on the persisted volume.
+    assert not xdg.exists()
+    assert list((agent_dir / ".opencode" / "runs").iterdir()) == []
+
+
+async def test_concurrent_runs_get_distinct_data_homes(tmp_path, monkeypatch):
+    agent_dir = _agent_dir(tmp_path)
+    seen: list[str] = []
+
+    async def _fake_exec(*cmd, cwd=None, env=None, **kw):
+        seen.append(env["XDG_DATA_HOME"])
+        await asyncio.sleep(0)  # let both runs overlap before either returns
+        return _FakeProc()
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", _fake_exec)
+
+    await asyncio.gather(
+        run_agent_opencode(agent_dir=agent_dir, agent_name="a", prompt="x"),
+        run_agent_opencode(agent_dir=agent_dir, agent_name="b", prompt="y"),
+    )
+    assert len(seen) == 2
+    assert len(set(seen)) == 2  # distinct dirs ⇒ distinct SQLite stores
+
+
+async def test_per_run_dir_cleaned_even_on_timeout(tmp_path, monkeypatch):
+    agent_dir = _agent_dir(tmp_path)
+    captured: dict = {}
+
+    class _HangProc:
+        returncode = None
+
+        async def communicate(self):
+            await asyncio.sleep(10)  # exceeds timeout
+            return (b"", b"")
+
+        def kill(self):
+            self.returncode = -9
+
+    async def _fake_exec(*cmd, cwd=None, env=None, **kw):
+        captured["xdg"] = env["XDG_DATA_HOME"]
+        return _HangProc()
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", _fake_exec)
+
+    res = await run_agent_opencode(
+        agent_dir=agent_dir, agent_name="x", prompt="hi", timeout_s=0.05,
+    )
+    assert not res.ok and "timeout" in res.error
+    assert not Path(captured["xdg"]).exists()  # finally cleaned it
+
+
+def test_sweep_removes_only_stale_run_dirs(tmp_path):
+    fresh = tmp_path / "fresh"
+    fresh.mkdir()
+    stale = tmp_path / "stale"
+    stale.mkdir()
+    old = time.time() - runner._RUN_DIR_STALE_S - 100
+    os.utime(stale, (old, old))
+
+    runner._sweep_stale_run_dirs(tmp_path)
+
+    assert fresh.exists()  # recent dir (possibly an in-flight run) is left alone
+    assert not stale.exists()  # crash-orphaned dir is swept

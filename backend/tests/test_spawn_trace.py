@@ -9,6 +9,8 @@ write is best-effort (a ledger failure must never bubble out of spawn).
 from __future__ import annotations
 
 import asyncio
+import contextlib
+from pathlib import Path
 
 from app.runtime.runner import AgentRunResult
 from app.telegram import spawn
@@ -156,3 +158,44 @@ def test_spawn_trace_write_is_best_effort(monkeypatch):
     result = asyncio.run(spawn.spawn_agent(agent="goals/x", prompt="hi", run_id="run_z"))
     assert result.text == "hello"
     assert result.run_id == "run_z"
+
+
+def test_spawn_closes_ledger_row_on_cancellation(monkeypatch):
+    """The scheduler runs spawn_agent under asyncio.wait_for(timeout); on
+    job-timeout it cancels the spawn mid-run. The ledger row must still be closed
+    (status='failed') instead of sticking 'running' forever — the stuck-row bug."""
+    completes: list[tuple] = []
+
+    class _Repo:
+        async def ensure_run(self, *a, **k):
+            return None
+
+        async def complete_run(self, run_id, *, status="completed", contract_passed=None):
+            completes.append((run_id, status))
+            return {}
+
+    monkeypatch.setattr(
+        "app.db.repos.execution_ledger.ExecutionLedgerRepo", lambda: _Repo()
+    )
+    monkeypatch.setattr(spawn, "fleet_dir", lambda: Path("/tmp"))
+
+    async def _hang(**kwargs):
+        await asyncio.sleep(5)  # still awaiting when we cancel it
+        return AgentRunResult(text="never", tool_calls=[])
+
+    monkeypatch.setattr(spawn, "run_agent_opencode", _hang)
+
+    async def _drive():
+        task = asyncio.create_task(
+            spawn.spawn_agent(agent="goals/x", prompt="hi", run_id="run_cancel")
+        )
+        await asyncio.sleep(0.02)  # let it reach the await inside run_agent_opencode
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+        # the loop stays alive (as the scheduler's does) so the shielded
+        # complete_run task can finish.
+        await asyncio.sleep(0.05)
+
+    asyncio.run(_drive())
+    assert ("run_cancel", "failed") in completes

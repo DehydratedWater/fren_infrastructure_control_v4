@@ -86,43 +86,66 @@ async def spawn_agent(
     if trigger == "cron" and "FREN_MSG_KIND" not in env:
         env["FREN_MSG_KIND"] = "proactive"
 
-    result = await run_agent_opencode(
-        agent_dir=fleet_dir(),
-        agent_name=agent_name,
-        prompt=prompt,
-        timeout_s=timeout_s,
-        extra_env=env,
-        # Cron/proactive runs go to the low-priority vLLM lane so user replies
-        # preempt them on the shared :8082 endpoint (see runner.run_agent_opencode).
-        background=(trigger == "cron"),
-    )
-    result.run_id = run_id
-
-    # Close out the ledger run row so it doesn't stay status='running' forever
-    # (the dashboard + supersede logic depend on a terminal status). Best-effort:
-    # a failure here must NEVER block or fail the agent run.
+    completed = False
     try:
-        from app.db.repos.execution_ledger import ExecutionLedgerRepo
-
-        await ExecutionLedgerRepo().complete_run(
-            run_id,
-            status="completed" if result.ok else "failed",
-            contract_passed=result.ok,
+        result = await run_agent_opencode(
+            agent_dir=fleet_dir(),
+            agent_name=agent_name,
+            prompt=prompt,
+            timeout_s=timeout_s,
+            extra_env=env,
+            # Cron/proactive runs go to the low-priority vLLM lane so user replies
+            # preempt them on the shared :8082 endpoint (see runner.run_agent_opencode).
+            background=(trigger == "cron"),
         )
-    except Exception:  # noqa: BLE001 — ledger is observability, never blocks spawn
-        pass
+        result.run_id = run_id
 
-    # Persist the parsed trajectory (assistant output + the ordered tool calls)
-    # as ONE `run_trace` artifact so the dashboard can replay what the agent
-    # reasoned and which tools/commands it ran. This trajectory is otherwise
-    # used only for evaluation and discarded. Best-effort: a failure here must
-    # NEVER block or fail the agent run.
-    try:
-        await _write_run_trace(run_id, result)
-    except Exception:  # noqa: BLE001 — trace is observability, never blocks spawn
-        pass
+        # Close out the ledger run row so it doesn't stay status='running' forever
+        # (the dashboard + supersede logic depend on a terminal status). Best-
+        # effort: a failure here must NEVER block or fail the agent run.
+        try:
+            from app.db.repos.execution_ledger import ExecutionLedgerRepo
 
-    return result
+            await ExecutionLedgerRepo().complete_run(
+                run_id,
+                status="completed" if result.ok else "failed",
+                contract_passed=result.ok,
+            )
+            completed = True
+        except Exception:  # noqa: BLE001 — ledger is observability, never blocks spawn
+            pass
+
+        # Persist the parsed trajectory (assistant output + the ordered tool calls)
+        # as ONE `run_trace` artifact so the dashboard can replay what the agent
+        # reasoned and which tools/commands it ran. This trajectory is otherwise
+        # used only for evaluation and discarded. Best-effort: a failure here must
+        # NEVER block or fail the agent run.
+        try:
+            await _write_run_trace(run_id, result)
+        except Exception:  # noqa: BLE001 — trace is observability, never blocks spawn
+            pass
+
+        return result
+    finally:
+        # The scheduler runs this under `asyncio.wait_for(..., timeout)`; on
+        # job-timeout (or shutdown) it CANCELS us mid-run, so the normal
+        # complete_run above never executes and the ledger row sticks 'running'
+        # forever (the stuck-row bug). If we didn't complete normally, close the
+        # row as failed — shielded so the in-flight cancellation can't abort the
+        # UPDATE (the shielded task keeps running on the loop). The periodic
+        # ledger reconciler is the further backstop.
+        if not completed:
+            import asyncio
+            import contextlib
+
+            from app.db.repos.execution_ledger import ExecutionLedgerRepo
+
+            with contextlib.suppress(Exception):
+                await asyncio.shield(
+                    ExecutionLedgerRepo().complete_run(
+                        run_id, status="failed", contract_passed=False,
+                    )
+                )
 
 
 # Cap each free-text field so a chatty run can't bloat the DB. Output text and

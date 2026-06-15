@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.db.session import execute_sql, fetch_all, fetch_one, get_async_session
@@ -105,6 +105,41 @@ class ExecutionLedgerRepo:
         async with get_async_session() as s:
             row = await fetch_one(s, sql, params)
             return dict(row) if row else {}
+
+    async def reconcile_stale_running(
+        self, *, older_than_seconds: int = 1200, status: str = "failed",
+    ) -> int:
+        """Flip execution_runs stuck in 'running' past a cutoff to a terminal status.
+
+        A run row is set 'running' at spawn (start_run/ensure_run) and closed by
+        complete_run when the agent finishes. Several paths orphan it as 'running'
+        forever: the scheduler's ``asyncio.wait_for(spawn_agent(), timeout)``
+        cancels the spawn on job-timeout BEFORE its complete_run runs; a worker/bot
+        crash; or emit_guidance's own ensure_run rows that nothing completes. Stuck
+        rows make the dashboard read as perpetually busy and break supersede logic.
+
+        This sweep mirrors ``CronExecutionsRepo.reconcile_stale_running`` (which the
+        ledger lacked) and is the durable backstop regardless of WHY a row stuck.
+        ``older_than_seconds`` must comfortably exceed the longest agent timeout
+        (≤600s) so it never reaps a genuinely in-flight run. Returns rows updated.
+        """
+        sql = """
+            UPDATE execution_runs
+            SET status = :status, completed_at = :now
+            WHERE status = 'running' AND started_at < :cutoff
+        """
+        now = datetime.now(UTC)
+        params = {
+            "status": status,
+            "now": now,
+            "cutoff": now - timedelta(seconds=older_than_seconds),
+        }
+        async with get_async_session() as s:
+            res = await execute_sql(s, sql, params)
+            try:
+                return res.rowcount or 0
+            except Exception:  # noqa: BLE001 — driver may not expose rowcount
+                return 0
 
     async def get_run(self, run_id: str) -> dict[str, Any] | None:
         sql = "SELECT * FROM execution_runs WHERE run_id = :run_id"

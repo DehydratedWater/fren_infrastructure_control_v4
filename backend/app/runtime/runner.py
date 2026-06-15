@@ -19,9 +19,14 @@ unit-tested without a live opencode.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import os
 import re
+import shutil
+import tempfile
+import time
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -359,12 +364,68 @@ def opencode_errors(stdout: str) -> list[str]:
     return out
 
 
+# --- per-run opencode state isolation ---------------------------------------
+#
+# opencode keeps its session store in ONE SQLite DB at
+# `$XDG_DATA_HOME/opencode/opencode.db` (WAL mode). When every agent run shares
+# one XDG_DATA_HOME (the fleet tree), concurrent `opencode run` processes — the
+# */5 crons that align on the same minute + the bot's first-contact handoffs +
+# workers, across the bot AND scheduler containers on the shared volume — contend
+# on that single DB and fail with "Unexpected error database is locked".
+#
+# opencode's AUTH/CONFIG do NOT live here: the apiKeys are inline in
+# `~/.config/opencode/opencode.json` + the project-root `opencode.json` (see
+# app.opencode_config), both read from HOME/PWD, not XDG_DATA_HOME. A one-shot
+# `opencode run` also needs no cross-run session continuity (no --session/
+# --continue). So each run can get a PRIVATE, throwaway data dir — eliminating the
+# shared DB, hence the lock contention — with zero auth impact.
+_RUNS_SUBDIR = Path(".opencode") / "runs"
+_RUN_DIR_STALE_S = 3600  # boot/opportunistic sweep cutoff for leaked run dirs
+
+
+def _new_run_data_home(agent_dir: Path) -> tuple[Path, bool]:
+    """Create a private per-run XDG_DATA_HOME under the fleet tree.
+
+    Returns (data_home, owned): `owned` is True when we created a throwaway dir
+    that the caller must clean up. Falls back to the shared dir (owned=False) if
+    the private dir can't be made, so a filesystem hiccup degrades to old
+    behaviour rather than failing the run.
+    """
+    runs_root = agent_dir / _RUNS_SUBDIR
+    try:
+        runs_root.mkdir(parents=True, exist_ok=True)
+        _sweep_stale_run_dirs(runs_root)
+        data_home = Path(
+            tempfile.mkdtemp(prefix=f"oc_{int(time.time())}_{uuid.uuid4().hex[:6]}_", dir=str(runs_root))
+        )
+        return data_home, True
+    except OSError:
+        return agent_dir / ".opencode" / "data", False
+
+
+def _sweep_stale_run_dirs(runs_root: Path) -> None:
+    """Best-effort removal of run dirs orphaned by a hard crash (SIGKILL skips
+    the finally cleanup). Cheap; runs at most once per spawn."""
+    now = time.time()
+    try:
+        entries = list(runs_root.iterdir())
+    except OSError:
+        return
+    for d in entries:
+        try:
+            if d.is_dir() and (now - d.stat().st_mtime) > _RUN_DIR_STALE_S:
+                shutil.rmtree(d, ignore_errors=True)
+        except OSError:
+            continue
+
+
 async def run_agent_opencode(
     *, agent_dir: Path, agent_name: str, prompt: str, timeout_s: float = 120,
     extra_env: dict[str, str] | None = None, background: bool = False,
 ) -> AgentRunResult:
     env = os.environ.copy()
-    env["XDG_DATA_HOME"] = str(agent_dir / ".opencode" / "data")
+    data_home, owned = _new_run_data_home(agent_dir)
+    env["XDG_DATA_HOME"] = str(data_home)
     env["PWD"] = str(agent_dir)
     # Custom context the compiled agent's own scripts read at runtime
     # (e.g. FREN_RUN_ID / FREN_MSG_HEADER / FREN_CLEARANCE / FREN_MODEL_POSTFIX).
@@ -389,40 +450,51 @@ async def run_agent_opencode(
     # A missing cwd raises the same FileNotFoundError as a missing binary —
     # surface the actual problem (this masked the /data/agents-on-host bug).
     if not Path(agent_dir).is_dir():
+        if owned:
+            shutil.rmtree(data_home, ignore_errors=True)
         return AgentRunResult(error=f"agent_dir does not exist: {agent_dir}")
     try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd, cwd=str(agent_dir), env=env,
-            stdin=asyncio.subprocess.DEVNULL,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
         try:
-            out_b, err_b = await asyncio.wait_for(proc.communicate(), timeout=timeout_s)
-        except asyncio.TimeoutError:
-            proc.kill()
-            await proc.communicate()
-            return AgentRunResult(error=f"timeout after {timeout_s}s")
-    except FileNotFoundError:
-        return AgentRunResult(error="opencode binary not found")
+            proc = await asyncio.create_subprocess_exec(
+                *cmd, cwd=str(agent_dir), env=env,
+                stdin=asyncio.subprocess.DEVNULL,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            try:
+                out_b, err_b = await asyncio.wait_for(proc.communicate(), timeout=timeout_s)
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.communicate()
+                return AgentRunResult(error=f"timeout after {timeout_s}s")
+        except FileNotFoundError:
+            return AgentRunResult(error="opencode binary not found")
 
-    stdout = out_b.decode("utf-8", errors="replace")
-    text, calls, trajectory = parse_opencode_trajectory(stdout)
-    err = None
-    # surface opencode error events (agent-not-found, provider errors, …) — never
-    # let them pass as "empty text" (see opencode_errors docstring).
-    ev_errors = opencode_errors(stdout)
-    if ev_errors:
-        err = "opencode error: " + " | ".join(ev_errors[:2])
-    elif proc.returncode != 0 and not text.strip():
-        err = f"opencode exit {proc.returncode}: {err_b.decode('utf-8', 'replace')[:500]}"
-    # Surface the denied/blocked tool attempts so the evaluator can forward the
-    # tool-discipline signal to the judge + rewriter (close the self-correction
-    # loop on flailing). Computed once here; consumers read result.blocked.
-    return AgentRunResult(
-        text=text, tool_calls=calls, raw_stdout=stdout, error=err,
-        blocked=blocked_tool_details(stdout), trajectory=trajectory,
-    )
+        stdout = out_b.decode("utf-8", errors="replace")
+        text, calls, trajectory = parse_opencode_trajectory(stdout)
+        err = None
+        # surface opencode error events (agent-not-found, provider errors, …) —
+        # never let them pass as "empty text" (see opencode_errors docstring).
+        ev_errors = opencode_errors(stdout)
+        if ev_errors:
+            err = "opencode error: " + " | ".join(ev_errors[:2])
+        elif proc.returncode != 0 and not text.strip():
+            err = f"opencode exit {proc.returncode}: {err_b.decode('utf-8', 'replace')[:500]}"
+        # Surface the denied/blocked tool attempts so the evaluator can forward
+        # the tool-discipline signal to the judge + rewriter (close the self-
+        # correction loop on flailing). Computed once here; read via result.blocked.
+        return AgentRunResult(
+            text=text, tool_calls=calls, raw_stdout=stdout, error=err,
+            blocked=blocked_tool_details(stdout), trajectory=trajectory,
+        )
+    finally:
+        # Always remove the private per-run state dir (incl. on timeout/cancel/
+        # error) so the throwaway SQLite store + snapshots don't pile up on the
+        # persisted volume. A hard SIGKILL skips this; the boot/opportunistic
+        # sweep in _new_run_data_home() is the backstop for those.
+        if owned:
+            with contextlib.suppress(Exception):
+                shutil.rmtree(data_home, ignore_errors=True)
 
 
 # --- direct backend ---------------------------------------------------------

@@ -231,6 +231,11 @@ class Scheduler:
         state = _load_state()
         now = datetime.now(UTC)
 
+        # Durable backstop: clear any execution_runs orphaned as 'running'
+        # (cancelled spawns / emit_guidance orphans / crashes) so the dashboard
+        # doesn't accumulate perpetually-running rows. Cheap bounded UPDATE.
+        await self._reconcile_stale_ledger_runs()
+
         # --- Regular recurring jobs ---
         for job_id, cfg in jobs.items():
             if not isinstance(cfg, dict):
@@ -569,6 +574,25 @@ class Scheduler:
                 logger.warning("Reconciled %d stale running cron executions on startup", reconciled)
         except Exception:
             logger.exception("Failed to reconcile stale running cron executions on startup")
+        await self._reconcile_stale_ledger_runs()
+
+    @staticmethod
+    async def _reconcile_stale_ledger_runs() -> None:
+        """Backstop for execution_runs orphaned as 'running' (cancelled spawns,
+        emit_guidance orphans, worker/bot crashes). The ledger has no terminal-
+        status sweep of its own; without this they sit 'running' forever in the
+        dashboard. Cutoff (1200s) is well above the longest agent timeout (≤600s)
+        so an in-flight run is never reaped."""
+        try:
+            from app.db.repos.execution_ledger import ExecutionLedgerRepo
+
+            reconciled = await ExecutionLedgerRepo().reconcile_stale_running(
+                older_than_seconds=1200,
+            )
+            if reconciled:
+                logger.warning("Reconciled %d stale running execution_runs", reconciled)
+        except Exception:
+            logger.exception("Failed to reconcile stale running execution_runs")
 
     # ------------------------------------------------------------------
     # TODO(v4-port): verify agent-spawn wiring. Optional in-process spawn path
