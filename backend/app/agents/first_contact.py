@@ -127,8 +127,46 @@ _FETCH_CONTEXT = {
     },
 }
 
-_FC_TOOLS = [_HANDOFF, _TODO, _FETCH_CONTEXT]
+_CALL_SPECIALIST = {
+    "name": "call_specialist",
+    "description": (
+        "Run a SMALL specialist and WAIT for its result to fold into YOUR reply"
+        " (micro-orchestration). It returns its data to you (it does NOT message"
+        " the user); you then answer in your guidance. Use for a quick scoped"
+        " lookup/computation a specialist does better. Do NOT use for things that"
+        " should reply to the user themselves (use handoff) or for long/heavy"
+        " runs (use handoff)."
+    ),
+    "script": None,  # special: no-deliver spawn + read the guidance back
+    "schema": {
+        "type": "object",
+        "properties": {
+            "agent": {"type": "string", "description": "specialist agent id"},
+            "task": {"type": "string", "description": "the precise task for it"},
+        },
+        "required": ["agent", "task"],
+    },
+}
+
+_FC_TOOLS = [_HANDOFF, _CALL_SPECIALIST, _TODO, _FETCH_CONTEXT]
 _SCRIPT_BY_TOOL = {t["name"]: t["script"] for t in _FC_TOOLS}
+
+# Routing probes — the autoloop-testable contract for the FC's decision policy.
+# Each (message, expected_route): "direct" = answer with no tool; else the tool
+# the turn should reach for. `route_probe()` runs the FC and returns the route;
+# point it at the live client for quality scoring, or a stub for CI wiring tests.
+FC_ROUTING_PROBES: list[tuple[str, str]] = [
+    ("good morning! how are you?", "direct"),
+    ("just venting — rough night, no tasks", "direct"),
+    ("what do you think about rust vs go?", "direct"),
+    ("add a todo: call the dentist tomorrow", "todo_manager"),
+    ("what are my tasks today?", "todo_manager"),
+    ("mark the trash todo done", "todo_manager"),
+    ("remember what I said about the ZUS documents?", "fetch_context"),
+    ("can you render me an image of you in a library", "handoff"),
+    ("do deep research on local LLM serving and write it up", "handoff"),
+    ("re-plan my whole week around my fitness goal", "handoff"),
+]
 
 FC_SYSTEM_PROMPT = """\
 You are Twily — a warm, sharp personal-assistant persona. This is the FAST
@@ -155,8 +193,11 @@ the heavy stuff.
    you handed something off, "skip" only when nothing should be said.
 
 ## Rules
-- Prefer answering directly. Do NOT hand off simple conversation or a quick
-  task — that is slow and unnecessary.
+- DEFAULT TO DIRECT. A greeting, check-in, opinion, reaction, small talk, or a
+  quick factual answer is ALWAYS direct (message_kind="reply") — NEVER handoff or
+  call_specialist for those. Only reach for a tool when the user CLEARLY asks for
+  an action (a task op) or HEAVY work (research, a photo/video, multi-step
+  planning). If in doubt, answer directly.
 - You CAN send photos/selfies/videos — by handing off to persona/twily_selfie /
   persona/twily_videographer. NEVER say you are "text-only" or cannot make
   images.
@@ -187,6 +228,27 @@ def _live_spec():
         tools=tools,
         output_schema=OUTPUT_SCHEMA,
     )
+
+
+def route_probe(message: str, *, client=None, history: list[dict] | None = None) -> str:
+    """Report the FC's ROUTE for `message`: the first tool it calls, or 'direct'
+    if it answers with no tool. Delivers NOTHING (records calls only). Pass a
+    stub `client` for offline CI; omit for a live qwen routing check. This is the
+    autoloop-testable hook for the FC decision policy (run vs FC_ROUTING_PROBES).
+    """
+    from src.interactive import run_interactive
+
+    calls: list[str] = []
+
+    def _record(name: str, args: dict) -> str:
+        calls.append(name)
+        return "ok"
+
+    run_interactive(
+        _live_spec(), message, tool_runner=_record, client=client,
+        history=history or [], max_tool_rounds=2,
+    )
+    return calls[0] if calls else "direct"
 
 
 def _make_tool_runner(run_id: str):
@@ -226,6 +288,54 @@ def _make_tool_runner(run_id: str):
                 return f"dispatched to {agent} (running in background; it will deliver its own result)"
             except Exception as exc:  # noqa: BLE001
                 return f"ERROR dispatching to {agent}: {exc}"
+
+        if tool_name == "call_specialist":
+            agent = str(args.get("agent") or "")
+            task = str(args.get("task") or "")
+            if not agent:
+                return "ERROR: call_specialist needs an agent"
+            sub_rid = f"run_{uuid.uuid4().hex[:16]}"
+            try:
+                # Run the specialist in NO-DELIVER mode (it records its guidance
+                # but messages nobody), WAIT, then read its guidance back. Both
+                # are subprocesses so the bot's async DB engine is never touched
+                # from this worker thread.
+                subprocess.run(
+                    [
+                        "python", "scripts/opencode_manager.py",
+                        "--command", "run", "--agent", agent,
+                        "--prompt", task, "--run_id", sub_rid,
+                    ],
+                    cwd=cwd,
+                    env={**os.environ, "FREN_NO_DELIVER": "1", "FREN_RUN_ID": sub_rid},
+                    capture_output=True, text=True, timeout=240,
+                )
+                logs = subprocess.run(
+                    [
+                        "python", "scripts/opencode_manager.py",
+                        "--command", "logs", "--run_id", sub_rid,
+                    ],
+                    cwd=cwd, env={**os.environ}, capture_output=True, text=True,
+                    timeout=30,
+                )
+                data = json.loads(logs.stdout or "{}")
+                arts = (data.get("result") or data).get("artifacts") or []
+                for a in arts:
+                    if not isinstance(a, dict):
+                        continue
+                    if a.get("artifact_type") == "persona_guidance" or a.get("type") == "persona_guidance":
+                        payload = a.get("payload") or a.get("content") or {}
+                        if isinstance(payload, str):
+                            try:
+                                payload = json.loads(payload)
+                            except Exception:
+                                payload = {}
+                        kps = payload.get("key_points") if isinstance(payload, dict) else None
+                        if kps:
+                            return f"{agent} returned: " + " | ".join(str(k) for k in kps)
+                return f"{agent} ran but returned no readable guidance"
+            except Exception as exc:  # noqa: BLE001
+                return f"ERROR call_specialist {agent}: {exc}"
 
         script = _SCRIPT_BY_TOOL.get(tool_name)
         if not script:
@@ -319,7 +429,7 @@ async def run_first_contact(message: str, *, username: str = "user") -> dict:
             chat_id = int(get_settings().chat_id or 0)
             g = PersonaGuidance.from_dict(guidance)
             ctx = await fetch_chat_context(chat_id=chat_id)
-            await generate_persona_message(g, ctx, run_id=run_id, kind="reply")
+            await generate_persona_message(g, ctx, run_id=run_id, kind="reply", fast=True)
             delivered = True
         except Exception:  # noqa: BLE001 — never crash the turn on delivery
             logger.exception("first_contact: persona_prose delivery failed")

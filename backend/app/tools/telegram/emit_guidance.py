@@ -91,6 +91,24 @@ class EmitGuidanceTool(ScriptTool[Input, Output]):
 
         guidance = parse_guidance_from_agent_output(raw_json)
 
+        # ── No-deliver mode (call_specialist micro-orchestration) ──
+        # The first-contact tier runs a small specialist with FREN_NO_DELIVER=1
+        # to GET its result, then composes the single user reply itself. So the
+        # specialist records its guidance (the caller reads it back by run_id) but
+        # renders + sends NOTHING — FC stays the sole deliverer (no double-send).
+        if os.environ.get("FREN_NO_DELIVER") == "1":
+            try:
+                await ExecutionLedgerRepo().write_artifact(
+                    run_id, "persona_guidance", guidance.to_dict(),
+                    producer="emit_guidance",
+                )
+            except Exception:  # noqa: BLE001
+                pass
+            return Output(
+                success=True, run_id=run_id,
+                delivered_text="; ".join(guidance.key_points),
+            )
+
         # ── Skip fast-path: contract-satisfying SILENCE, deliver NOTHING ──
         # A conditional background agent that has nothing to send this run emits
         # message_kind="skip" (or an empty guidance). The delivery contract is

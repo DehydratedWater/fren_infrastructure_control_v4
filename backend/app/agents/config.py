@@ -69,12 +69,13 @@ QWEN35_27B = _preset("qwen35-27b", "local-vllm-remote", "qwen35-27b", options=_V
 QWEN35_27B_LIVE = _preset(
     "qwen35-27b-live", "local-vllm-remote",
     "cyankiwi/Qwen3.5-27B-AWQ-BF16-INT8",
-    temperature=1.0,
-    # enable_thinking=false: the FAST first-contact tier wants SNAP, not a
-    # reasoning trace — and Qwen3.x on vLLM returns EMPTY content unless thinking
-    # is disabled for the direct (non-interleaved) path. The heavy opencode tier
-    # keeps thinking ON; only this quick tier turns it off.
-    options={**_VLLM_REMOTE, "extra_body": '{"chat_template_kwargs": {"enable_thinking": false}}'},
+    temperature=0.6,
+    # Thinking ON for the first-contact DECISION: routing (answer-directly vs
+    # handoff vs direct-tool) needs reasoning — thinking-off mis-routed greetings
+    # to handoff. The expensive persona_prose RENDER is what runs thinking-OFF
+    # (generate_persona_message(fast=True)), so the turn stays snappy while the
+    # routing stays correct.
+    options=_VLLM_REMOTE,
 )
 
 # --- split-profile presets (simultaneous multi-model serving) ---------------

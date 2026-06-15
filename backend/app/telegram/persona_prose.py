@@ -1218,6 +1218,7 @@ async def generate_persona_message(
     prior_ack_text: str = "",
     run_id: str = "",
     kind: str = "",
+    fast: bool = False,
 ) -> dict[str, Any]:
     """Take guidance + chat context, produce the final Telegram reply.
 
@@ -1627,6 +1628,11 @@ async def generate_persona_message(
     from app.delivery.gate import PROACTIVE_KINDS
 
     extra_kwargs["extra_body"] = {"priority": 100 if kind in PROACTIVE_KINDS else 0}
+    # FAST render (first-contact tier): disable qwen thinking so the voice pass
+    # is snappy (~few s) instead of a full reasoning trace (~30s+). Quality trade
+    # is acceptable for the quick tier; the heavy tier keeps thinking ON.
+    if fast:
+        extra_kwargs["extra_body"]["chat_template_kwargs"] = {"enable_thinking": False}
 
     timeout_seconds = settings.persona_prose_timeout_seconds
     if has_raw_data:
