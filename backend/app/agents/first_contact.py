@@ -374,16 +374,59 @@ async def _recent_history(limit: int = 12) -> list[dict]:
         return []
 
 
-async def run_first_contact(message: str, *, username: str = "user") -> dict:
+async def _latest_user_ts() -> float:
+    """Unix ts of the most recent USER message (for the mid-run staleness check)."""
+    try:
+        from app.db.repos.chat import ChatMessagesRepo
+
+        for m in await ChatMessagesRepo().get_recent(limit=6):  # most-recent-first
+            if m.get("sender") != "twily":
+                return float(m.get("timestamp_unix") or 0)
+    except Exception:
+        pass
+    return 0.0
+
+
+def _build_user_input(message: str, image_path: str | None):
+    """Plain string, or a multimodal user message (text + image) the local qwen
+    (:8082, multimodal) can SEE — so the user can send a photo and FC reads it."""
+    if not image_path:
+        return message
+    try:
+        import base64
+        import mimetypes
+        from pathlib import Path
+
+        p = Path(image_path)
+        b64 = base64.b64encode(p.read_bytes()).decode()
+        mime = mimetypes.guess_type(str(p))[0] or "image/jpeg"
+        return [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": message or "(the user sent this image)"},
+                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
+            ],
+        }]
+    except Exception:
+        logger.exception("first_contact: failed to attach image — falling back to text")
+        return message
+
+
+async def run_first_contact(
+    message: str, *, username: str = "user", image_path: str | None = None,
+) -> dict:
     """Run ONE first-contact turn. Returns the RunResult-ish dict.
 
     Fast path: in-process LangChain/qwen turn. The FC agent answers directly
     (emit_guidance → persona_prose) or hands off heavy work. Runs the sync
     `run_interactive` in a worker thread so the bot loop is never blocked.
+    Supports IMAGES (multimodal qwen) and SKIPS its delivery if a newer user
+    message arrived mid-run (a fresh turn then handles the combined context).
     """
     from src.interactive import run_interactive
 
     run_id = f"run_{uuid.uuid4().hex[:16]}"
+    started_user_ts = await _latest_user_ts()
     # Ledger row first, so emit_guidance's inline delivery + post-run hook attribute
     # to this turn (mirrors spawn_agent).
     try:
@@ -398,10 +441,11 @@ async def run_first_contact(message: str, *, username: str = "user") -> dict:
     spec = _live_spec()
     history = await _recent_history()
     tool_runner = _make_tool_runner(run_id)
+    user_input = _build_user_input(message, image_path)
 
     def _go():
         return run_interactive(
-            spec, message, tool_runner=tool_runner, history=history,
+            spec, user_input, tool_runner=tool_runner, history=history,
             max_tool_rounds=6,
         )
 
@@ -410,6 +454,22 @@ async def run_first_contact(message: str, *, username: str = "user") -> dict:
     except Exception as exc:  # noqa: BLE001
         logger.exception("first_contact run failed: %s", exc)
         return {"ok": False, "error": str(exc), "run_id": run_id}
+
+    # Mid-run staleness: if a NEWER user message arrived while we were running, a
+    # fresh debounced turn will handle the combined context — skip THIS (now
+    # stale) delivery so the user does not get a reply to a superseded message
+    # plus a duplicate. Marked 'stale' so the caller does NOT fall back.
+    if started_user_ts and await _latest_user_ts() > started_user_ts + 0.01:
+        logger.info("first_contact: newer user message arrived mid-run — skipping stale delivery")
+        try:
+            from app.db.repos.execution_ledger import ExecutionLedgerRepo
+
+            await ExecutionLedgerRepo().complete_run(
+                run_id, status="superseded", contract_passed=False,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        return {"ok": False, "run_id": run_id, "delivered": False, "stale": True}
 
     # Deliver the FC's structured guidance via persona_prose (decision: ONE voice
     # renderer everywhere). The guidance is the model's structured FINAL answer —

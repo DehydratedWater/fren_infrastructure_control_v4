@@ -198,15 +198,19 @@ async def _send_fast_ack(workflow: str) -> None:
 
 async def _first_contact_or_fallback(
     message_text: str, *, username: str, model: str, content_class: str,
+    image_path: str | None = None,
 ) -> None:
     """Tier-0 fast path: run the in-process first-contact agent; if it does not
     deliver (error / skip / crash), fall back to the opencode chat agent so the
-    user is never left in silence."""
+    user is never left in silence. A 'stale' result (a newer user message arrived
+    mid-run) does NOT fall back — the fresh turn handles the combined context."""
     try:
         from app.agents.first_contact import run_first_contact
 
-        result = await run_first_contact(message_text, username=username)
-        if result.get("delivered"):
+        result = await run_first_contact(
+            message_text, username=username, image_path=image_path,
+        )
+        if result.get("delivered") or result.get("stale"):
             return
         logger.info(
             "first_contact did not deliver (err=%s) — falling back to twily_chat",
@@ -217,7 +221,8 @@ async def _first_contact_or_fallback(
     from app.telegram.bot import trigger_chat_agent
 
     await trigger_chat_agent(
-        message_text, username=username, model=model, content_class=content_class,
+        message_text, username=username, model=model,
+        image_path=image_path, content_class=content_class,
     )
 
 
@@ -324,18 +329,13 @@ async def _debounce_dispatch() -> None:
         # opencode suite. Falls back to the opencode chat agent if FC does not
         # deliver. Image-bearing turns + special modes (rp/study) keep the
         # opencode path (FC v1 is text-only; image analysis needs the suite).
-        if mode in ("chat", "work", "assistant") and not image_path:
+        if mode in ("chat", "work", "assistant"):
+            # FC handles images too — the local qwen is multimodal, so it can SEE
+            # an attached photo and answer/route on it. Falls back to twily_chat.
             _fire_and_forget(
                 _first_contact_or_fallback(
-                    message_text, username=username, model=model, content_class=content_class,
-                )
-            )
-        elif mode in ("chat", "work", "assistant"):
-            from app.telegram.bot import trigger_chat_agent
-
-            _fire_and_forget(
-                trigger_chat_agent(
-                    message_text, username=username, model=model, image_path=image_path, content_class=content_class
+                    message_text, username=username, model=model,
+                    content_class=content_class, image_path=image_path,
                 )
             )
         else:
