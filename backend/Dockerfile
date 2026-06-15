@@ -8,6 +8,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -fsSL https://opencode.ai/install | bash
 ENV PATH="/root/.opencode/bin:${PATH}"
 
+# `uv` shim → python. Many compiled agent prompts (and the runtime reminders)
+# instruct `uv run scripts/<x>.py`, but this image installs deps into the system
+# python (PYTHONPATH), not a uv venv — so a real `uv run` would lack the app
+# deps. Without uv on PATH agents wasted a failed `uv run` attempt before
+# falling back to `python` (extra latency + tokens, and risk of giving up). The
+# shim maps `uv run <args>` → `python <args>` so every uv-run reference works.
+RUN printf '#!/bin/sh\ncase "$1" in\n  run) shift ;;\nesac\nexec python "$@"\n' \
+        > /usr/local/bin/uv && chmod +x /usr/local/bin/uv
+
 WORKDIR /app
 
 # Deps installed without the framework (mounted + importable via PYTHONPATH).

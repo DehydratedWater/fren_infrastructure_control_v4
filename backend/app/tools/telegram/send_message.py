@@ -25,12 +25,16 @@ class Output(BaseModel):
 
 def _gate_message(
     message: str, recent_twily_texts: list[str], policy: dict | None,
+    *, kind: str = "reply", last_user_age_s: float | None = None,
+    last_bot_age_s: float | None = None,
 ) -> Output | None:
     """The thin delivery-gate seam: None → deliver; Output → suppressed.
 
     Pure (no I/O) so it is unit-testable in isolation; the verdict comes
     from app.delivery.gate.evaluate_message — the autoloop-optimised
-    policy (component_id "policy:delivery_gate"). A suppressed message
+    policy (component_id "policy:delivery_gate"). `kind`/`last_*_age_s` drive
+    the proactive background-cooldown (a proactive send is suppressed when the
+    user is actively chatting or the bot just spoke). A suppressed message
     reports success=True + suppressed=True so agents treat the task as
     complete instead of retry-spamming. Any gate error → deliver (the
     gate must never block real messages).
@@ -38,7 +42,10 @@ def _gate_message(
     try:
         from app.delivery.gate import evaluate_message
 
-        decision = evaluate_message(message, recent_twily_texts, policy)
+        decision = evaluate_message(
+            message, recent_twily_texts, policy,
+            kind=kind, last_user_age_s=last_user_age_s, last_bot_age_s=last_bot_age_s,
+        )
     except Exception as exc:  # noqa: BLE001 — gate failure must not block delivery
         print(f"[send_message] delivery gate skipped: {exc}", file=sys.stderr)
         return None

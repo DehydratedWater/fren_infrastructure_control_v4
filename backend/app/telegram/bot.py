@@ -208,6 +208,44 @@ async def trigger_chatbot(
     except Exception:
         pass
 
+    # ── Recent chat history ──
+    # Without this the orchestrator only saw a (often stale/empty) digest and
+    # answered with no real conversation context — the chat-mode path
+    # (trigger_chat_agent) already injects history; this restores parity.
+    # Same chunk-aligned anchoring so vLLM's prefix cache reuses the history
+    # prefix across turns instead of rolling by one message each turn.
+    try:
+        from app.db.repos.chat import ChatMessagesRepo
+
+        clearance = "full" if is_local_model(model) else "public"
+        BASE_HISTORY = 30
+        HISTORY_CHUNK = 30
+        history = await ChatMessagesRepo().get_history(
+            days=1, limit=BASE_HISTORY + HISTORY_CHUNK, clearance=clearance,
+        )
+        recent_5 = await ChatMessagesRepo().get_recent(limit=5, clearance=clearance)
+        recent_5.reverse()  # get_recent returns DESC, need ASC
+        history_ids = {m.get("id") for m in history}
+        for m in recent_5:
+            if m.get("id") not in history_ids:
+                history.append(m)
+        if history:
+            newest_id = max((m.get("id") or 0) for m in history)
+            if newest_id:
+                window_floor = (newest_id // HISTORY_CHUNK) * HISTORY_CHUNK - BASE_HISTORY
+                history = [m for m in history if (m.get("id") or 0) >= window_floor]
+        history_lines = [
+            f"[{str(m.get('timestamp', ''))[:16]}] [{m.get('sender', '?')}]: "
+            f"{str(m.get('message', ''))[:300]}"
+            for m in history
+        ]
+        if history_lines:
+            volatile_sections.append(
+                "## Recent conversation\n" + "\n".join(history_lines)
+            )
+    except Exception:
+        pass
+
     intents_section = _infer_intents(message)
     if intents_section:
         volatile_sections.append(intents_section)
