@@ -87,6 +87,37 @@ F. Tests + autoloop probes: FC route-vs-answer decisions + reply quality, via
 G. Deploy + verify (rebuild bot, smoke a banter turn = fast, a "deep research"
    turn = hands off + acks, an "add a task" turn = direct tool).
 
+## Concrete build notes (APIs verified 2026-06-15)
+
+- Runner: `from src.interactive import run_interactive` (runner.py:288).
+  `run_interactive(spec, user_input, *, tool_runner, client=None, sink=None,
+  max_tool_rounds=8, history=None, **params) -> RunResult`. `client` defaults to
+  `OpenAICompatClient.from_spec(spec)`. `tool_runner` is `(tool_name, args) ->
+  result_text` (same shape as the LangChain binding). It records ToolCallRecords.
+- Spec: `from src.interactive.spec import build_interactive_spec`.
+  `build_interactive_spec(agent=<AgentDefinition>, live_profile=<VariantSpec>,
+  output_schema=None)`. Tools come from the agent's ScriptTools (auto → ToolSpec).
+- LIVE preset CAVEAT: the worker preset `QWEN35_27B` uses `model_id="qwen35-27b"`
+  (the opencode.json KEY). The interactive client calls vLLM DIRECTLY, so the
+  LIVE preset's `model_id` MUST be the SERVED id
+  `cyankiwi/Qwen3.5-27B-AWQ-BF16-INT8`, with `provider_options`
+  `{base_url: "http://192.168.0.42:8082/v1", api_key_env: "VLLM_API_KEY"}`
+  (= `_VLLM_REMOTE` in app/agents/config.py). Define `QWEN35_27B_LIVE` + a
+  `LIVE_PROFILE` SplitProfile returning it for every model_class.
+- Qwen quirk handled by OpenAICompatClient (empty content → reads reasoning
+  field); reasoning/thinking stays ON.
+- Framework `src/interactive` is solid: 43 tests pass.
+
+## Build phases (resume here)
+A. config.py: `QWEN35_27B_LIVE` preset + `LIVE_PROFILE`. (low-risk, no hot path)
+B. domains: `persona/twily_first_contact` AgentDefinition (lightweight prompt +
+   direct-tool subset + call_specialist + handoff + emit_guidance).
+C. tools: `call_specialist` (await spawn_agent) + `handoff` (fire-and-forget).
+D. `app/agents/first_contact.py`: build spec + run_interactive + tool_runner.
+E. handler wiring in `_debounce_dispatch` (PRODUCTION hot path — do carefully).
+F. tests + autoloop probes (route-vs-answer).
+G. rebuild + deploy + smoke.
+
 ## Compatibility
 
 Opencode suite, delivery gate, proactive cooldown, send_message, vLLM priority
