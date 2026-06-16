@@ -31,11 +31,30 @@ class WorldPackageError(RuntimeError):
     """Raised when a package is missing, malformed, or referentially broken."""
 
 
+class _StrictLoader(yaml.SafeLoader):
+    """SafeLoader that REJECTS duplicate mapping keys. Plain pyyaml silently keeps
+    the last — which let a stray second `start_hour:` shadow the real one. For a
+    hand-edited world package that's a nasty silent footgun, so we fail loudly."""
+
+
+def _no_duplicate_keys(loader, node, deep=False):  # noqa: ANN001
+    mapping = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            raise WorldPackageError(f"duplicate key {key!r} in YAML mapping (line {key_node.start_mark.line + 1})")
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+_StrictLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _no_duplicate_keys)
+
+
 def _read_yaml(path: Path) -> dict:
     if not path.exists():
         return {}
     with path.open("r", encoding="utf-8") as fh:
-        data = yaml.safe_load(fh) or {}
+        data = yaml.load(fh, Loader=_StrictLoader) or {}  # noqa: S506 — _StrictLoader is SafeLoader-derived
     if not isinstance(data, dict):
         raise WorldPackageError(f"{path.name}: expected a YAML mapping, got {type(data).__name__}")
     return data

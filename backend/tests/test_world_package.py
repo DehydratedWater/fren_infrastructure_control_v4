@@ -62,6 +62,23 @@ def test_every_npc_home_and_default_npc_resolves():
             assert nid in npc_ids
 
 
+def test_starts_in_daytime():
+    # a fresh world should open during the day (good first impression), not at
+    # 23:00 — guards the duplicate-start_hour regression.
+    pkg = load_package(DEFAULT_PACKAGE)
+    assert 6 <= pkg.scenario.start_hour <= 18
+
+
 def test_missing_package_raises():
     with pytest.raises(WorldPackageError):
         load_package("does_not_exist_xyz")
+
+
+def test_loader_rejects_duplicate_keys(tmp_path):
+    # silent duplicate-key override is a footgun for hand-edited packages
+    from app.world.loader import WorldPackageError, _read_yaml
+
+    bad = tmp_path / "dup.yaml"
+    bad.write_text("a: 1\nb: 2\na: 3\n", encoding="utf-8")
+    with pytest.raises(WorldPackageError):
+        _read_yaml(bad)
