@@ -357,7 +357,9 @@ jobs:
     # real web at her desk, talk to NPCs). Background/silent: this never messages
     # the user (script jobs skip the delivery hook). The 02:00 promote (below)
     # folds her distilled experiences back into her persona memory.
-    cron: '*/15 7-23 * * *'
+    # NOTE: the scheduler evaluates cron in UTC; 5-22 UTC ≈ 07:00-00:00 Warsaw,
+    # so she "lives" through roughly the user's waking day and evening.
+    cron: '*/15 5-22 * * *'
     agent: script:scripts/world_turn.py
     prompt: ''
     description: Twily's world — one background life beat
