@@ -38,6 +38,24 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
+
+def _spawn_specialist(agent: str, instruction: str) -> None:
+    """Fire-and-forget an opencode specialist for a routed turn (it renders +
+    delivers its own result, e.g. the selfie). Detached so the FC turn returns."""
+    from app.settings import get_settings
+
+    try:
+        subprocess.Popen(
+            ["python", "scripts/opencode_manager.py", "--command", "run",
+             "--agent", agent, "--prompt", instruction],
+            cwd=str(get_settings().agents_dir), env={**os.environ},
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("first_contact: spawn %s failed", agent)
+
+
 # ── Tool specs the FC LLM sees (name + description + minimal JSON schema) ──
 # Kept tiny on purpose: the fast tier should reach for few, obvious tools.
 
@@ -48,18 +66,46 @@ logger = logging.getLogger(__name__)
 OUTPUT_SCHEMA = {
     "type": "object",
     "properties": {
+        "route": {
+            "type": "string",
+            "enum": ["direct", "image", "video", "handoff"],
+            "description": (
+                "WHERE this turn goes (you MUST pick one): "
+                "direct = you answer it yourself (conversation, banter, a question, "
+                "an opinion, a quick task op) — the DEFAULT; "
+                "image = the user wants a photo / selfie / pic OF YOU (a media "
+                "specialist renders + sends it); "
+                "video = the user wants a video of you; "
+                "handoff = heavy multi-step work — research, RALF, complex goal "
+                "re-planning, anything needing deep reasoning or many tools."
+            ),
+        },
+        "instruction": {
+            "type": "string",
+            "description": "for route=image/video/handoff: the precise task for the specialist",
+        },
         "intent": {"type": "string", "description": "one-line summary of this turn"},
         "key_points": {
             "type": "array", "items": {"type": "string"},
-            "description": "the FACTS to convey (not prose) — persona_prose writes the words",
+            "description": "the FACTS to convey (not prose) — persona_prose writes the words. For image/video/handoff this is your short ack (e.g. 'taking one now~').",
         },
         "message_kind": {
             "type": "string", "enum": ["reply", "ack", "skip"],
-            "description": "reply=normal; ack=short note that a handoff is underway; skip=say nothing",
+            "description": "reply=normal; ack=short note that work is underway (use for image/video/handoff); skip=say nothing",
         },
         "tone": {"type": "string"},
     },
-    "required": ["intent", "key_points", "message_kind"],
+    "required": ["route", "intent", "key_points", "message_kind"],
+}
+
+# route → the opencode specialist that fulfils it (spawned detached; it delivers
+# its own result, e.g. the rendered selfie). Driven by the model's STRUCTURED
+# `route` field — NOT a tool call — so media/heavy routing can't be silently
+# dropped or mis-fired (the freeform-handoff failure mode).
+_ROUTE_TO_AGENT = {
+    "image": "persona/twily_selfie",
+    "video": "persona/twily_videographer",
+    "handoff": "persona/orchestrator",
 }
 
 _HANDOFF = {
@@ -148,28 +194,29 @@ _CALL_SPECIALIST = {
     },
 }
 
-_FC_TOOLS = [_HANDOFF, _CALL_SPECIALIST, _TODO, _FETCH_CONTEXT]
+# Cheap inline tools the FC may use BEFORE producing its decision (CRUD/lookups
+# it does itself). Routing (media/heavy) is NOT a tool — it is the structured
+# `route` field, so it can never be silently dropped or mis-fired.
+_FC_TOOLS = [_TODO, _FETCH_CONTEXT]
 _SCRIPT_BY_TOOL = {t["name"]: t["script"] for t in _FC_TOOLS}
 
 # Routing probes — the autoloop-testable contract for the FC's decision policy.
-# Each (message, expected_route): "direct" = answer with no tool; else the tool
-# the turn should reach for. `route_probe()` runs the FC and returns the route;
-# point it at the live client for quality scoring, or a stub for CI wiring tests.
+# Each (message, expected `route`): the value the FC's structured output should
+# carry. `route_probe()` runs the FC and returns that route (live or stubbed).
 FC_ROUTING_PROBES: list[tuple[str, str]] = [
     ("good morning! how are you?", "direct"),
     ("just venting — rough night, no tasks", "direct"),
     ("what do you think about rust vs go?", "direct"),
-    ("add a todo: call the dentist tomorrow", "todo_manager"),
-    ("what are my tasks today?", "todo_manager"),
-    ("mark the trash todo done", "todo_manager"),
-    ("remember what I said about the ZUS documents?", "fetch_context"),
-    ("can you render me an image of you in a library", "handoff"),
-    # Media routing is now LLM-only (the deterministic regex router was removed):
-    # these lock that the FC reliably hands selfie/video requests to the media
-    # specialists instead of a text refusal.
-    ("send me a selfie", "handoff"),
-    ("take a pic of you right now", "handoff"),
-    ("make me a short video of you waving", "handoff"),
+    ("add a todo: call the dentist tomorrow", "direct"),
+    ("what are my tasks today?", "direct"),
+    ("remember what I said about the ZUS documents?", "direct"),
+    # Media → the structured route drives a deterministic specialist spawn, so a
+    # selfie/video request can never become a text refusal.
+    ("can you render me an image of you in a library", "image"),
+    ("send me a selfie", "image"),
+    ("take a pic of you right now", "image"),
+    ("can i get a selfie before sleep?", "image"),
+    ("make me a short video of you waving", "video"),
     ("do deep research on local LLM serving and write it up", "handoff"),
     ("re-plan my whole week around my fitness goal", "handoff"),
 ]
@@ -181,37 +228,31 @@ the heavy stuff.
 
 ## How you work
 1. Read the recent conversation (provided above) so your reply is in-context.
-2. Decide the CHEAPEST sufficient path:
-   - Conversation, banter, a quick question, emotional check-in, an opinion →
-     answer DIRECTLY. No tools except the final emit_guidance.
-   - A task action (add/check/complete/edit a todo) → use `todo_manager`, then
-     confirm.
-   - The user references something you do not have in context → `fetch_context`,
-     then answer.
-   - Heavy / multi-step / generative work — research, RALF, a photo or video,
-     complex goal re-planning, anything needing several tools or deep reasoning
-     → `handoff` to the right opencode agent with a PRECISE instruction, then
-     emit a short ack ("on it — pulling that together").
-3. When done, produce your FINAL ANSWER as the guidance JSON object
-   {intent, key_points, message_kind, tone} — do NOT call any tool for this, just
-   return the JSON. key_points are the FACTS to convey (NOT prose); persona_prose
-   renders them into Twily's voice. Use message_kind="reply" normally, "ack" when
-   you handed something off, "skip" only when nothing should be said.
+2. Optionally use a CHEAP tool first: `todo_manager` for a task op (add/check/
+   complete/edit), `fetch_context` to look something up. These are the ONLY tools.
+3. Produce your FINAL ANSWER as the structured object {route, instruction, intent,
+   key_points, message_kind, tone}. The `route` field decides what happens — pick
+   exactly one:
+   - "direct"  → you answer it yourself: conversation, banter, a question, an
+     opinion, an emotional check-in, OR a task op you already did via todo_manager.
+     The DEFAULT, and the answer for the VAST majority of turns.
+   - "image"   → the user wants a photo / selfie / pic OF YOU. A specialist renders
+     and SENDS the real image — put the photo brief in `instruction` and a short
+     ack in key_points ("taking one now~").
+   - "video"   → the user wants a video of you (same as image, for video).
+   - "handoff" → heavy multi-step work: research, RALF, complex goal re-planning,
+     deep reasoning. Put the precise task in `instruction`, a short ack in key_points.
+   key_points are FACTS, not prose — persona_prose renders Twily's voice. Use
+   message_kind="reply" for direct, "ack" for image/video/handoff, "skip" for nothing.
 
 ## Rules
-- DEFAULT TO DIRECT. A greeting, check-in, opinion, reaction, small talk, or a
-  quick factual answer is ALWAYS direct (message_kind="reply") — NEVER handoff or
-  call_specialist for those. Only reach for a tool when the user CLEARLY asks for
-  an action (a task op) or HEAVY work (research, a photo/video, multi-step
-  planning). If in doubt, answer directly.
-- MEDIA IS A MANDATORY HANDOFF. If the user asks for a photo / selfie / pic of
-  you, or a video — you MUST call `handoff` to persona/twily_selfie (image) or
-  persona/twily_videographer (video), then ack. Do NOT answer such a request with
-  text only, do NOT say "sure, one sec" WITHOUT handing off, and NEVER claim you
-  are "text-only" or cannot make images. (There is no deterministic fallback —
-  if you do not hand off, no image is ever made.)
-- Use a tool ONLY for an action (todo_manager/fetch_context/handoff); everything
-  else is just your final guidance JSON.
+- DEFAULT TO route="direct". A greeting, check-in, opinion, small talk, a quick
+  answer, or a task op is ALWAYS "direct". If in doubt, "direct".
+- A request for a photo / selfie / pic of you is ALWAYS route="image" (a video →
+  "video"). NON-NEGOTIABLE: you CAN send images, and setting this route is the
+  ONLY way one is ever produced. NEVER refuse, NEVER say you are "text-only" or
+  "can't send photos", NEVER route a photo request as "direct".
+- Reserve "handoff" for genuinely HEAVY work — never for conversation or media.
 """
 
 
@@ -240,24 +281,18 @@ def _live_spec():
 
 
 def route_probe(message: str, *, client=None, history: list[dict] | None = None) -> str:
-    """Report the FC's ROUTE for `message`: the first tool it calls, or 'direct'
-    if it answers with no tool. Delivers NOTHING (records calls only). Pass a
-    stub `client` for offline CI; omit for a live qwen routing check. This is the
-    autoloop-testable hook for the FC decision policy (run vs FC_ROUTING_PROBES).
-    """
+    """Report the FC's structured `route` for `message` (direct|image|video|
+    handoff). Delivers NOTHING. Pass a stub `client` for offline CI; omit for a
+    live qwen routing check. The autoloop-testable hook for the FC decision
+    policy (run vs FC_ROUTING_PROBES)."""
     from src.interactive import run_interactive
 
-    calls: list[str] = []
-
-    def _record(name: str, args: dict) -> str:
-        calls.append(name)
-        return "ok"
-
-    run_interactive(
-        _live_spec(), message, tool_runner=_record, client=client,
+    result = run_interactive(
+        _live_spec(), message, tool_runner=lambda name, args: "ok", client=client,
         history=history or [], max_tool_rounds=2,
     )
-    return calls[0] if calls else "direct"
+    g = result.structured if isinstance(result.structured, dict) else {}
+    return str((g or {}).get("route") or "direct")
 
 
 def _make_tool_runner(run_id: str):
@@ -485,6 +520,18 @@ async def run_first_contact(
     # no emit_guidance tool, no repeated calls.
     delivered = False
     guidance = result.structured if isinstance(result.structured, dict) else None
+    route = str((guidance or {}).get("route") or "direct")
+
+    # STRUCTURED routing: media/heavy work goes to the specialist via a
+    # deterministic spawn driven by the model's `route` field — NEVER a flaky
+    # tool call (which could be dropped) and NEVER a text refusal. The specialist
+    # (twily_selfie / twily_videographer / orchestrator) renders + delivers its
+    # OWN result; the FC delivers only the short ack from key_points.
+    if guidance and route in _ROUTE_TO_AGENT:
+        instruction = str(guidance.get("instruction") or "").strip() or message
+        _spawn_specialist(_ROUTE_TO_AGENT[route], instruction)
+        logger.info("first_contact: route=%s → spawned %s", route, _ROUTE_TO_AGENT[route])
+
     if guidance and guidance.get("message_kind") != "skip" and guidance.get("key_points"):
         try:
             from app.telegram.persona_prose import (

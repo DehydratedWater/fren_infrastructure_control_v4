@@ -20,15 +20,17 @@ def test_fc_tools_are_actions_only_no_emit_guidance():
 
     names = {t.name for t in _live_spec().tools}
     assert "emit_guidance" not in names
-    assert names == {"handoff", "call_specialist", "todo_manager", "fetch_context"}
+    # Routing is the structured `route` field, NOT a tool — only cheap CRUD tools.
+    assert names == {"todo_manager", "fetch_context"}
 
 
-def test_fc_has_guidance_output_schema():
+def test_fc_has_structured_route_schema():
     from app.agents.first_contact import _live_spec
 
     schema = _live_spec().output_schema
     assert schema is not None
-    assert set(schema["required"]) == {"intent", "key_points", "message_kind"}
+    assert set(schema["required"]) == {"route", "intent", "key_points", "message_kind"}
+    assert set(schema["properties"]["route"]["enum"]) == {"direct", "image", "video", "handoff"}
 
 
 def test_fc_decision_keeps_thinking_render_is_fast():
@@ -53,13 +55,15 @@ def test_handoff_tool_has_agent_and_instruction():
     assert _HANDOFF["script"] is None  # handled specially (detached spawn)
 
 
-def test_call_specialist_and_full_routing_spectrum_present():
-    from app.agents.first_contact import _live_spec
+def test_routing_is_structured_with_specialist_map():
+    from app.agents.first_contact import _ROUTE_TO_AGENT, _live_spec
 
     names = {t.name for t in _live_spec().tools}
-    # the full spectrum: direct CRUD (todo) + lookup (fetch_context) + wait
-    # (call_specialist) + fire-and-forget (handoff)
-    assert names == {"handoff", "call_specialist", "todo_manager", "fetch_context"}
+    assert names == {"todo_manager", "fetch_context"}  # no handoff/call_specialist tools
+    # media/heavy routing is the structured `route` → specialist (deterministic spawn)
+    assert _ROUTE_TO_AGENT["image"] == "persona/twily_selfie"
+    assert _ROUTE_TO_AGENT["video"] == "persona/twily_videographer"
+    assert _ROUTE_TO_AGENT["handoff"] == "persona/orchestrator"
 
 
 # ── routing probes: deterministic plumbing via a stub client ──
@@ -98,20 +102,21 @@ def test_route_probe_direct_when_no_tool():
     assert route_probe("good morning", client=_StubClient(_final())) == "direct"
 
 
-def test_route_probe_reports_first_tool():
+def test_route_probe_reports_structured_route():
     from app.agents.first_contact import route_probe
 
-    client = _StubClient(_tool("handoff", {"agent": "persona/orchestrator", "instruction": "x"}), _final())
-    assert route_probe("do deep research", client=client) == "handoff"
-
-    client2 = _StubClient(_tool("todo_manager", {"command": "add", "title": "x"}), _final())
-    assert route_probe("add a todo", client=client2) == "todo_manager"
+    for route in ("image", "video", "handoff", "direct"):
+        content = (
+            '{"route":"%s","instruction":"x","intent":"x",'
+            '"key_points":["x"],"message_kind":"ack"}' % route
+        )
+        assert route_probe("x", client=_StubClient(_final(content))) == route
 
 
 def test_routing_probe_pack_targets_are_valid():
-    from app.agents.first_contact import FC_ROUTING_PROBES, _live_spec
+    from app.agents.first_contact import FC_ROUTING_PROBES
 
-    valid = {t.name for t in _live_spec().tools} | {"direct"}
+    valid = {"direct", "image", "video", "handoff"}
     assert len(FC_ROUTING_PROBES) >= 8
     for msg, route in FC_ROUTING_PROBES:
         assert route in valid, f"{msg!r} → unknown route {route!r}"
