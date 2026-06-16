@@ -98,11 +98,12 @@ async def run_world_turn(
     present_npcs = pkg.npcs_at(loc_id)
     npc_aff = {nid: int(st.get("affinity", 0)) for nid, st in (await repo.npc_states()).items()}
     events = await repo.events_for_prompt(limit=24)
+    beats_here = int((session.get("persona_state") or {}).get("beats_here", 0))
 
     spec, client = _build_client(pkg, visitor_present=visitor_present)
     message = prompts.build_turn_message(
         pkg, session=session, events=events, present_npcs=present_npcs,
-        npc_affinity=npc_aff, visitor_input=visitor_input,
+        npc_affinity=npc_aff, visitor_input=visitor_input, beats_here=beats_here,
     )
 
     try:
@@ -124,6 +125,7 @@ async def run_world_turn(
         message2 = prompts.build_turn_message(
             pkg, session=session, events=events, present_npcs=present_npcs,
             npc_affinity=npc_aff, visitor_input=visitor_input, research_feedback=res,
+            beats_here=beats_here,
         )
         try:
             outcome2 = await asyncio.to_thread(_generate, spec, client, message2)
@@ -171,6 +173,8 @@ async def run_world_turn(
         ps["mood"] = outcome.mood
     energy = int(ps.get("energy", 80)) + int(outcome.energy_delta or 0)
     ps["energy"] = max(0, min(100, energy))
+    # restlessness counter: reset on a move, otherwise climb
+    ps["beats_here"] = 0 if moved else beats_here + 1
 
     for aff in outcome.affinity:
         await repo.bump_affinity(aff.npc_id, aff.delta, turn_no)
@@ -182,9 +186,12 @@ async def run_world_turn(
                               importance=importance, location_id=new_loc or loc_id)
 
     minutes = _estimate_minutes(outcome, moved=moved, researched=researched)
+    # A visit lasts only as long as Vis is actively engaging: an autonomous
+    # background beat ends it, so a chat doesn't pin her to one room all night.
+    next_visitor_present = bool(visitor_input)
     new_session = await repo.advance_turn(
         new_location_id=new_loc, minutes=minutes, persona_state=ps,
-        visitor_present=bool(session.get("visitor_present")),
+        visitor_present=next_visitor_present,
     )
 
     return {

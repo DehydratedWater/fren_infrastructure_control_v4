@@ -64,6 +64,36 @@ def test_lore_selection_matches_keywords():
     assert any(entry.content == h for h in hits)
 
 
+def test_system_prompt_lists_the_cast_as_pull():
+    pkg = _pkg()
+    sysp = prompts.build_system_prompt(pkg)
+    # the town digest should name NPCs so she has reasons to leave home
+    assert "HER TOWN" in sysp
+    assert any(n.name in sysp for n in pkg.npcs)
+
+
+def test_restlessness_pressure_grows_with_beats_here():
+    pkg = _pkg()
+    start = pkg.scenario.starting_location_id
+    session = {"current_location_id": start, "clock_minutes": 14 * 60, "day_count": 1,
+               "persona_state": {"mood": "ok", "energy": 70}}
+    fresh = prompts.build_turn_message(pkg, session=session, events=[], present_npcs=[],
+                                       npc_affinity={}, beats_here=0)
+    stuck = prompts.build_turn_message(pkg, session=session, events=[], present_npcs=[],
+                                       npc_affinity={}, beats_here=7)
+    assert "RESTLESSNESS" not in fresh
+    assert "RESTLESSNESS" in stuck
+
+
+def test_solo_at_home_surfaces_people_to_seek():
+    pkg = _pkg()
+    start = pkg.scenario.starting_location_id  # the study (home, solo)
+    session = {"current_location_id": start, "clock_minutes": 11 * 60, "day_count": 1, "persona_state": {}}
+    msg = prompts.build_turn_message(pkg, session=session, events=[], present_npcs=[],
+                                     npc_affinity={}, beats_here=1)
+    assert "PEOPLE SHE COULD SEEK OUT" in msg
+
+
 def test_research_feedback_renders_results():
     pkg = _pkg()
     start = pkg.scenario.starting_location_id

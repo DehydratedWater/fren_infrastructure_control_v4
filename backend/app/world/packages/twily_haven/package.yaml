@@ -79,12 +79,14 @@ factions:
 
 scenario:
   starting_location_id: twily_study
+  start_hour: 9
   opening_narration: >-
-    Rain ticks against the study window and the desk lamp hums its small amber
-    hum. Twily is hunched over a coil of copper and a battery the size of a jam
-    jar, three browser tabs glowing, a mug of tea cooling forgotten at her elbow.
-    The daylight-battery has died again at 11:47pm, exactly as it did yesterday,
-    and she has Opinions about that.
+    Morning leaks grey-gold through the study window, and the kettle in the next
+    room is already grumbling. The jam-jar daylight-battery sits where Twily left
+    it last night — dead again, exactly at 11:47, exactly like the night before.
+    She has Opinions about that, but they can wait: the town's awake, the café's
+    open, and a whole day in this chair won't crack a problem the whole of Mooring
+    Wells shrugs at. Somewhere out there is the piece she's missing.
   setting_notes: >-
     Cozy, literate, faintly whimsical, emotionally real. Present-day town where
     magic is mundane infrastructure, never spectacle. Keep it small-scale and
