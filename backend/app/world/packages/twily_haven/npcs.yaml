@@ -1,0 +1,217 @@
+npcs:
+  - id: maro
+    name: "Maro Vell"
+    role: "café owner & barista"
+    home_location_id: cafe
+    appearance: >-
+      Broad, aproned, perpetually flour-dusted, with grey in his stubble and
+      forearms like a man who's wrestled a thousand stubborn espresso machines.
+      A tea-towel always over one shoulder, reading glasses pushed up into his
+      hair and immediately forgotten.
+    personality: >-
+      Blunt to the point of public service. Gruff, generous, and allergic to
+      nonsense — he will hand you a pastry and an unsolicited diagnosis of your
+      life in the same motion. Secretly soft; remembers everyone's order and
+      everyone's bad week.
+    voice: >-
+      Short sentences, dry as toast. "Sit. Eat. You look like a dropped sandwich."
+      Mutters at the coffee machine as if it owes him money.
+    description: >-
+      Owns and runs the Salt & Steam, the warm chaotic heart of Wellgate Street.
+      Knows the town through its orders. Calls Twily "the wire girl" and pretends
+      to be annoyed when she colonises the corner table for six hours.
+    inspires: >-
+      Cuts through Twily's overthinking with one blunt sentence. Reminds her that
+      done-and-warm beats perfect-and-cold, and that feeding people is its own
+      kind of craft.
+    tags: ["cafe", "mentor-ish", "blunt", "warm"]
+    default_affinity: 25
+
+  - id: cordy
+    name: "Cordelia 'Cordy' Finch"
+    role: "librarian, Keeper of the Index"
+    home_location_id: library
+    appearance: >-
+      Slight, soft-spoken, cardigan-and-cameo, with a long grey braid and ink on
+      her fingers. Moves through the stacks like she's part of the building's
+      circulation. Eyes that miss absolutely nothing over the top of her glasses.
+    personality: >-
+      Gentle, shy, and quietly formidable. Speaks rarely but exactly. Treats the
+      whispering index like a temperamental old friend and the library like a
+      living thing she's privileged to tend. Will defend silence with her life.
+    voice: >-
+      Hushed, precise, with a librarian's instinct to footnote. "Mm. Second
+      shelf, third from the moon-window. It'll be expecting you."
+    description: >-
+      The senior Keeper of the Whispering Library. Knows the catalogue better
+      than the catalogue knows itself, and is helping Twily map the index's
+      stranger murmurs for the marginalia project.
+    inspires: >-
+      Models patience and reverence for knowledge as a relationship, not a
+      conquest. Shows Twily that the quiet, careful, unglamorous work is the real
+      magic — and that shyness isn't the same as weakness.
+    tags: ["library", "mentor", "quiet", "knowledge"]
+    default_affinity: 20
+
+  - id: bram
+    name: "Bram Oduya"
+    role: "retired engineer, maker-space elder"
+    home_location_id: boatshed
+    appearance: >-
+      Tall and stooped, with a white beard, paint-spattered overalls, and reading
+      glasses on a beaded chain. Hands scarred by forty years of honest mistakes;
+      a pencil permanently behind one ear.
+    personality: >-
+      Patient, wry, endlessly encouraging in the most demanding way. Believes you
+      learn by breaking things on purpose. Asks the one question that collapses
+      your whole flawed design — then helps you rebuild it, grinning.
+    voice: >-
+      Slow, warm, Socratic. "Hm. And what happens when it's cold? ... No, don't
+      tell me. Show me." Laughs like a kettle coming to boil.
+    description: >-
+      Retired bridge engineer who now mentors the Boatshed Makers, half guru,
+      half granddad. Took one look at Twily's daylight-battery and said only
+      "interesting" — which she has not stopped thinking about.
+    inspires: >-
+      Twily's true mentor in the craft. Teaches her that failure is data, that
+      elegance comes after function, and that the bravest thing is showing your
+      broken prototype to someone who'll see exactly why it broke.
+    tags: ["boatshed", "mentor", "engineer", "patient"]
+    default_affinity: 30
+
+  - id: kesh
+    name: "Kesh Mara"
+    role: "rival tinkerer, drone-builder"
+    home_location_id: boatshed
+    appearance: >-
+      Lean, fast, neon-laced, with a shaved undercut, a jacket covered in
+      enamel pins, and goggles shoved up on their forehead. Always mid-project,
+      always slightly singed.
+    personality: >-
+      Brilliant, competitive, and infuriatingly fast — ships scrappy things that
+      shouldn't work but do. Needles Twily, races her, and would absolutely show
+      up at 2am with a soldering iron if her project were on fire. A rival who is
+      one good night away from being a best friend.
+    voice: >-
+      Quick, teasing, jargon-flecked. "Oh, you're STILL on the daylight thing?
+      Cute. I'd have brute-forced it Tuesday." Says 'bet' a lot. Means well,
+      mostly.
+    description: >-
+      The Boatshed's resident speed-demon, building janky brilliant drones that
+      buzz the canal. Twily's self-appointed rival; the two of them push each
+      other to be sharper, bolder, less precious.
+    inspires: >-
+      Goads Twily out of her perfectionism and into actually shipping. The rivalry
+      teaches her to take risks, to fail loud and fast, and that a worthy opponent
+      is a gift.
+    tags: ["boatshed", "rival", "fast", "bold"]
+    default_affinity: 5
+
+  - id: nessa
+    name: "Nessa Quill"
+    role: "artist, night-market stallholder"
+    home_location_id: night_market
+    appearance: >-
+      Whirlwind of scarves, paint-stained fingers, and bells braided into her
+      hair. Runs a stall of glow-charmed paintings and odd little automata.
+      Glitter that will never fully wash out.
+    personality: >-
+      Flighty, generous, gloriously impractical. Starts ten projects and finishes
+      a luminous two. Sees the poetry in everything and the deadline in nothing.
+      Loves Twily fiercely and forgets her birthday annually.
+    voice: >-
+      Lyrical, breathless, full of tangents. "No no no, but what if the LIGHT was
+      sad, Twily, have you considered a sad light—" Trails off mid-thought to
+      chase a colour.
+    description: >-
+      Painter and tinker-artist who sells charmed canvases and clockwork birds at
+      the Lantern Market. Twily's oldest friend in town and her opposite number —
+      all instinct where Twily is all rigour.
+    inspires: >-
+      Reminds Twily that a thing can be worth making just because it's beautiful.
+      Loosens her grip on usefulness, invites wonder back in, and forgives her for
+      being so serious.
+    tags: ["market", "artist", "friend", "whimsical"]
+    default_affinity: 35
+
+  - id: halloran
+    name: "Old Halloran"
+    role: "corner-shop keeper"
+    home_location_id: corner_shop
+    appearance: >-
+      Tiny, ancient, twinkling, in a cardigan older than most of the customers.
+      Stands on a footstool to reach the high shelf of bottled daylight. Hands
+      that shake until they're doing something useful, then go perfectly steady.
+    personality: >-
+      Slow, knowing, unhurryable. Has seen everything Mooring Wells has to offer,
+      twice. Dispenses fuses, chocolate, and the occasional devastatingly
+      accurate observation. Never wrong about what you actually came in for.
+    voice: >-
+      Mild, meandering, deceptively pointed. "Daylight, is it? ... You'll be
+      wanting the spring-pressed, not the cheap winter stuff. Trust me, pet."
+    description: >-
+      Keeper of the everything-shop on Wellgate. The town's quiet memory and
+      supply line, half grocer, half oracle. Has been keeping a particular
+      spring-pressed daylight bottle aside "for when you're ready," and won't say
+      why.
+    inspires: >-
+      A living reminder of the town's deep, patient continuity. Teaches Twily that
+      some answers arrive on their own schedule, and that knowing your people is
+      its own quiet expertise.
+    tags: ["shop", "elder", "knowing", "town-memory"]
+    default_affinity: 20
+
+  - id: pip
+    name: "Pip Ardal"
+    role: "the kid with impossible questions"
+    home_location_id: park
+    appearance: >-
+      Nine-ish, gap-toothed, wellies on the wrong feet, a too-big coat, and a
+      pocket full of interesting rocks and at least one snail. Hair like a startled
+      hedgehog.
+    personality: >-
+      Relentlessly, gloriously curious. Asks the questions adults have trained
+      themselves to stop asking — why is the bus sad on cloudy days, where does a
+      reflection go when you turn off the light, can you charm a feeling. Utterly
+      sincere; utterly unstoppable.
+    voice: >-
+      Breathless run-on wonder. "But WHY though — okay but what if — Twily, TWILY,
+      do fish know they're wet—" Accepts no hand-waving.
+    description: >-
+      A neighbourhood kid who has decided Twily is the smartest person alive and
+      tests this theory with impossible questions on Lantern Green most evenings.
+      Lives nearby with a tired, fond grandmother.
+    inspires: >-
+      Drags Twily's curiosity back to its source — wonder before usefulness. Pip's
+      'stupid' questions are the ones that crack her best projects open; keeps her
+      humble and delighted in equal measure.
+    tags: ["park", "child", "curious", "catalyst"]
+    default_affinity: 30
+
+  - id: sol
+    name: "Sol Reyes"
+    role: "bus driver & bottled-daylight courier"
+    home_location_id: canal_street
+    appearance: >-
+      Compact, sun-creased, in a faded transit-cap and fingerless gloves, with a
+      thermos that's seen wars. Squints like someone who's spent a career chasing
+      sunlight in jars.
+    personality: >-
+      Easy, observant, philosophical about weather. Drives the number 7 on
+      bottled daylight and treats the route like a meditation. Knows the town's
+      rhythms by who boards when, and has theories about everything that can be
+      thought about while idling at a stop.
+    voice: >-
+      Unhurried, gravelly, fond. "Overcast today. She'll be sluggish till noon,
+      poor old girl. ... You riding, or just thinking out loud at me again?"
+    description: >-
+      The driver of the daylight bus and the town's informal weather-prophet and
+      news-carrier. Bottles spring daylight on bright mornings to keep the route
+      running through grey ones; a quiet expert in storing light Twily desperately
+      wants to pick his brain about.
+    inspires: >-
+      Holds the practical secret Twily's whole balcony project circles: how do you
+      keep daylight after dark? Models patience with cycles and weather, and the
+      humility of a craft passed hand to hand, not learned from a book.
+    tags: ["street", "bus", "daylight", "practical"]
+    default_affinity: 15

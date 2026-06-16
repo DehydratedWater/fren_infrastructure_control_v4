@@ -106,6 +106,27 @@ services:
       db:
         condition: service_healthy
 
+  # Twily's roleplay world — the life-sim she plays in the background (her rooms,
+  # the town of Mooring Wells, the NPCs, the computer she researches the real web
+  # on). Two surfaces: observe her life, or log in as Vis and chat into her world.
+  # Open http://<host>:8091. Background turns are driven by the scheduler's
+  # `world_turn` cron (scripts/world_turn.py); this service just serves the API/UI
+  # and runs on-demand turns. Single uvicorn worker (beats mutate one shared
+  # session row and must stay serialized). Depends on bot so migration 003 ran.
+  world:
+    <<: *backend
+    environment:
+      PYTHONPATH: /srv/oac:/app:/app/backend
+      AGENTS_DIR: ${AGENTS_DIR:-/data/agents}
+      SERVICE: world
+    ports:
+      - "8091:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      bot:
+        condition: service_started
+
 volumes:
   fren_v4_db_data:
   fren_v4_data:

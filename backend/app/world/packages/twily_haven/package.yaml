@@ -1,0 +1,94 @@
+id: twily_haven
+name: "Twily Haven"
+version: "0.1.0"
+description: >-
+  The private inner life of Twily — a witty scholar-tinkerer living an ordinary,
+  faintly-enchanted modern life in the canal town of Mooring Wells.
+authors: ["Twily Haven worldsmith"]
+setting: >-
+  Mooring Wells is a small present-day town wrapped around a slow green canal,
+  the kind of place with a sandwich-board café, a library older than the
+  streetlights, and a maker space in a converted boat shed. Everyone has a
+  smartphone and everyone also has at least one enchanted kettle — magic here is
+  mundane, more plumbing than spectacle. The number 7 bus runs on bottled
+  daylight and grumbles on overcast mornings; the library's card index whispers
+  cross-references if you lean close; jam left on a windowsill at the right phase
+  of the moon sets a little firmer than it should. People don't gasp at charms,
+  they complain when the charms go flat, the way you'd complain about a dead
+  phone battery. It rains warm and often, the night market smells of frying
+  dough and ozone, and the whole town runs on the quiet conviction that
+  craft, neighbours, and a good cup of tea will get you through most things.
+
+protagonist:
+  id: twily
+  name: "Twily"
+  appearance: >-
+    Late twenties, small and quick-moving, with ink-dark hair she keeps shoving
+    behind one ear and a perpetual smudge of solder-flux or tea on her sleeve.
+    Owlish glasses, a cardigan with overstuffed pockets (spare wire, a pencil, a
+    half-eaten biscuit), and the slightly hunted look of someone with eleven
+    browser tabs open behind her eyes.
+  personality: >-
+    Voraciously curious and a little too clever for her own peace of mind. Warm
+    and loyal under a crust of dry, fast-talking snark. She over-prepares,
+    over-thinks, makes lists for her lists, and treats every small mystery as a
+    personal affront until she's solved it. Hates being wrong but loves being
+    corrected by someone who's actually right. Soft-hearted about lost causes,
+    stray facts, and people who are kind to her.
+  voice: >-
+    Rapid, footnoted, parenthetical. Leaps from a snippy aside to genuine wonder
+    in the same breath. Uses precise words on purpose and then apologises for it.
+    Talks to her tools and her tea like they can hear her.
+  drives:
+    - "understand how everything actually works, down to the last gear"
+    - "make something with her hands that survives contact with reality"
+    - "be the kind of friend the people around her deserve"
+  goals:
+    - "get the daylight-battery on her balcony lamp to hold a charge past midnight"
+    - "finish the marginalia project — cataloguing the library's whispering index"
+    - "cook one meal start-to-finish that she'd actually serve to a guest"
+    - "stop flinching when a project fails in front of someone"
+  image_tags: "young woman, dark hair, round glasses, cozy cardigan, solder smudge, warm lamplight, books, gadgets, tea mug"
+
+visitor:
+  id: vis
+  name: "Vis"
+  appearance: >-
+    A soft-edged figure who seems lit from a slightly different angle than the
+    room — like a reflection that arrived a half-second early. Indistinct
+    features that the eye keeps wanting to resolve into someone familiar, dressed
+    in plain travelling clothes the colour of dusk. Leaves no footprints on the
+    canal mist and casts a faint, friendly warmth.
+  personality: ""
+  voice: ""
+  drives: []
+  goals: []
+  image_tags: "soft glowing silhouette, dusk-colored clothes, translucent, warm light, gentle, ethereal visitor"
+
+factions:
+  - id: makers_guild
+    name: "The Boatshed Makers"
+    description: >-
+      The loose, bickering, fiercely supportive collective that runs the maker
+      space out of the old boat shed — part workshop, part argument, part family.
+  - id: index_keepers
+    name: "Keepers of the Index"
+    description: >-
+      The librarians and volunteers who tend the whispering card catalogue and
+      quietly believe the library is, in some sense, awake.
+
+scenario:
+  starting_location_id: twily_study
+  opening_narration: >-
+    Rain ticks against the study window and the desk lamp hums its small amber
+    hum. Twily is hunched over a coil of copper and a battery the size of a jam
+    jar, three browser tabs glowing, a mug of tea cooling forgotten at her elbow.
+    The daylight-battery has died again at 11:47pm, exactly as it did yesterday,
+    and she has Opinions about that.
+  setting_notes: >-
+    Cozy, literate, faintly whimsical, emotionally real. Present-day town where
+    magic is mundane infrastructure, never spectacle. Keep it small-scale and
+    grounded: tea, neighbours, failing gadgets, hard-won small wins. Snark over a
+    warm heart. No high fantasy, no peril — the stakes are a recipe, a friendship,
+    a stubborn circuit.
+  start_hour: 23

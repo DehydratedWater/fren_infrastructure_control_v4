@@ -35,6 +35,7 @@ case "$SERVICE" in
   scheduler) exec python -m app scheduler ;;
   checker)   exec python -m app checker ;;
   web)       exec python -m app web ;;
+  world)     exec python -m app world ;;
   compile)   exec python -m app compile ;;
   *)         exec python -m app "$SERVICE" ;;
 esac

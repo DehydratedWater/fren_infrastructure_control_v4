@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Twily Haven</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <!-- ── top bar ─────────────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">✦</span>
+      <div class="brand-text">
+        <h1 id="world-name">Twily Haven</h1>
+        <p id="world-setting" class="setting">a softly-lit life, lived in the background…</p>
+      </div>
+    </div>
+
+    <div class="clockwrap">
+      <div class="clock" id="clock">
+        <span class="clock-time" id="clock-time">--:--</span>
+        <span class="clock-meta" id="clock-meta">day — · —</span>
+      </div>
+      <div class="mode-toggle" role="tablist" aria-label="View mode">
+        <button id="tab-observe" class="mode-btn active" role="tab" aria-selected="true">Observe</button>
+        <button id="tab-visit" class="mode-btn" role="tab" aria-selected="false">Visit as Vis</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ── stream column ─────────────────────────────────────────────── -->
+    <section class="stream-col">
+      <div class="stream-head">
+        <h2 id="stream-title">Her day, unfolding</h2>
+        <div class="stream-actions">
+          <button id="load-more" class="ghost-btn" hidden>Earlier beats</button>
+          <button id="advance-btn" class="primary-btn">
+            <span class="btn-label">Advance a turn</span>
+            <span class="spinner" hidden></span>
+          </button>
+        </div>
+      </div>
+
+      <div id="stream" class="stream" aria-live="polite">
+        <!-- events injected here -->
+      </div>
+
+      <!-- composer, only in visit mode -->
+      <form id="composer" class="composer" hidden>
+        <textarea id="composer-input" rows="1"
+          placeholder="As Vis, say or do something in her world…"
+          aria-label="What Vis says or does"></textarea>
+        <button type="submit" id="composer-send" class="primary-btn">
+          <span class="btn-label">Send</span>
+          <span class="spinner" hidden></span>
+        </button>
+      </form>
+    </section>
+
+    <!-- ── world sidebar ─────────────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+      <!-- location card -->
+      <div class="card" id="card-location">
+        <div class="card-kicker">Where she is</div>
+        <h3 class="card-title" id="loc-name">—</h3>
+        <div class="loc-kind" id="loc-kind"></div>
+        <p class="loc-desc" id="loc-desc"></p>
+        <div class="chips" id="loc-activities"></div>
+        <div class="present" id="loc-present"></div>
+      </div>
+
+      <!-- her state -->
+      <div class="card" id="card-state">
+        <div class="card-kicker">How she's doing</div>
+        <div class="mood-row">
+          <span class="mood-label">Mood</span>
+          <span class="mood-value" id="mood-value">—</span>
+        </div>
+        <div class="energy">
+          <div class="energy-top">
+            <span>Energy</span><span id="energy-num">—</span>
+          </div>
+          <div class="energy-bar"><div class="energy-fill" id="energy-fill"></div></div>
+        </div>
+      </div>
+
+      <!-- neighbors -->
+      <div class="card" id="card-neighbors">
+        <div class="card-kicker">She could wander to…</div>
+        <div class="chips" id="neighbor-chips"><span class="muted">—</span></div>
+      </div>
+
+      <!-- npc roster -->
+      <div class="card" id="card-npcs">
+        <div class="card-kicker">People in her world</div>
+        <ul class="npc-list" id="npc-list"></ul>
+      </div>
+
+      <!-- research log -->
+      <div class="card" id="card-research">
+        <div class="card-kicker">From her computer</div>
+        <div class="research-log" id="research-log">
+          <p class="muted">Nothing looked up yet.</p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

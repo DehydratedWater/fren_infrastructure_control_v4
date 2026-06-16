@@ -102,6 +102,22 @@ def _run_web() -> None:
     )
 
 
+def _run_world() -> None:
+    """Serve Twily's roleplay world (observe / visit-as-Vis) on 0.0.0.0:8000.
+
+    A single uvicorn worker on purpose: world turns mutate one shared session row
+    and the engine assumes serialized beats (no two beats racing the same state).
+    """
+    import uvicorn
+
+    uvicorn.run(
+        "app.world.api:app",
+        host="0.0.0.0",  # noqa: S104 — container service, port published in compose
+        port=8000,
+        log_level="info",
+    )
+
+
 def _run_compile() -> None:
     """Compile the whole fleet (all worker variants) into settings.agents_dir."""
     from pathlib import Path
@@ -407,6 +423,8 @@ def _dispatch(service: str, argv: list[str]) -> None:
         _run_checker()
     elif service == "web":
         _run_web()
+    elif service == "world":
+        _run_world()
     elif service == "compile":
         _run_compile()
     elif service == "improve":

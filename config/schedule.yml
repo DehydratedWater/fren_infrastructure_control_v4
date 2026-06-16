@@ -351,3 +351,25 @@ jobs:
     description: Weekly relationship reflection and strategy update
     enabled: true
     timeout: 1800
+  world_turn:
+    # Twily's life advances one beat every ~15 min while she's awake — she
+    # chooses her own next action (roam Mooring Wells, cook, tinker, research the
+    # real web at her desk, talk to NPCs). Background/silent: this never messages
+    # the user (script jobs skip the delivery hook). The 02:00 promote (below)
+    # folds her distilled experiences back into her persona memory.
+    cron: '*/15 7-23 * * *'
+    agent: script:scripts/world_turn.py
+    prompt: ''
+    description: Twily's world — one background life beat
+    enabled: true
+    timeout: 300
+  world_promote:
+    # Once a day, promote the important memories from her life into her real
+    # persona memory + turn the things she looked up into persona interests, so
+    # who she is on Telegram is shaped by who she's been in the world.
+    cron: 0 2 * * *
+    agent: script:scripts/world_turn.py
+    prompt: --promote-only
+    description: Promote Twily's world experiences into persona memory
+    enabled: true
+    timeout: 300

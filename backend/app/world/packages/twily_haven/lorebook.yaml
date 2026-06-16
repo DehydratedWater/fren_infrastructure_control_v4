@@ -1,0 +1,115 @@
+lorebook:
+  - id: how_magic_works
+    keywords: ["magic", "enchant", "enchanted", "spell", "charm", "charmed", "charm-cartridge"]
+    content: >-
+      In Mooring Wells magic is infrastructure, not miracle — it behaves like
+      electricity that runs on intention and the right material. You don't cast
+      spells so much as set charms, which drain, flatten, and need topping up like
+      a battery. A good charm is invisible until it fails; the whole town's craft
+      is in keeping the small enchantments quietly working.
+    priority: 100
+
+  - id: bottled_daylight
+    keywords: ["daylight", "bottled daylight", "sunlight", "the bus", "number 7", "solar", "daylight-battery", "daylight lamp"]
+    content: >-
+      Daylight can be caught and bottled on bright mornings — spring-pressed light
+      is prized, winter light is thin and cheap. It powers lamps, the number 7
+      bus, and a hundred small charms, but it leaks: nobody in town has cleanly
+      cracked how to hold daylight past midnight, which is exactly the problem
+      Twily's balcony battery keeps losing to at 11:47pm.
+    priority: 90
+
+  - id: whispering_index
+    keywords: ["index", "card catalogue", "catalogue", "whisper", "whispering", "library", "marginalia"]
+    content: >-
+      The Whispering Library's card index murmurs cross-references to anyone who
+      leans close — usually helpful, occasionally cryptic, lately stranger than
+      usual. The Keepers believe the library is faintly awake and that the index
+      remembers more than it was ever filed with. Twily's marginalia project is an
+      attempt to map what it whispers when no one asked.
+    priority: 85
+
+  - id: enchanted_kettles
+    keywords: ["kettle", "tea", "brew", "teapot"]
+    content: >-
+      Nearly every home has an enchanted kettle, and they all develop
+      temperaments: they sulk when ignored, boil eager for a favoured guest, go
+      cold out of spite. Tea here is a small daily negotiation and a serious
+      social rite — offering a proper pot is how Mooring Wells says it cares.
+    priority: 70
+
+  - id: town_history
+    keywords: ["Mooring Wells", "town", "history", "founded", "canal", "the wells"]
+    content: >-
+      Mooring Wells grew up where an old canal met a cluster of springs the
+      locals swore held caught light. The wells are long capped, but the name and
+      the knack stuck: it's a craft town, a slow town, the sort that solved the
+      arrival of smartphones by simply charming them to charge off windowsills.
+    priority: 65
+
+  - id: the_boatshed
+    keywords: ["boat shed", "boatshed", "maker space", "makers", "workshop", "guild"]
+    content: >-
+      The Boatshed Makers run the maker space out of a converted shed on the
+      towpath — a loud, generous, bickering collective who believe the fastest way
+      to learn anything is to build it badly first. Bram mentors, Kesh races, the
+      kettle runs on spite, and everyone's project quietly improves by being
+      argued at.
+    priority: 60
+
+  - id: the_lantern_market
+    keywords: ["night market", "lantern market", "market", "stall", "stalls", "dumplings"]
+    content: >-
+      After dark the canal basin fills with the Lantern Market: stalls strung with
+      glow-charms, frying dough, salvage components, second-hand books, and
+      paintings that hum. It smells of sugar and ozone and is where half the
+      town's broken things find a second life — and where Twily does her best
+      scavenging.
+    priority: 55
+
+  - id: foggy_mirror
+    keywords: ["mirror", "fog", "reflection", "bathroom mirror"]
+    content: >-
+      Twily's bathroom mirror fogs into the shape of whatever she's quietly
+      worrying about — a habit of small domestic charms that bleed feeling into
+      their surroundings. The town is full of these: lights that dim with your
+      mood, ferns that hum at dusk, doorbells that ring true.
+    priority: 50
+
+  - id: the_lemon_tree
+    keywords: ["lemon tree", "fern", "plants", "balcony", "basil"]
+    content: >-
+      The balcony plants are an ongoing in-joke and an ongoing heartbreak: the
+      basil thrives, the lemon tree fruits exactly one cruel lemon a year, and the
+      fern definitely hums at dusk no matter what Kesh says. Twily talks to all of
+      them and insists it's "just thinking out loud."
+    priority: 45
+
+  - id: rumour_47
+    keywords: ["11:47", "midnight", "the witching glitch", "the dropout"]
+    content: >-
+      11:47pm is a small town legend — the hour when daylight charms most often
+      fail, lamps gutter, and the bus is brought in for the night. Old Halloran
+      calls it "the dropout" and the Keepers note the index goes quiet then too.
+      Nobody's sure if it's physics, magic, or coincidence, which is precisely the
+      kind of thing that keeps Twily up past it.
+    priority: 80
+
+  - id: the_seven_bus
+    keywords: ["Sol", "bus driver", "courier", "route"]
+    content: >-
+      Sol Reyes drives the number 7 on bottled daylight and bottles fresh light
+      on bright mornings to keep it running through grey ones — making them the
+      town's working expert on storing daylight, the exact knowledge Twily's
+      project needs. Sol carries news along the route and reads the day by who
+      boards when.
+    priority: 40
+
+  - id: small_stakes
+    keywords: ["fail", "failure", "broken", "prototype", "wrong"]
+    content: >-
+      Nothing in Mooring Wells is life-or-death — the stakes are a recipe, a
+      friendship, a circuit that won't hold. The town's whole ethic is that
+      failing small and often, in good company, is how anything good gets made.
+      Bram says it best: failure is just data wearing a frown.
+    priority: 35

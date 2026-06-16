@@ -1,0 +1,294 @@
+locations:
+  # ── HOME (parent) ───────────────────────────────────────────────────────────
+  - id: twily_home
+    name: "Twily's Apartment"
+    kind: venue
+    parent_id: null
+    description: >-
+      A cozy first-floor flat above the canal, all warm clutter and good light.
+      Books colonise every flat surface, a kettle is always thinking about
+      boiling, and the radiators tick like a contented animal. Home enough that
+      she sometimes forgets there's a town outside it.
+    image_tags: "cozy apartment, canal view, warm light, bookshelves, plants, lived-in"
+    default_npcs: []
+    activities: []
+    tags: ["home"]
+    position: [0, 0]
+
+  - id: twily_study
+    name: "The Study"
+    kind: room
+    parent_id: twily_home
+    description: >-
+      Half library, half lab. A scarred wooden workbench runs under the window,
+      crowded with a soldering iron, jars of salvaged components, and the
+      half-built daylight-battery. The computer sits in a nest of sticky notes
+      and reference books, screen glow competing with a brass desk lamp. This is
+      where Twily thinks out loud and where her best and worst ideas are born.
+    image_tags: "study lab, workbench, soldering iron, computer, brass lamp, books, sticky notes, rain on window"
+    default_npcs: []
+    activities:
+      - {tag: computer, label: "Use the computer", description: "look something up, write, chase a rabbit-hole, tinker with code"}
+      - {tag: tinker, label: "Tinker at the bench", description: "solder, wire, breadboard, swear gently at a circuit"}
+      - {tag: read, label: "Read", description: "pull a book from the wall and disappear into it"}
+      - {tag: journal, label: "Take research notes", description: "scribble findings and half-theories into the lab notebook"}
+    tags: ["home", "quiet", "work"]
+    position: [0, 1]
+
+  - id: twily_bedroom
+    name: "The Bedroom"
+    kind: room
+    parent_id: twily_home
+    description: >-
+      Small, dim, and unreasonably comfortable. A bed under a sloped ceiling, a
+      teetering bedside stack of novels she's "definitely about to finish," and a
+      string of warm fairy-lights she enchanted to dim themselves when she
+      actually falls asleep (they rarely get the chance).
+    image_tags: "cozy bedroom, sloped ceiling, fairy lights, stack of novels, soft blankets, dim warm light"
+    default_npcs: []
+    activities:
+      - {tag: rest, label: "Sleep", description: "actually lie down and let the day reset"}
+      - {tag: journal, label: "Journal", description: "write the day down before it blurs"}
+      - {tag: read, label: "Read in bed", description: "one more chapter, famously"}
+    tags: ["home", "quiet", "rest"]
+    position: [-1, 1]
+
+  - id: twily_kitchen
+    name: "The Kitchen"
+    kind: room
+    parent_id: twily_home
+    description: >-
+      A galley kitchen barely wide enough to turn around in, ruled by an
+      enchanted kettle that sulks when ignored. Spice jars in defiant disorder, a
+      cookbook splayed open to a recipe she is losing a fight with, and the faint
+      perpetual smell of toast that went slightly too far.
+    image_tags: "small galley kitchen, enchanted kettle, spice jars, open cookbook, warm, slightly chaotic"
+    default_npcs: []
+    activities:
+      - {tag: cook, label: "Cook", description: "attempt a recipe, badly then better"}
+      - {tag: brew_tea, label: "Brew tea", description: "the kettle's favourite ritual; hers too"}
+    tags: ["home", "warm"]
+    position: [1, 1]
+
+  - id: twily_bathroom
+    name: "The Bathroom"
+    kind: room
+    parent_id: twily_home
+    description: >-
+      Tiny, white-tiled, with a mirror that fogs in the shape of whatever she was
+      worrying about. A shelf of half-used potions-that-are-just-shampoo and a
+      rubber duck she has, regrettably, given a small voice circuit.
+    image_tags: "small white-tiled bathroom, foggy mirror, shelf of bottles, rubber duck, soft light"
+    default_npcs: []
+    activities:
+      - {tag: refresh, label: "Wash up", description: "shower, splash water, reset the brain"}
+      - {tag: think, label: "Stare into the foggy mirror", description: "the place her best epiphanies ambush her"}
+    tags: ["home", "quiet"]
+    position: [2, 1]
+
+  - id: twily_balcony
+    name: "The Balcony"
+    kind: room
+    parent_id: twily_home
+    description: >-
+      A narrow iron balcony over the canal, crowded with terracotta pots: basil,
+      a temperamental lemon tree, and a fern she's certain hums at dusk. Here
+      hangs the daylight lamp she's forever rewiring, drinking in whatever sun the
+      day will give. The best seat in the flat for watching boats and weather.
+    image_tags: "narrow iron balcony, canal view, potted plants, lemon tree, daylight lamp, dusk, string lights"
+    default_npcs: []
+    activities:
+      - {tag: tend_plants, label: "Tend the plants", description: "water, prune, murmur encouragement at the lemon tree"}
+      - {tag: tinker, label: "Adjust the daylight lamp", description: "fiddle with the balcony's stubborn solar charm"}
+      - {tag: think, label: "Watch the canal", description: "tea in hand, let the mind wander downstream"}
+    tags: ["home", "outdoors", "green"]
+    position: [0, 2]
+
+  - id: twily_hall
+    name: "The Hallway & Front Door"
+    kind: room
+    parent_id: twily_home
+    description: >-
+      A short hall of hooks and abandoned shoes, a coat-rack that holds three
+      coats for every kind of rain Mooring Wells can throw, and the front door
+      with its little brass charm that chimes when she forgets her keys (often).
+    image_tags: "narrow hallway, coat rack, shoes, front door, brass door charm, umbrella stand"
+    default_npcs: []
+    activities:
+      - {tag: depart, label: "Head out", description: "grab a coat, check for keys, step into the town"}
+    tags: ["home", "threshold"]
+    position: [0, 3]
+
+  # ── TOWN ─────────────────────────────────────────────────────────────────────
+  - id: canal_street
+    name: "Wellgate Street"
+    kind: outdoor
+    parent_id: null
+    description: >-
+      The cobbled spine of Mooring Wells, running between the canal and a row of
+      crooked shopfronts. The number 7 bus wheezes past on bottled daylight,
+      bicycles lean unlocked against lampposts, and a sandwich board outside the
+      café always promises something improbable. Everything in town is a short,
+      damp walk from here.
+    image_tags: "cobbled street, canal, crooked shopfronts, vintage bus, bicycles, rain, lampposts, sandwich board"
+    default_npcs: ["sol"]
+    activities:
+      - {tag: walk, label: "Walk the street", description: "drift between shopfronts, nod at neighbours"}
+      - {tag: think, label: "People-watch", description: "watch the town be itself for a while"}
+    tags: ["town", "outdoors", "hub"]
+    position: [0, 5]
+
+  - id: cafe
+    name: "The Salt & Steam"
+    kind: venue
+    parent_id: null
+    description: >-
+      A snug café with fogged windows, mismatched chairs, and a coffee machine
+      that hisses like it has opinions (it does). The pastries are blunt and
+      perfect, the tea is taken seriously, and Maro behind the counter will tell
+      you exactly what he thinks of your day whether you asked or not. Twily's
+      unofficial second study.
+    image_tags: "cozy cafe, fogged windows, mismatched chairs, espresso machine, pastries, warm light, chalkboard menu"
+    default_npcs: ["maro"]
+    activities:
+      - {tag: socialize, label: "Chat at the counter", description: "trade barbs and gossip with Maro and whoever's in"}
+      - {tag: brew_tea, label: "Order a pot", description: "the good leaf, a window seat, a notebook"}
+      - {tag: read, label: "Read in the corner", description: "café-noise as background music for a book"}
+    tags: ["town", "indoors", "social", "warm"]
+    position: [-1, 5]
+
+  - id: library
+    name: "The Whispering Library"
+    kind: venue
+    parent_id: null
+    description: >-
+      A tall stone reading-room older than the streetlights, where the card index
+      murmurs cross-references if you lean close and the shelves rearrange
+      themselves, very slightly, when no one's watching. Dust motes hang gold in
+      the high windows. Cordy keeps the silence and the secrets; the library, the
+      Keepers insist, is in some quiet sense awake.
+    image_tags: "old stone library, tall windows, card catalogue, golden dust motes, towering shelves, hushed, reading desks"
+    default_npcs: ["cordy"]
+    activities:
+      - {tag: read, label: "Read & research", description: "chase a reference down the stacks"}
+      - {tag: consult_index, label: "Ask the whispering index", description: "lean close and let the catalogue murmur"}
+      - {tag: socialize, label: "Talk to Cordy", description: "trade a quiet word with the librarian"}
+    tags: ["town", "indoors", "quiet", "knowledge"]
+    position: [1, 5]
+
+  - id: boatshed
+    name: "The Boat Shed"
+    kind: venue
+    parent_id: null
+    description: >-
+      The maker space — a converted boat shed loud with grinders, 3D-printers, and
+      argument. Half-built drones, a kiln, a wall of donated tools, and a kettle
+      that runs on someone's experimental charm and occasionally on spite. This is
+      where Twily's projects go to meet other people's projects and steal their
+      good ideas.
+    image_tags: "converted boat shed, maker space, 3d printers, tools on pegboard, half-built drones, kiln, sparks, busy"
+    default_npcs: ["bram", "kesh"]
+    activities:
+      - {tag: tinker, label: "Build at the bench", description: "use the big tools she doesn't own at home"}
+      - {tag: collaborate, label: "Workshop an idea", description: "pitch, argue, prototype with the others"}
+      - {tag: socialize, label: "Hang around the shed", description: "tea, banter, borrowed expertise"}
+    tags: ["town", "indoors", "making", "social"]
+    position: [2, 5]
+
+  - id: towpath
+    name: "The Canal Towpath"
+    kind: outdoor
+    parent_id: null
+    description: >-
+      A long green ribbon of path along the water, hung with willows and the smell
+      of wet stone. Narrowboats drowse at their moorings, ducks conduct loud
+      business, and the light off the canal does something forgiving to everyone's
+      face. The town's thinking-walk; problems untangle themselves out here.
+    image_tags: "canal towpath, willows, narrowboats, ducks, green water, soft light, wet stone, quiet"
+    default_npcs: []
+    activities:
+      - {tag: walk, label: "Walk the towpath", description: "let a long walk do the thinking"}
+      - {tag: think, label: "Sit on the lock gate", description: "watch the water and untangle a knot"}
+    tags: ["town", "outdoors", "calm", "green"]
+    position: [-2, 6]
+
+  - id: park
+    name: "Lantern Green"
+    kind: outdoor
+    parent_id: null
+    description: >-
+      A small commons of grass and old trees with a bandstand nobody plays and a
+      pond that freezes first every winter. By day, dogs and prams; by dusk, a few
+      enchanted lanterns warm up on their own. Twily comes here to read on the
+      grass and to lose arguments with a very persistent local child.
+    image_tags: "town green, old trees, bandstand, duck pond, glowing lanterns, dusk, grass, benches"
+    default_npcs: ["pip"]
+    activities:
+      - {tag: read, label: "Read on the grass", description: "a blanket, a book, a sky"}
+      - {tag: think, label: "Walk the green", description: "loop the pond and let thoughts settle"}
+      - {tag: socialize, label: "Field impossible questions", description: "get ambushed by Pip's latest why"}
+    tags: ["town", "outdoors", "green", "calm"]
+    position: [1, 7]
+
+  - id: night_market
+    name: "The Lantern Market"
+    kind: venue
+    parent_id: null
+    description: >-
+      An after-dark sprawl of stalls under strung bulbs and glow-charms by the
+      canal basin — frying dough, spare components, second-hand books, dubious
+      potions, and the smell of ozone and sugar. Loud, warm, and a little
+      magical in the ordinary way. Twily comes for salvage and stays for the
+      dumplings.
+    image_tags: "night market, strung lights, glowing stalls, fried food, canal basin, components, secondhand books, crowd, ozone"
+    default_npcs: ["nessa"]
+    activities:
+      - {tag: browse, label: "Browse the stalls", description: "hunt salvage, odd components, a good book"}
+      - {tag: socialize, label: "Haggle and gossip", description: "trade banter and coins with the stallholders"}
+      - {tag: cook, label: "Eat at a stall", description: "dumplings, fried dough, something on a stick"}
+    tags: ["town", "outdoors", "night", "social", "lively"]
+    position: [-1, 7]
+
+  - id: corner_shop
+    name: "Halloran's Corner Shop"
+    kind: venue
+    parent_id: null
+    description: >-
+      The cramped, everything-shop on the corner of Wellgate: milk, fuses, sticky
+      tape, the good chocolate, and a surprising back shelf of bottled daylight
+      and charm-cartridges. Old Halloran knows what you need before you do and
+      will not be hurried. The bell over the door is, of course, enchanted to
+      ring true even when the door is held.
+    image_tags: "cramped corner shop, crowded shelves, fuses, chocolate, bottled daylight, charm cartridges, doorbell, warm"
+    default_npcs: ["halloran"]
+    activities:
+      - {tag: shop, label: "Buy supplies", description: "milk, fuses, tea, a bottle of daylight"}
+      - {tag: socialize, label: "Chat with Halloran", description: "the slow, knowing small-talk of the regular"}
+    tags: ["town", "indoors", "errands"]
+    position: [-1, 6]
+
+connections:
+  # home internal cluster (study is the hub of the flat)
+  - {from_id: twily_study, to_id: twily_hall, label: "the study door", bidirectional: true, travel_note: "a step into the hall"}
+  - {from_id: twily_hall, to_id: twily_bedroom, label: "the bedroom door", bidirectional: true, travel_note: ""}
+  - {from_id: twily_hall, to_id: twily_kitchen, label: "the kitchen archway", bidirectional: true, travel_note: ""}
+  - {from_id: twily_hall, to_id: twily_bathroom, label: "the bathroom door", bidirectional: true, travel_note: ""}
+  - {from_id: twily_kitchen, to_id: twily_balcony, label: "the balcony door", bidirectional: true, travel_note: "out past the herbs"}
+  - {from_id: twily_study, to_id: twily_balcony, label: "the study's balcony door", bidirectional: true, travel_note: "the other way onto the iron balcony"}
+
+  # front door to the town
+  - {from_id: twily_hall, to_id: canal_street, label: "the front door", bidirectional: true, travel_note: "down the stairs and out onto Wellgate Street"}
+
+  # the street is the town hub
+  - {from_id: canal_street, to_id: cafe, label: "into the Salt & Steam", bidirectional: true, travel_note: "two doors down, mind the sandwich board"}
+  - {from_id: canal_street, to_id: library, label: "up the library steps", bidirectional: true, travel_note: "across the square to the old reading-room"}
+  - {from_id: canal_street, to_id: corner_shop, label: "into Halloran's", bidirectional: true, travel_note: "the bell rings true"}
+  - {from_id: canal_street, to_id: towpath, label: "down to the towpath", bidirectional: true, travel_note: "a gap in the railings to the water"}
+  - {from_id: canal_street, to_id: boatshed, label: "along to the boat shed", bidirectional: true, travel_note: "five minutes upstream to the maker space"}
+
+  # towpath threads the riverside places together
+  - {from_id: towpath, to_id: boatshed, label: "the shed's water door", bidirectional: true, travel_note: "the boat shed opens onto the path"}
+  - {from_id: towpath, to_id: night_market, label: "round to the market basin", bidirectional: true, travel_note: "where the canal widens and the lights begin"}
+  - {from_id: towpath, to_id: park, label: "up onto Lantern Green", bidirectional: true, travel_note: "a slope of grass off the path"}
+  - {from_id: canal_street, to_id: night_market, label: "down to the Lantern Market", bidirectional: true, travel_note: "follow the smell of dough and ozone"}
+  - {from_id: canal_street, to_id: park, label: "across to Lantern Green", bidirectional: true, travel_note: "over the little stone bridge"}
