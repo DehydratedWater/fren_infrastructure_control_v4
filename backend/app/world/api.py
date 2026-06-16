@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -191,7 +192,7 @@ def create_app() -> FastAPI:
         if not result.get("ok"):
             return JSONResponse(status_code=503, content={"ok": False, "error": result.get("error")})
         result["state"] = await _serialize_state(_pkg(), _repo())
-        return JSONResponse(content=result)
+        return JSONResponse(content=jsonable_encoder(result))
 
     @app.post("/api/visitor/turn")
     async def visitor_turn(body: VisitorTurn) -> JSONResponse:
@@ -207,7 +208,7 @@ def create_app() -> FastAPI:
         if not result.get("ok"):
             return JSONResponse(status_code=503, content={"ok": False, "error": result.get("error")})
         result["state"] = await _serialize_state(_pkg(), _repo())
-        return JSONResponse(content=result)
+        return JSONResponse(content=jsonable_encoder(result))
 
     return app
 
