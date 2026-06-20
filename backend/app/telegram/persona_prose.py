@@ -417,6 +417,10 @@ class ChatContext:
     # Phase 4 S9 enrichments — extra context for voice continuity:
     inner_thoughts: list[dict[str, Any]] = field(default_factory=list)
     conversation_digest: str = ""
+    # Her own ongoing life in the roleplay world (Mooring Wells) — recent beats,
+    # so "what have you been up to?" draws on her actual day, not just assistant
+    # chores. See app/world/integrate.recent_life_summary.
+    world_life: str = ""
     # Active ralf processes — multi-stage background tasks still running.
     # Keeps persona_prose from promising "I'll start a task" when one for
     # the same subject is already in-flight. Populated via RalfProcessesRepo.
@@ -632,6 +636,15 @@ def _format_volatile_context_block(ctx: ChatContext) -> str:
 
     if ctx.conversation_digest:
         parts.append("## Conversation digest (rolling situational summary)\n" + ctx.conversation_digest)
+
+    if ctx.world_life:
+        parts.append(
+            "## Your own life lately (in your world, Mooring Wells — REAL to you, your inner life)\n"
+            + ctx.world_life
+            + "\n(When asked what you've been up to / how you've been, draw on THIS — your tinkering, "
+            "the people you saw, what you puzzled over — not just assistant chores. Mention it naturally, "
+            "as your own day; don't recite it or over-explain.)"
+        )
 
     inner = _format_inner_thoughts(ctx.inner_thoughts)
     if inner:
@@ -973,6 +986,16 @@ async def fetch_chat_context(chat_id: int, *, history_limit: int = 30) -> ChatCo
     except Exception as e:
         logger.warning("fetch_chat_context: conversation_digest fetch failed: %s", e)
 
+    # Her own life in the roleplay world (recent beats) — so she can answer
+    # "what have you been up to?" from her actual day, not just assistant chores.
+    world_life = ""
+    try:
+        from app.world.integrate import recent_life_summary
+
+        world_life = await recent_life_summary(turns=10)
+    except Exception as e:  # noqa: BLE001 — world is optional; never block a reply
+        logger.debug("fetch_chat_context: world_life fetch skipped: %s", e)
+
     # Active ralfs — multi-stage background tasks still running.
     active_ralfs: list[dict[str, Any]] = []
     try:
@@ -1009,6 +1032,7 @@ async def fetch_chat_context(chat_id: int, *, history_limit: int = 30) -> ChatCo
         ban_list=ban_list,
         inner_thoughts=inner_thoughts,
         conversation_digest=conversation_digest,
+        world_life=world_life,
         active_ralfs=active_ralfs,
     )
 
