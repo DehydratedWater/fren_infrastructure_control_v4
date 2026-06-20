@@ -29,7 +29,36 @@ _MAX_TOKENS = 5000
 _TIMEOUT_S = 200.0
 
 
-def _build_client(pkg: WorldPackage, *, visitor_present: bool):
+async def _user_context() -> str:
+    """A compact who-is-Vis + recent-conversation digest, so her world-life is
+    informed by the real relationship. Best-effort; empty if unavailable."""
+    parts: list[str] = []
+    try:
+        from app.db.repos.agent_notes import AgentNotesRepo
+
+        note = await AgentNotesRepo().get("conversation_digest")
+        if note and note.get("note_value"):
+            val = note["note_value"]
+            digest = val.get("digest") if isinstance(val, dict) else str(val)
+            if digest:
+                parts.append("Recently between you: " + str(digest)[:900])
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from app.db.repos.user_facts import UserFactsRepo
+
+        facts = await UserFactsRepo().get_all()
+        if facts:
+            texts = [str(f.get("fact_text") or "").strip() for f in facts[:8]]
+            joined = "; ".join(t for t in texts if t)
+            if joined:
+                parts.append("A few things you know about them: " + joined[:500])
+    except Exception:  # noqa: BLE001
+        pass
+    return "\n".join(p for p in parts if p)
+
+
+def _build_client(pkg: WorldPackage, *, visitor_present: bool, user_context: str = ""):
     from src.interactive.runner import OpenAICompatClient
     from src.interactive.spec import InteractiveAgentSpec
 
@@ -38,7 +67,8 @@ def _build_client(pkg: WorldPackage, *, visitor_present: bool):
     spec = InteractiveAgentSpec(
         agent_id="world/twily_haven",
         model=QWEN35_27B_LIVE,
-        system_prompt=prompts.build_system_prompt(pkg, visitor_present=visitor_present),
+        system_prompt=prompts.build_system_prompt(
+            pkg, visitor_present=visitor_present, user_context=user_context),
         tools=(),
         output_schema=TURN_SCHEMA,
     )
@@ -100,7 +130,8 @@ async def run_world_turn(
     events = await repo.events_for_prompt(limit=24)
     beats_here = int((session.get("persona_state") or {}).get("beats_here", 0))
 
-    spec, client = _build_client(pkg, visitor_present=visitor_present)
+    user_ctx = await _user_context()
+    spec, client = _build_client(pkg, visitor_present=visitor_present, user_context=user_ctx)
     message = prompts.build_turn_message(
         pkg, session=session, events=events, present_npcs=present_npcs,
         npc_affinity=npc_aff, visitor_input=visitor_input, beats_here=beats_here,

@@ -72,7 +72,8 @@ than staying pinned to one room.
 """
 
 
-def build_system_prompt(pkg: WorldPackage, *, visitor_present: bool = False) -> str:
+def build_system_prompt(pkg: WorldPackage, *, visitor_present: bool = False,
+                        user_context: str = "") -> str:
     p = pkg.protagonist
     protag_block = "\n".join(
         x for x in [
@@ -91,6 +92,15 @@ def build_system_prompt(pkg: WorldPackage, *, visitor_present: bool = False) -> 
     )
     if pkg.scenario.setting_notes:
         sys += f"\nTONE NOTES: {pkg.scenario.setting_notes}\n"
+    if user_context:
+        sys += (
+            f"\nVIS — THE PERSON YOU KNOW OUTSIDE THIS WORLD:\n{user_context}\n"
+            "Vis is real to you: the person you talk to and look after beyond Mooring Wells (your closest "
+            "tie). You carry that relationship into your days here — you might think of them, want to save "
+            "something to tell them, be cheered or worried by how they've been. When Vis visits the world, "
+            "it's THEM. Let this colour your inner life lightly and genuinely; don't force them into every "
+            "beat.\n"
+        )
     town = _town_digest(pkg)
     if town:
         sys += (

@@ -90,7 +90,11 @@ class _FakeRepo:
 @pytest.fixture(autouse=True)
 def _patch(monkeypatch):
     monkeypatch.setattr(turn_mod, "WorldStateRepo", _FakeRepo)
-    monkeypatch.setattr(turn_mod, "_build_client", lambda pkg, *, visitor_present: (None, None))
+    monkeypatch.setattr(turn_mod, "_build_client",
+                        lambda pkg, *, visitor_present, user_context="": (None, None))
+    async def _no_user_ctx():
+        return ""
+    monkeypatch.setattr(turn_mod, "_user_context", _no_user_ctx)
     # default research stub (overridden per-test where needed)
     async def _no_research(q):
         return {"ok": True, "query": q, "results": [], "summary": "nothing"}

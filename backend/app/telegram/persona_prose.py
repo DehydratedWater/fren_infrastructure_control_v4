@@ -421,6 +421,10 @@ class ChatContext:
     # so "what have you been up to?" draws on her actual day, not just assistant
     # chores. See app/world/integrate.recent_life_summary.
     world_life: str = ""
+    # The threads of her world the user ALREADY knows about (she's introduced
+    # them). Everything else in world_life is PRIVATE — she should introduce/offer
+    # it, not reference it as shared. See app/world/knowledge.shared_topics.
+    world_shared: list[dict[str, Any]] = field(default_factory=list)
     # Active ralf processes — multi-stage background tasks still running.
     # Keeps persona_prose from promising "I'll start a task" when one for
     # the same subject is already in-flight. Populated via RalfProcessesRepo.
@@ -638,12 +642,28 @@ def _format_volatile_context_block(ctx: ChatContext) -> str:
         parts.append("## Conversation digest (rolling situational summary)\n" + ctx.conversation_digest)
 
     if ctx.world_life:
+        known = [t for t in ctx.world_shared if t.get("status") == "shared"]
+        offered = [t for t in ctx.world_shared if t.get("status") == "offered"]
+        shared_line = (
+            "The user ALREADY knows about: "
+            + "; ".join(t.get("label", t.get("key", "")) for t in known)
+            if known else "The user does NOT yet know about ANY of this — it's all new to them."
+        )
+        offered_line = (
+            "\nYou've floated but not yet explained: "
+            + "; ".join(t.get("label", t.get("key", "")) for t in offered)
+            if offered else ""
+        )
         parts.append(
-            "## Your own life lately (in your world, Mooring Wells — REAL to you, your inner life)\n"
+            "## Your own private life lately (your world, Mooring Wells — REAL to you, your inner life)\n"
             + ctx.world_life
-            + "\n(When asked what you've been up to / how you've been, draw on THIS — your tinkering, "
-            "the people you saw, what you puzzled over — not just assistant chores. Mention it naturally, "
-            "as your own day; don't recite it or over-explain.)"
+            + f"\n\n### What the user knows of it\n{shared_line}{offered_line}\n"
+            "### How to handle it\nThis life is PRIVATE by default. Do NOT reference a thread as if the "
+            "user already knows it unless it's listed under 'already knows'. If you want to bring up "
+            "something new, INTRODUCE it or ask if they'd like to hear ('mind if I tell you about the "
+            "thing I've been tinkering with?') — a light offer, not a data-dump. For threads they already "
+            "know, build on them naturally (they were curious, they asked). When asked how you've been, "
+            "you can offer a glimpse and let them pull the thread."
         )
 
     inner = _format_inner_thoughts(ctx.inner_thoughts)
@@ -989,10 +1009,13 @@ async def fetch_chat_context(chat_id: int, *, history_limit: int = 30) -> ChatCo
     # Her own life in the roleplay world (recent beats) — so she can answer
     # "what have you been up to?" from her actual day, not just assistant chores.
     world_life = ""
+    world_shared: list[dict[str, Any]] = []
     try:
         from app.world.integrate import recent_life_summary
+        from app.world.knowledge import shared_topics
 
         world_life = await recent_life_summary(turns=10)
+        world_shared = await shared_topics()
     except Exception as e:  # noqa: BLE001 — world is optional; never block a reply
         logger.debug("fetch_chat_context: world_life fetch skipped: %s", e)
 
@@ -1033,6 +1056,7 @@ async def fetch_chat_context(chat_id: int, *, history_limit: int = 30) -> ChatCo
         inner_thoughts=inner_thoughts,
         conversation_digest=conversation_digest,
         world_life=world_life,
+        world_shared=world_shared,
         active_ralfs=active_ralfs,
     )
 
@@ -1769,6 +1793,16 @@ async def generate_persona_message(
         logger.warning("persona_prose generated empty text — skipping delivery")
     else:
         await _deliver_via_send_message(delivered_text, guidance.attachments, kind=kind)
+        # If this reply drew on her private world, record what she disclosed so
+        # she remembers (shared vs private) next time. Best-effort, post-delivery
+        # so it never delays the user's message.
+        if getattr(chat_context, "world_life", ""):
+            try:
+                from app.world.knowledge import classify_and_record
+
+                await classify_and_record(delivered_text, chat_context.world_life)
+            except Exception:  # noqa: BLE001
+                logger.debug("persona_prose: world disclosure tracking skipped")
 
     # Build the trace dict.
     trace: dict[str, Any] = {
