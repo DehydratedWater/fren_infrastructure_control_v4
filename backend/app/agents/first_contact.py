@@ -56,6 +56,102 @@ def _spawn_specialist(agent: str, instruction: str) -> None:
         logger.exception("first_contact: spawn %s failed", agent)
 
 
+# ── deterministic selfie dispatch (route=image) ──────────────────────────────
+# The old path spawned the `twily_selfie` opencode agent, but the fast model
+# sometimes "finished" WITHOUT calling the render tool (she'd promise a pic and
+# never send one). We instead make ONE structured design call, then compose +
+# dispatch the render IN CODE — so the render can never be silently skipped.
+_SELFIE_DESIGN_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "form": {"type": "string", "enum": ["anthro", "human", "pony"],
+                 "description": "her body form (default anthro unless asked otherwise)"},
+        "action": {"type": "string", "description": "pose/expression, e.g. 'taking a selfie, soft smile'"},
+        "location": {"type": "string", "description": "the setting, e.g. 'her cozy study, warm lamplight'"},
+        "clothing": {"type": "string", "description": "outfit (optional)"},
+        "happiness": {"type": "number", "description": "mood warmth 0..1"},
+        "confidence": {"type": "number", "description": "confidence 0..1"},
+    },
+    "required": ["form", "action", "location"],
+}
+_SELFIE_DESIGN_PROMPT = (
+    "Design ONE selfie of Twily (Twilight Sparkle) to send the user, from their request and the "
+    "moment. Pick her form (default 'anthro' unless they ask for human/pony), a believable setting, "
+    "an outfit, a pose/expression, and mood floats (0..1). Tasteful, in-character. Return ONLY the "
+    "structured object."
+)
+
+
+async def _dispatch_selfie(instruction: str) -> bool:
+    """Render + send a selfie deterministically: one structured design call, then
+    compose + dispatch the render in code (no agent that can skip the tool)."""
+    import asyncio
+
+    from src.interactive import run_interactive
+    from src.interactive.runner import OpenAICompatClient
+    from src.interactive.spec import InteractiveAgentSpec
+
+    from app.agents.config import QWEN35_27B_LIVE
+
+    spec = InteractiveAgentSpec(
+        agent_id="persona/selfie_design", model=QWEN35_27B_LIVE,
+        system_prompt=_SELFIE_DESIGN_PROMPT, tools=(), output_schema=_SELFIE_DESIGN_SCHEMA,
+    )
+    client = OpenAICompatClient.from_spec(spec)
+    client.default_params["max_tokens"] = 1500
+
+    try:
+        res = await asyncio.to_thread(
+            lambda: run_interactive(spec, instruction, client=client, history=[], max_tool_rounds=1)
+        )
+        d = res.structured if isinstance(res.structured, dict) else {}
+    except Exception:  # noqa: BLE001
+        logger.exception("selfie design call failed; using defaults")
+        d = {}
+
+    def _f(v: object, dv: float) -> float:
+        try:
+            return max(0.0, min(1.0, float(v)))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return dv
+
+    form = str(d.get("form") or "anthro")
+    action = str(d.get("action") or "taking a selfie, soft smile")
+    location = str(d.get("location") or "her cozy study, warm lamplight")
+    clothing = str(d.get("clothing") or "")
+    happiness, confidence = _f(d.get("happiness"), 0.55), _f(d.get("confidence"), 0.5)
+
+    def _compose_and_dispatch() -> bool:
+        from app.tools.vis_simulation.ponyxl_prompt_composer import (
+            Input as CInput,
+            PonyXLPromptComposerTool,
+        )
+        from app.tools.vis_simulation.render_ponyxl import Input as RInput, RenderPonyXLTool
+
+        c = PonyXLPromptComposerTool().execute(CInput(
+            command="compose", character="twilight_sparkle", form=form, action=action,
+            location=location, clothing=clothing, happiness=happiness, confidence=confidence,
+            suggestiveness=0.0, nsfw=False, aspect="portrait"))
+        if not c.success:
+            logger.error("selfie compose failed: %s", c.error)
+            return False
+        data = c.data or {}
+        r = RenderPonyXLTool().execute(RInput(
+            command="dispatch_image", positive_prompt=str(data.get("positive_prompt", "")),
+            negative_prompt=str(data.get("negative_prompt", "")),
+            workflow_id=str(data.get("workflow_id", "")), filename_prefix="twily_selfie",
+            caption="", aspect="portrait"))
+        return bool(r.success)
+
+    try:
+        ok = await asyncio.to_thread(_compose_and_dispatch)
+        logger.info("first_contact: selfie dispatched in-code (form=%s, ok=%s)", form, ok)
+        return ok
+    except Exception:  # noqa: BLE001
+        logger.exception("first_contact: in-code selfie dispatch failed")
+        return False
+
+
 # ── Tool specs the FC LLM sees (name + description + minimal JSON schema) ──
 # Kept tiny on purpose: the fast tier should reach for few, obvious tools.
 
@@ -529,8 +625,13 @@ async def run_first_contact(
     # OWN result; the FC delivers only the short ack from key_points.
     if guidance and route in _ROUTE_TO_AGENT:
         instruction = str(guidance.get("instruction") or "").strip() or message
-        _spawn_specialist(_ROUTE_TO_AGENT[route], instruction)
-        logger.info("first_contact: route=%s → spawned %s", route, _ROUTE_TO_AGENT[route])
+        if route == "image":
+            # deterministic in-code dispatch — the render always fires (no flaky agent)
+            await _dispatch_selfie(instruction)
+            logger.info("first_contact: route=image → in-code selfie dispatch")
+        else:
+            _spawn_specialist(_ROUTE_TO_AGENT[route], instruction)
+            logger.info("first_contact: route=%s → spawned %s", route, _ROUTE_TO_AGENT[route])
 
     if guidance and guidance.get("message_kind") != "skip" and guidance.get("key_points"):
         try:

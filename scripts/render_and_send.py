@@ -44,6 +44,23 @@ def _render_scene_sync(**kwargs: object) -> dict:
     return asyncio.run(render_scene(**kwargs))
 
 
+def _render_with_retry(*, attempts: int = 3, **kwargs: object) -> dict:
+    """Render, retrying transient failures (ComfyUI briefly unreachable —
+    'All connection attempts failed' — is the common one). Backoff between tries."""
+    import time
+
+    result: dict = {}
+    for i in range(attempts):
+        result = _render_scene_sync(**kwargs)
+        if result.get("success"):
+            return result
+        err = str(result.get("error", ""))
+        print(f"[render_and_send] render attempt {i + 1}/{attempts} failed: {err}", file=sys.stderr)
+        if i < attempts - 1:
+            time.sleep(4 * (i + 1))  # 4s, 8s — ride out a brief ComfyUI hiccup/restart
+    return result
+
+
 def _extract_output_path(render_result: dict) -> str | None:
     """Extract file path from render result. Downloads from remote ComfyUI if needed."""
     from app.comfyui.client import download_output
@@ -113,11 +130,17 @@ def _scale_reference_image(ref_path: str) -> tuple[str, int, int]:
 
 
 def _send_error_message(error: str) -> None:
-    """Send error notification to Telegram."""
+    """Tell the user the render hiccuped — honestly, and as a REPLY (not a
+    proactive 'leak', which the delivery gate was suppressing). Crucially this
+    must NEVER imply she can't generate images — only that this one render failed
+    after retries. The real error is in the logs above."""
     from app.tools.telegram.send_message import Input, SendMessageTool
 
+    print(f"[render_and_send] render failed after retries: {error[:300]}", file=sys.stderr)
+    msg = "Ugh — my render box hiccuped on that one and the image didn't come through. Ask again in a minute and I'll get it. 💜"
     with contextlib.suppress(Exception):
-        SendMessageTool().execute(Input(message=f"[Render Error] {error[:500]}"))
+        os.environ["FREN_MSG_KIND"] = "reply"  # a response to their request, not a proactive nudge
+        SendMessageTool().execute(Input(message=msg))
 
 
 def _trigger_self_review(file_path: str, media_type: str, caption: str) -> None:
@@ -180,7 +203,7 @@ def run_image_mode(job: dict) -> None:
     """Render T2I image and send to Telegram."""
     print(f"[render_and_send] Image mode: {job['filename_prefix']}")
 
-    result = _render_scene_sync(
+    result = _render_with_retry(
         workflow_id=job["workflow_id"],
         positive_prompt=job["positive_prompt"],
         negative_prompt=job["negative_prompt"],
@@ -218,7 +241,7 @@ def run_video_mode(job: dict) -> None:
     print(f"[render_and_send] Video mode: {job['filename_prefix']}")
 
     # Step 1: T2I render (reference frame).
-    t2i_result = _render_scene_sync(
+    t2i_result = _render_with_retry(
         workflow_id=job["workflow_id"],
         positive_prompt=job["positive_prompt"],
         negative_prompt=job["negative_prompt"],
