@@ -1014,16 +1014,17 @@ async def fetch_chat_context(chat_id: int, *, history_limit: int = 30) -> ChatCo
 
     # Her own life in the roleplay world (recent beats) — so she can answer
     # "what have you been up to?" from her actual day, not just assistant chores.
+    # World-life bleed into LIVE chat is DISABLED on purpose. The chat reply path
+    # has several generators (persona_prose ack + handoff specialists like
+    # orchestrator/twily_chat), and only persona_prose ever saw the world framing —
+    # so a question like "who is Sol?" routed to a specialist with no world context
+    # produced unframed assertions, disavowals ("that was a hallucination"), and
+    # confabulation. Her world still SHAPES her gently via the nightly promote
+    # (interests + memories), and the sim still carries who the user is; but raw
+    # recent-beats are no longer injected into every reply. Re-enable only behind a
+    # single coherent reply path (see docs/plans/twily-world.md).
     world_life = ""
     world_shared: list[dict[str, Any]] = []
-    try:
-        from app.world.integrate import recent_life_summary
-        from app.world.knowledge import shared_topics
-
-        world_life = await recent_life_summary(turns=10)
-        world_shared = await shared_topics()
-    except Exception as e:  # noqa: BLE001 — world is optional; never block a reply
-        logger.debug("fetch_chat_context: world_life fetch skipped: %s", e)
 
     # Active ralfs — multi-stage background tasks still running.
     active_ralfs: list[dict[str, Any]] = []

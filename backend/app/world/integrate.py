@@ -10,16 +10,12 @@ failure, so we catch and store without a vector rather than losing the memory.
 from __future__ import annotations
 
 import logging
-import uuid
 from typing import Any
 
 from app.world.loader import DEFAULT_PACKAGE, get_package
 from app.world.state import WorldStateRepo
 
 logger = logging.getLogger(__name__)
-
-# only memories at/above this importance cross into her persona
-_PROMOTE_THRESHOLD = 0.6
 
 
 async def _embed(text: str) -> list[float] | None:
@@ -33,47 +29,25 @@ async def _embed(text: str) -> list[float] | None:
 
 
 async def promote_world_memories(world_id: str = DEFAULT_PACKAGE, *, limit: int = 12) -> dict[str, int]:
-    """Promote unconsumed, important world memories into persona memory and
-    convert recent research into persona interests. Returns counts."""
-    from app.db.repos.memories import MemoriesRepo
-
+    """Convert her recent research into persona interests (gentle curiosity
+    shaping). Episodic world memories are intentionally NOT promoted — see below.
+    Returns counts."""
     repo = WorldStateRepo(world_id)
-    pkg = get_package(world_id)
     pending = await repo.unconsumed_memories(limit=limit)
 
-    promoted_ids: list[int] = []
-    mem_repo = MemoriesRepo()
-    promoted = 0
-    for m in pending:
-        if float(m.get("importance", 0)) < _PROMOTE_THRESHOLD:
-            promoted_ids.append(int(m["id"]))  # consume low-value ones too (don't re-scan)
-            continue
-        content = str(m.get("content", "")).strip()
-        if not content:
-            promoted_ids.append(int(m["id"]))
-            continue
-        emb = await _embed(content)
-        try:
-            await mem_repo.create(
-                memory_id=f"world_{world_id}_{uuid.uuid4().hex[:12]}",
-                title=f"From her life in {pkg.name}",
-                content=content,
-                tags=["inner_life", "world", world_id],
-                category="inner_life",
-                source="world",
-                embedding=emb,
-            )
-            promoted += 1
-        except Exception:  # noqa: BLE001
-            logger.exception("world.integrate: failed to promote memory %s", m.get("id"))
-            continue
-        promoted_ids.append(int(m["id"]))
-
+    # NOTE: we deliberately do NOT promote episodic world memories (Sol said X,
+    # the dropout, etc.) into the chat-retrieved `memories` table — those leaked
+    # world specifics into assistant replies (a query topically matching them made
+    # a clueless reply path confabulate/disavow). She's shaped GENTLY instead, via
+    # interests only (her curiosities — harmless topics). Episodic beats stay in
+    # the world's own tables and surface only in the world UI. We still consume the
+    # pending rows so they don't re-scan.
+    promoted_ids = [int(m["id"]) for m in pending]
     await repo.mark_memories_consumed(promoted_ids)
 
     interests = await _promote_research_interests(world_id)
-    logger.info("world.integrate[%s]: promoted %d memories, %d interests", world_id, promoted, interests)
-    return {"memories": promoted, "interests": interests, "scanned": len(pending)}
+    logger.info("world.integrate[%s]: %d interests (episodic promotion disabled)", world_id, interests)
+    return {"memories": 0, "interests": interests, "scanned": len(pending)}
 
 
 async def _promote_research_interests(world_id: str) -> int:
