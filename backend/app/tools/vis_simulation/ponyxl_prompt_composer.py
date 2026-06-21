@@ -172,15 +172,17 @@ FORM_CONFIG: dict[str, dict[str, str | bool]] = {
         "source": "source_furry",
         "body_tags": "mlp, pony, cute, fluffy ears",
         "face_tags": "",
-        "neg_species": "anthro, bipedal, human, humanoid, human face, human skin, human body, catgirl, foxgirl, boobs, breasts, chest, cleavage, spike, dragon",
+        "neg_species": "anthro, bipedal, human, humanoid, human face, human skin, human body, catgirl, cat ears, feline, rabbit, bunny, rabbit ears, foxgirl, fox ears, boobs, breasts, chest, cleavage, spike, dragon",
         "neg_face": "realistic, photorealistic, real horse, muscular, detailed anatomy, uncanny",
         "allow_nsfw": True,
     },
     "anthro": {
         "source": "source_furry",
-        "body_tags": "anthro, pony, furry female, bipedal, humanoid body, breasts, tail, slim athletic build, fingers, hands, hooves on legs, feminine body, short face",
+        "body_tags": "anthro, pony, equine, pony ears, horse ears, furry female, bipedal, humanoid body, breasts, tail, slim athletic build, fingers, hands, hooves on legs, feminine body, short face",
         "face_tags": "short snout, cute face, round face",
-        "neg_species": "feral, quadruped, catgirl, foxgirl, spike, dragon",
+        # exclude OTHER species' ears/features — the furry model otherwise defaults
+        # to cat/rabbit/fox ears on the anthro pony (she must stay an equine).
+        "neg_species": "feral, quadruped, spike, dragon, catgirl, cat ears, cat tail, feline, whiskers, nekomimi, neko, rabbit, bunny, rabbit ears, bunny ears, foxgirl, fox ears, dog ears, wolf ears, deer antlers, antlers, generic furry, wrong species, kemonomimi",
         "neg_face": "horse head, long snout, long face, equine face",
         "allow_nsfw": True,
     },
