@@ -108,6 +108,79 @@ Return ONLY the structured object.
 """
 
 
+_YT_ID_RE = re.compile(
+    r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([\w-]{11})"
+)
+
+
+async def _gather_grounding(request: str, *, max_body_chars: int = 6000) -> str:
+    """Carry ALREADY-produced work into the recovery run so the orchestrator gets
+    DATA, not a treasure hunt.
+
+    The recovery target (persona/orchestrator) has a read-side toolset but NOT
+    every fetch tool — e.g. it can discover that a YouTube transcript was cached
+    but has no tool to read the transcript BODY (that lives in youtube_videos,
+    reachable only via youtube_fetcher, which it lacks). So we pull the actual
+    bodies and inline a bounded excerpt. This is the difference between "go find
+    out how to get a transcript" (the orchestrator flails — it has no such tool)
+    and "here is the transcript, extract the tracks" (trivially solvable).
+
+    Grounding is keyed on ENTITIES IN THE REQUEST (e.g. a YouTube id in the URL),
+    not a time window — so it is robust whether the verifier fires seconds or
+    hours after the flow. Recent context_cache rows are added as a supplement."""
+    lines: list[str] = []
+    try:
+        from app.db.session import fetch_all, get_async_session
+
+        async with get_async_session() as s:
+            # 1) Entity-keyed: a YouTube id in the request → its transcript body.
+            m = _YT_ID_RE.search(request or "")
+            if m:
+                yt_id = m.group(1)
+                rows = await fetch_all(
+                    s,
+                    "SELECT video_id, title, transcript FROM youtube_videos "
+                    "WHERE yt_video_id = :y AND transcript IS NOT NULL AND transcript <> '' "
+                    "ORDER BY length(transcript) DESC LIMIT 1",
+                    {"y": yt_id},
+                )
+                if rows:
+                    title = str(rows[0].get("title") or "").strip()
+                    body = str(rows[0].get("transcript") or "")
+                    excerpt = body[:max_body_chars]
+                    trunc = " …(truncated)" if len(body) > max_body_chars else ""
+                    lines.append(
+                        f"- YouTube transcript ALREADY fetched for {yt_id}"
+                        + (f" — \"{title}\"" if title else "")
+                        + f" ({len(body)} chars)."
+                    )
+                    lines.append(
+                        f"\n  TRANSCRIPT TEXT ({len(excerpt)} of {len(body)} chars){trunc}:\n"
+                        f"  \"\"\"\n{excerpt}\n  \"\"\"\n"
+                    )
+
+            # 2) Supplement: anything the just-failed flow cached very recently.
+            recent = await fetch_all(
+                s,
+                """
+                SELECT artifact_type, entity_id, summary
+                FROM context_cache
+                WHERE created_at > now() - interval '45 minutes'
+                ORDER BY created_at DESC LIMIT 5
+                """,
+                {},
+            )
+            for r in recent:
+                summary = str(r.get("summary") or "").strip()
+                if summary and summary not in "\n".join(lines):
+                    eid = str(r.get("entity_id") or "")
+                    atype = str(r.get("artifact_type") or "")
+                    lines.append(f"- [{atype}] {summary}" + (f" (entity_id={eid})" if eid else ""))
+    except Exception:  # noqa: BLE001
+        logger.debug("delivery_verify: grounding gather failed", exc_info=True)
+    return "\n".join(lines).strip()
+
+
 async def _collect_delivery(run_id: str) -> dict:
     """Gather what a run actually delivered: the user-facing text + a terse tool
     summary + whether the run skipped delivery entirely."""
@@ -236,16 +309,27 @@ async def verify_and_maybe_reroute(
         run_id, agent, confidence, what,
     )
 
+    # Carry the data the failed flow ALREADY produced into the recovery run. This
+    # is what makes recovery *feasible* rather than a treasure hunt: the
+    # orchestrator's toolset can't re-fetch everything (e.g. it has no tool to
+    # read a YouTube transcript body), so we hand it the data inline.
+    grounding = await _gather_grounding(request)
+    grounding_block = (
+        f"\nDATA ALREADY FETCHED — use this directly, do NOT try to re-fetch it "
+        f"(you may not have a tool that can):\n{grounding}\n"
+        if grounding else ""
+    )
+
     instruction = (
         "A previous attempt to handle the user's request DID NOT deliver it. You are the "
-        "recovery orchestrator — fix it.\n\n"
+        "recovery orchestrator — fix it and DELIVER.\n\n"
         f"USER'S ORIGINAL REQUEST:\n{request.strip()}\n\n"
         f"WHAT WENT WRONG (first attempt by {agent}):\n{what}\n\n"
-        f"WHAT TO DO:\n{how}\n\n"
-        "Take a DIFFERENT approach if the first one was structurally broken (e.g. call the "
-        "tools directly instead of describing them; use the youtube_fetcher / research_manager "
-        "for video transcripts; use analyze_media for files). When you have the real result, "
-        "DELIVER it to the user via emit_guidance — do not just promise it."
+        f"WHAT IS STILL NEEDED:\n{how}\n"
+        f"{grounding_block}\n"
+        "Work with the tools you ACTUALLY have and the data above — do not assume a tool exists. "
+        "If the data you need is already inlined above, just use it directly. When you have the "
+        "real result, DELIVER it to the user via emit_guidance — do not merely promise it."
     )
 
     try:
