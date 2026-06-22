@@ -56,6 +56,28 @@ async def _post_run_persona_delivery(agent: str, run_id: str) -> None:
         logger.exception("post-run persona_prose delivery failed for %s", agent)
 
 
+_verify_tasks: set[asyncio.Task] = set()
+
+
+def _spawn_delivery_verify(agent: str, run_id: str, request: str, trigger: str) -> None:
+    """Fire-and-forget honesty check: after a flow ends, audit whether the user
+    actually got what they asked for and, if not, reroute to the orchestrator.
+    Never blocks the caller (the user-facing reply has already been delivered)."""
+    if _shutting_down or not request:
+        return
+    try:
+        from app.telegram.delivery_verify import verify_and_maybe_reroute
+
+        task = asyncio.ensure_future(
+            verify_and_maybe_reroute(agent=agent, run_id=run_id, request=request, trigger=trigger)
+        )
+        # Hold a reference so the task isn't garbage-collected mid-flight.
+        _verify_tasks.add(task)
+        task.add_done_callback(_verify_tasks.discard)
+    except Exception:  # noqa: BLE001
+        logger.exception("failed to schedule delivery verify for %s", agent)
+
+
 async def _send_error_notification(context: str) -> None:
     """Send a Twily-flavored error notification to the user via Telegram.
 
@@ -335,6 +357,7 @@ async def trigger_chatbot(
 
     # Post-run persona_prose delivery (no-op if agent didn't emit guidance).
     await _post_run_persona_delivery(agent, run_id)
+    _spawn_delivery_verify(agent, run_id, message, "chat")
 
 
 async def _update_personality_core_background(message: str, history_context: str, now_str: str) -> None:
@@ -828,6 +851,7 @@ async def trigger_chat_agent(
     # Post-run persona_prose delivery hook. No-op if the agent didn't emit
     # guidance (the agent still called send_message directly on the old path).
     await _post_run_persona_delivery(agent, run_id)
+    _spawn_delivery_verify(agent, run_id, message, "chat")
 
 
 async def trigger_workflow(
@@ -880,6 +904,7 @@ async def trigger_workflow(
 
     # Post-run persona_prose delivery (no-op for unconverted agents).
     await _post_run_persona_delivery(agent, run_id)
+    _spawn_delivery_verify(agent, run_id, message, "workflow")
 
 
 async def trigger_video_analysis(url: str, original_message: str, model: str | None = None) -> None:
@@ -948,6 +973,7 @@ async def trigger_video_analysis(url: str, original_message: str, model: str | N
 
     # Post-run persona_prose delivery hook.
     await _post_run_persona_delivery(agent, run_id)
+    _spawn_delivery_verify(agent, run_id, f"{original_message}\n(YouTube video: {url})", "video_analysis")
 
 
 async def trigger_document_analysis(rel_path: str, filename: str, caption: str, model: str | None = None) -> None:
@@ -1017,6 +1043,9 @@ async def trigger_document_analysis(rel_path: str, filename: str, caption: str, 
         logger.error("Document analyst failed for %s: %s", filename, result.error)
 
     await _post_run_persona_delivery(agent, run_id)
+    _spawn_delivery_verify(
+        agent, run_id, f"{caption or 'Analyze this file'} (file: {filename})", "document_analysis",
+    )
 
 
 async def trigger_bug_report(prompt: str, model: str | None = None) -> None:
