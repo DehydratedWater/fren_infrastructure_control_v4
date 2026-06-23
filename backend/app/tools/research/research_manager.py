@@ -13,13 +13,17 @@ from pydantic import BaseModel, Field
 
 class Input(BaseModel):
     command: str = Field(
-        description="Topic: create-topic|get-topic|list-topics|update-topic|delete-topic|get-topic-full; "
-        "Channel: add-channel|get-channel|list-channels; "
-        "Link: link-channel|unlink-channel|get-topic-channels; "
-        "Video: list-videos|get-video|list-pending-transcripts; "
-        "Analysis: list-analyses; Knowledge: get-knowledge; "
-        "Website: add-website|list-websites|remove-website; "
-        "Search: add-search-query|list-search-queries|remove-search-query"
+        # Flat pipe-list of BARE verbs (no "Category:" prefixes — those get
+        # mistaken for part of the verb, e.g. an agent emitting the invalid
+        # `Video: get-video`). Read a shared video's transcript with `get-video`
+        # (pass --video_id; transcript text comes back in item.transcript).
+        description="create-topic|get-topic|list-topics|update-topic|delete-topic|get-topic-full|"
+        "add-channel|get-channel|list-channels|"
+        "link-channel|unlink-channel|get-topic-channels|"
+        "list-videos|get-video|list-pending-transcripts|"
+        "list-analyses|get-knowledge|"
+        "add-website|list-websites|remove-website|"
+        "add-search-query|list-search-queries|remove-search-query"
     )
     # IDs
     topic_id: str = Field(default="", description="Topic ID")
