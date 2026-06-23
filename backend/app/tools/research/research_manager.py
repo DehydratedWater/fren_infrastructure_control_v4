@@ -29,6 +29,7 @@ class Input(BaseModel):
     topic_id: str = Field(default="", description="Topic ID")
     channel_id: str = Field(default="", description="Channel ID")
     video_id: str = Field(default="", description="Video ID")
+    offset: int = Field(default=0, description="get-video: char offset into the transcript to read from (for paging long transcripts)")
     website_id: str = Field(default="", description="Website ID")
     query_id: str = Field(default="", description="Search query ID")
     # Topic fields
@@ -151,7 +152,43 @@ class ResearchManagerTool(ScriptTool[Input, Output]):
 
         if cmd == "get-video":
             v = await YouTubeVideoRepo().get(inp.video_id)
-            return Output(success=bool(v), item=v or {}, error="" if v else "Video not found")
+            if not v:
+                return Output(success=False, item={}, error="Video not found")
+            # Project to a LEAN, WINDOWED shape. The raw row carries
+            # `transcript_raw` (timestamped segments + word chunks — ~60KB that
+            # DUPLICATES `transcript`) and `raw_api_response`; dumping the whole
+            # row (~78KB) — or even the full ~18KB transcript — overruns the
+            # agent's tool-output cap, so it only ever saw the truncated START and
+            # couldn't list everything. We strip the duplicates AND return the
+            # transcript in a bounded WINDOW with explicit paging so a long
+            # transcript can be read in full regardless of the cap.
+            transcript = v.get("transcript") or ""
+            window_size = 6000  # safely under any plausible tool-output cap
+            offset = max(0, inp.offset)
+            window = transcript[offset : offset + window_size]
+            next_offset = offset + len(window)
+            more = next_offset < len(transcript)
+            item = {
+                "video_id": v.get("video_id"),
+                "yt_video_id": v.get("yt_video_id"),
+                "title": v.get("title") or "",
+                "transcript_status": v.get("transcript_status"),
+                "transcript_length": len(transcript),
+                "offset": offset,
+                "next_offset": next_offset if more else None,
+                "more": more,
+                "transcript": window,
+                "note": (
+                    f"Transcript chars {offset}-{next_offset} of {len(transcript)}. "
+                    + (
+                        f"MORE remains — call get-video again with --offset {next_offset} "
+                        "to read the next part."
+                        if more
+                        else "This is the END of the transcript."
+                    )
+                ),
+            }
+            return Output(success=True, item=item)
 
         if cmd == "list-pending-transcripts":
             vs = await YouTubeVideoRepo().list_pending_transcripts()
