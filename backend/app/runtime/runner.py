@@ -431,7 +431,14 @@ async def run_agent_opencode(
     # (e.g. FREN_RUN_ID / FREN_MSG_HEADER / FREN_CLEARANCE / FREN_MODEL_POSTFIX).
     if extra_env:
         env.update({k: str(v) for k, v in extra_env.items()})
-    cmd = ["opencode", "run", "--agent", agent_name, "--format", "json"]
+    # `--print-logs` is REQUIRED, not optional: without it opencode routes its
+    # logs to a default file sink and intermittently DEADLOCKS on startup (A/B,
+    # idle box: ~1/3 of no-flag runs hang to the timeout or crawl to 49s for a
+    # trivial prompt; with the flag every run is a steady 3-4s). Logs then go to
+    # stderr, which `communicate()` already drains concurrently — no pipe-fill
+    # deadlock. This is the opencode-launcher half of the bot-hang root cause.
+    cmd = ["opencode", "run", "--print-logs", "--log-level", "WARN",
+           "--agent", agent_name, "--format", "json"]
     # Background runs (cron/proactive) on the LOCAL qwen target are routed to the
     # `-bg` model alias (same model, vLLM priority 100) so a concurrent user reply
     # (priority 0) preempts them on the single :8082 endpoint. Only override when
